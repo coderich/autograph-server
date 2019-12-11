@@ -7,12 +7,17 @@ module.exports = class Resolver {
   constructor(parser, stores = {}) {
     this.parser = parser;
 
+    // Create stores
     this.stores = Object.entries(stores).reduce((prev, [key, { type, uri }]) => {
       switch (type) {
         case 'mongo': return Object.assign(prev, { [key]: new MongoStore(uri) });
         default: return Object.assign(prev, { [key]: new MongoStore(uri) });
       }
     }, {});
+
+    // Create indexes
+    const modelsAndIndexes = parser.getModelNamesAndIndexes();
+    Object.values(this.stores).forEach(store => modelsAndIndexes.forEach(([model, indexes]) => store.createIndexes(model, indexes)));
   }
 
   get(model, id, required = false) {

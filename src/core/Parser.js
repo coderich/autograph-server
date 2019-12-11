@@ -22,7 +22,11 @@ module.exports = class Parser {
   }
 
   getModelNamesAndFields(getAll = true) {
-    return Object.entries(this.schema).filter(([, modelDef]) => getAll || !modelDef.hideFromApi).map(([model, def]) => [model, def.fields]);
+    return Object.entries(this.schema).filter(([, modelDef]) => getAll || !modelDef.hideFromApi).map(([model, { fields }]) => [model, fields]);
+  }
+
+  getModelNamesAndIndexes() {
+    return Object.entries(this.schema).filter(([, { indexes }]) => indexes).map(([model, { indexes }]) => [model, indexes]);
   }
 
   static isScalarField(field) {

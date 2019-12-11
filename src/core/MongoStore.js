@@ -29,6 +29,17 @@ module.exports = class MongoStore {
     return this.query(model, 'deleteOne', { _id: ObjectID(id) }).then(result => MongoStore.idDoc(doc));
   }
 
+  createIndexes(model, indexes) {
+    return Promise.all(indexes.map(({ name, type, fields }) => {
+      const $fields = fields.reduce((prev, field) => Object.assign(prev, { [field]: 1 }), {});
+
+      switch (type) {
+        case 'unique': return this.query(model, 'createIndex', $fields, { name, unique: true });
+        default: return null;
+      }
+    }));
+  }
+
   static idValue(value) {
     if (value instanceof ObjectID) return value;
     return ObjectID(value);

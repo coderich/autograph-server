@@ -7,6 +7,9 @@ module.exports = {
         books: { type: ['Book'], by: 'author' },
         friends: { type: ['Person'], unique: true, onDelete: 'cascade' },
       },
+      indexes: [
+        { name: 'uix_person_name', type: 'unique', fields: ['name'] },
+      ],
     },
     Book: {
       // id: 'Book',
@@ -16,6 +19,9 @@ module.exports = {
         author: { type: 'Person', onDelete: 'cascade', required: true, immutable: true },
         chapters: { type: ['Chapter'], by: 'book' },
       },
+      indexes: [
+        { name: 'uix_book', type: 'unique', fields: ['name', 'author'] },
+      ],
     },
     Chapter: {
       // id: 'Chapter',

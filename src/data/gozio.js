@@ -1,11 +1,8 @@
 module.exports = {
   schema: {
     networks: {
-      id: 'Network',
-      dao: {
-        id: 'mongo',
-        key: 'networks',
-      },
+      // id: 'Network',
+      // dao: { id: 'mongo', key: 'networks' },
       fields: {
         name: { type: String, required: true },
         placeholder: { type: ['network_placeholder'], by: 'network_id' },
