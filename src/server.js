@@ -3,7 +3,7 @@ const { ApolloServer, makeExecutableSchema } = require('apollo-server-hapi');
 const Parser = require('./core/Parser');
 const Resolver = require('./core/Resolver');
 const SchemaService = require('./service/schema.service');
-const { schema, stores } = require('./data/default');
+const { schema, stores } = require('./schema');
 
 const parser = new Parser(schema);
 const resolver = new Resolver(parser, stores);

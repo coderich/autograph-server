@@ -21,26 +21,37 @@ module.exports = class Resolver {
   }
 
   get(model, id, required = false) {
-    return this.stores.default.get(model, id).then((doc) => {
+    const modelId = this.parser.getModelId(model);
+    const store = this.parser.getModelStore(model);
+
+    return this.stores[store].get(modelId, id).then((doc) => {
       if (!doc && required) throw Boom.notFound(`${model} Not Found`);
       return doc;
     });
   }
 
   find(model, filter) {
-    return this.stores.default.find(model, filter);
+    const modelId = this.parser.getModelId(model);
+    const store = this.parser.getModelStore(model);
+    return this.stores[store].find(modelId, filter);
   }
 
   create(model, data) {
-    return this.validate(model, data).then(() => this.stores.default.create(model, this.normalizeModelData(model, data)));
+    const modelId = this.parser.getModelId(model);
+    const store = this.parser.getModelStore(model);
+    return this.validate(model, data).then(() => this.stores[store].create(modelId, this.normalizeModelData(model, data)));
   }
 
   update(model, id, data) {
-    return this.validate(model, data).then(() => this.get(model, id, true).then(doc => this.stores.default.replace(model, id, this.normalizeModelData(model, deepMerge(doc, data)))));
+    const modelId = this.parser.getModelId(model);
+    const store = this.parser.getModelStore(model);
+    return this.validate(model, data).then(() => this.get(model, id, true).then(doc => this.stores[store].replace(modelId, id, this.normalizeModelData(model, deepMerge(doc, data)))));
   }
 
   delete(model, id) {
-    return this.get(model, id, true).then(doc => this.stores.default.delete(model, id, doc));
+    const modelId = this.parser.getModelId(model);
+    const store = this.parser.getModelStore(model);
+    return this.get(model, id, true).then(doc => this.stores[store].delete(modelId, id, doc));
   }
 
   async validate(model, data, path = '') {

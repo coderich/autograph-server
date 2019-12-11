@@ -72,19 +72,24 @@ exports.createGraphSchema = (parser, resolver) => {
     ]),
     resolvers: parser.getModelNamesAndFields().reduce((prev, [model, fields]) => {
       return Object.assign(prev, {
-        [model]: Object.entries(fields).filter(([field, fieldDef]) => !Parser.isScalarField(fieldDef) && !fieldDef.embedded).reduce((def, [field, fieldDef]) => {
+        [model]: Object.entries(fields).filter(([field, fieldDef]) => !fieldDef.embedded).reduce((def, [field, fieldDef]) => {
           return Object.assign(def, {
             [field]: (root, args) => {
-              const fieldType = getFieldType(model, field, fieldDef);
-              const arrayType = Parser.getFieldArrayType(fieldDef);
+              const value = root[parser.getModelFieldId(model, field)];
+              const dataType = Parser.getFieldDataType(fieldDef);
 
-              if (arrayType) {
-                if (fieldDef.by) return resolver.find(arrayType, { [fieldDef.by]: root.id });
-                return Promise.all((root[field] || []).map(id => resolver.get(arrayType, id, fieldDef.required).catch(() => null)));
+              // Scalar Resolvers
+              if (Parser.isScalarField(fieldDef)) return value;
+
+              // Array Resolvers
+              if (Array.isArray(dataType)) {
+                if (fieldDef.by) return resolver.find(dataType[0], { [parser.getModelFieldId(dataType[0], fieldDef.by)]: root.id });
+                return Promise.all((value || []).map(id => resolver.get(dataType[0], id, fieldDef.required).catch(() => null)));
               }
 
-              if (fieldDef.by) return resolver.find(fieldType, { [fieldDef.by]: root.id }).then(results => results[0]);
-              return resolver.get(fieldType, root[field], fieldDef.required);
+              // Object Resolvers
+              if (fieldDef.by) return resolver.find(dataType, { [parser.getModelFieldId(dataType, fieldDef.by)]: root.id }).then(results => results[0]);
+              return resolver.get(dataType, value, fieldDef.required);
             },
           });
         }, {}),
@@ -92,20 +97,20 @@ exports.createGraphSchema = (parser, resolver) => {
     }, {
       System: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
-          [`get${model}`]: (root, args, context, info) => resolver.get(model, args.id, true),
-          [`find${model}`]: (root, args, context, info) => resolver.find(model, args.filter),
+          [`get${model}`]: (root, args) => resolver.get(model, args.id, true),
+          [`find${model}`]: (root, args) => resolver.find(model, args.filter),
         });
       }, {}),
 
       Query: {
-        System: (root, args, context, info) => ({}),
+        System: (root, args) => ({}),
       },
 
       Mutation: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
-          [`create${model}`]: (root, args, context, info) => resolver.create(model, args.data),
-          [`update${model}`]: (root, args, context, info) => resolver.update(model, args.id, args.data),
-          [`delete${model}`]: (root, args, context, info) => resolver.delete(model, args.id),
+          [`create${model}`]: (root, args) => resolver.create(model, args.data),
+          [`update${model}`]: (root, args) => resolver.update(model, args.id, args.data),
+          [`delete${model}`]: (root, args) => resolver.delete(model, args.id),
         });
       }, {}),
     }),

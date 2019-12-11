@@ -13,8 +13,20 @@ module.exports = class Parser {
     return this.schema[model];
   }
 
+  getModelId(model) {
+    return this.getModel(model).id || model;
+  }
+
+  getModelStore(model) {
+    return this.getModel(model).store || 'default';
+  }
+
   getModelFields(model) {
     return this.getModel(model).fields;
+  }
+
+  getModelFieldId(model, field) {
+    return this.getModel(model).fields[field].id || field;
   }
 
   getModelNames(getAll = true) {
