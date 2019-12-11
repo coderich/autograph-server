@@ -13,8 +13,13 @@ module.exports = class Parser {
     return this.schema[model];
   }
 
-  getModelId(model) {
-    return this.getModel(model).id || model;
+  getModelAlias(model) {
+    return this.getModel(model).alias || model;
+  }
+
+  getModelIdFieldAndType(model) {
+    const modelDef = this.getModelNames(model);
+    return [modelDef.id || 'id', modelDef.idType, modelDef.idType || String];
   }
 
   getModelStore(model) {
@@ -25,8 +30,8 @@ module.exports = class Parser {
     return this.getModel(model).fields;
   }
 
-  getModelFieldId(model, field) {
-    return this.getModel(model).fields[field].id || field;
+  getModelFieldAlias(model, field) {
+    return this.getModel(model).fields[field].alias || field;
   }
 
   getModelNames(getAll = true) {

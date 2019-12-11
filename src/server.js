@@ -14,9 +14,7 @@ const executableSchema = makeExecutableSchema(graphSchema);
 const apolloServer = new ApolloServer({
   schema: executableSchema,
   context: async ({ request, h }) => {
-    return {
-      parser,
-    };
+    return {};
   },
 });
 

@@ -10,7 +10,7 @@ module.exports = class MongoStore {
   }
 
   get(model, id) {
-    return this.query(model, 'findOne', { _id: ObjectID(id) }).then(MongoStore.idDoc);
+    return this.query(model, 'findOne', { _id: id }).then(MongoStore.idDoc);
   }
 
   find(model, filter = {}) {
@@ -22,11 +22,11 @@ module.exports = class MongoStore {
   }
 
   replace(model, id, doc) {
-    return this.query(model, 'replaceOne', { _id: ObjectID(id) }, doc).then(() => MongoStore.idDoc(doc));
+    return this.query(model, 'replaceOne', { _id: id }, doc).then(() => MongoStore.idDoc(doc));
   }
 
   delete(model, id, doc) {
-    return this.query(model, 'deleteOne', { _id: ObjectID(id) }).then(result => MongoStore.idDoc(doc));
+    return this.query(model, 'deleteOne', { _id: id }).then(result => MongoStore.idDoc(doc));
   }
 
   createIndexes(model, indexes) {

@@ -1,57 +1,67 @@
 const Boom = require('@hapi/boom');
 const Parser = require('./Parser');
-const MongoStore = require('./MongoStore');
+const MongoStore = require('../store/MongoStore');
+const Neo4jStore = require('../store/Neo4jStore');
 const { isPlainObject, deepMerge, uniq } = require('../service/app.service');
 
 module.exports = class Resolver {
   constructor(parser, stores = {}) {
     this.parser = parser;
 
-    // Create stores
-    this.stores = Object.entries(stores).reduce((prev, [key, { type, uri }]) => {
-      switch (type) {
-        case 'mongo': return Object.assign(prev, { [key]: new MongoStore(uri) });
-        default: return Object.assign(prev, { [key]: new MongoStore(uri) });
-      }
-    }, {});
+    // Available store types
+    this.storeMap = { mongo: MongoStore, neo4j: Neo4jStore };
 
-    // Create indexes
-    const modelsAndIndexes = parser.getModelNamesAndIndexes();
-    Object.values(this.stores).forEach(store => modelsAndIndexes.forEach(([model, indexes]) => store.createIndexes(model, indexes)));
+    // Create store instances
+    this.stores = Object.entries(stores).reduce((prev, [key, { type, uri }]) => Object.assign(prev, {
+      [key]: {
+        conn: new this.storeMap[type](uri),
+        type,
+        uri,
+      },
+    }), {});
+
+    // Create store indexes
+    parser.getModelNamesAndIndexes().forEach(([model, indexes]) => this.getModelStore(model).conn.createIndexes(model, indexes));
   }
 
   get(model, id, required = false) {
-    const modelId = this.parser.getModelId(model);
-    const store = this.parser.getModelStore(model);
+    const modelAlias = this.parser.getModelAlias(model);
+    const store = this.getModelStore(model);
+    const idValue = this.storeMap[store.type].idValue(id);
 
-    return this.stores[store].get(modelId, id).then((doc) => {
+    return store.conn.get(modelAlias, idValue).then((doc) => {
       if (!doc && required) throw Boom.notFound(`${model} Not Found`);
       return doc;
     });
   }
 
   find(model, filter) {
-    const modelId = this.parser.getModelId(model);
-    const store = this.parser.getModelStore(model);
-    return this.stores[store].find(modelId, filter);
+    const modelAlias = this.parser.getModelAlias(model);
+    const store = this.getModelStore(model);
+    return store.conn.find(modelAlias, filter);
   }
 
   create(model, data) {
-    const modelId = this.parser.getModelId(model);
-    const store = this.parser.getModelStore(model);
-    return this.validate(model, data).then(() => this.stores[store].create(modelId, this.normalizeModelData(model, data)));
+    const modelAlias = this.parser.getModelAlias(model);
+    const store = this.getModelStore(model);
+    return this.validate(model, data).then(() => store.conn.create(modelAlias, this.normalizeModelData(model, data)));
   }
 
   update(model, id, data) {
-    const modelId = this.parser.getModelId(model);
-    const store = this.parser.getModelStore(model);
-    return this.validate(model, data).then(() => this.get(model, id, true).then(doc => this.stores[store].replace(modelId, id, this.normalizeModelData(model, deepMerge(doc, data)))));
+    const modelAlias = this.parser.getModelAlias(model);
+    const store = this.getModelStore(model);
+    const idValue = this.storeMap[store.type].idValue(id);
+    return this.validate(model, data).then(() => this.get(model, id, true).then(doc => store.conn.replace(modelAlias, idValue, this.normalizeModelData(model, deepMerge(doc, data)))));
   }
 
   delete(model, id) {
-    const modelId = this.parser.getModelId(model);
-    const store = this.parser.getModelStore(model);
-    return this.get(model, id, true).then(doc => this.stores[store].delete(modelId, id, doc));
+    const modelAlias = this.parser.getModelAlias(model);
+    const store = this.getModelStore(model);
+    return this.get(model, id, true).then(doc => store.conn.delete(modelAlias, id, doc));
+  }
+
+  getModelStore(model) {
+    return this.stores[this.parser.getModelStore(model)];
   }
 
   async validate(model, data, path = '') {
@@ -109,15 +119,15 @@ module.exports = class Resolver {
           if (field.embedded) {
             prev[key] = value.map(v => this.normalizeModelData(ref, v));
           } else if (field.unique) {
-            prev[key] = uniq(value).map(v => MongoStore.idValue(v));
+            prev[key] = uniq(value).map(v => this.storeMap[this.getModelStore(ref).type].idValue(v));
           } else {
-            prev[key] = value.map(v => MongoStore.idValue(v));
+            prev[key] = value.map(v => this.storeMap[this.getModelStore(ref).type].idValue(v));
           }
         } else if (field.unique) {
           prev[key] = uniq(value);
         }
       } else if (ref) {
-        prev[key] = MongoStore.idValue(value);
+        prev[key] = this.storeMap[this.getModelStore(ref).type].idValue(value);
       } else {
         prev[key] = value;
       }

@@ -18,6 +18,7 @@
     "deepmerge": "^4.2.2",
     "lodash": "^4.17.15",
     "mongodb": "^3.3.5",
+    "neo4j-driver": "^4.0.0",
     "redis": "^2.8.0",
     "uuid": "^3.3.3"
   },

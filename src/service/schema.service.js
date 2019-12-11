@@ -75,7 +75,7 @@ exports.createGraphSchema = (parser, resolver) => {
         [model]: Object.entries(fields).filter(([field, fieldDef]) => !fieldDef.embedded).reduce((def, [field, fieldDef]) => {
           return Object.assign(def, {
             [field]: (root, args) => {
-              const value = root[parser.getModelFieldId(model, field)];
+              const value = root[parser.getModelFieldAlias(model, field)];
               const dataType = Parser.getFieldDataType(fieldDef);
 
               // Scalar Resolvers
@@ -83,12 +83,12 @@ exports.createGraphSchema = (parser, resolver) => {
 
               // Array Resolvers
               if (Array.isArray(dataType)) {
-                if (fieldDef.by) return resolver.find(dataType[0], { [parser.getModelFieldId(dataType[0], fieldDef.by)]: root.id });
+                if (fieldDef.by) return resolver.find(dataType[0], { [parser.getModelFieldAlias(dataType[0], fieldDef.by)]: root.id });
                 return Promise.all((value || []).map(id => resolver.get(dataType[0], id, fieldDef.required).catch(() => null)));
               }
 
               // Object Resolvers
-              if (fieldDef.by) return resolver.find(dataType, { [parser.getModelFieldId(dataType, fieldDef.by)]: root.id }).then(results => results[0]);
+              if (fieldDef.by) return resolver.find(dataType, { [parser.getModelFieldAlias(dataType, fieldDef.by)]: root.id }).then(results => results[0]);
               return resolver.get(dataType, value, fieldDef.required);
             },
           });
