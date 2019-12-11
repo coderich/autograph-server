@@ -1,0 +1,27 @@
+{
+  "name": "redis-graphql",
+  "author": "",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "license": "ISC",
+  "scripts": {
+    "start": "node ./src/server",
+    "test": "ratchet test",
+    "ratchet": "ratchet",
+    "uuid": "uuid"
+  },
+  "dependencies": {
+    "@hapi/boom": "^8.0.1",
+    "@hapi/hapi": "^18.4.0",
+    "apollo-server-hapi": "^2.9.13",
+    "deepmerge": "^4.2.2",
+    "lodash": "^4.17.15",
+    "mongodb": "^3.3.5",
+    "redis": "^2.8.0",
+    "uuid": "^3.3.3"
+  },
+  "devDependencies": {
+    "@coderich/ratchet": "^1.2.2"
+  }
+}
