@@ -1,14 +1,13 @@
 const Parser = require('../core/Parser');
 const { ucFirst, isScalarValue } = require('./app.service');
 
-const getFieldType = (field, suffix) => {
-  const dataType = Parser.getFieldDataType(field);
+const getFieldType = (model, field, fieldDef, suffix) => {
+  const dataType = Parser.getFieldDataType(fieldDef);
   let type = Array.isArray(dataType) ? dataType[0] : dataType;
-  if (suffix && !isScalarValue(type)) type = field.embedded ? `${type}${suffix}` : 'ID';
+  if (suffix && !isScalarValue(type)) type = fieldDef.embedded ? `${type}${suffix}` : 'ID';
+  if (fieldDef.enum) type = `${model}${ucFirst(field)}Enum`;
   return Array.isArray(dataType) ? `[${type}]` : type;
 };
-
-const getArrayType = str => (str.match(/\[(.*?)\]/) || [])[1];
 
 /* eslint-disable indent */
 exports.createGraphSchema = (parser, resolver) => {
@@ -18,7 +17,7 @@ exports.createGraphSchema = (parser, resolver) => {
         id: ID!
         ${
           Object.entries(fields)
-          .map(([field, fieldDef]) => `${field}: ${getFieldType(fieldDef).concat(fieldDef.required ? '!' : '')}`)
+          .map(([field, fieldDef]) => `${field}: ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`)
         }
       }
 
@@ -26,7 +25,7 @@ exports.createGraphSchema = (parser, resolver) => {
         ${
           Object.entries(fields)
           .filter(([field, fieldDef]) => !fieldDef.by)
-          .map(([field, fieldDef]) => `${field}: ${getFieldType(fieldDef, 'InputCreate').concat(fieldDef.required ? '!' : '')}`)
+          .map(([field, fieldDef]) => `${field}: ${getFieldType(model, field, fieldDef, 'InputCreate').concat(fieldDef.required ? '!' : '')}`)
         }
       }
 
@@ -34,7 +33,7 @@ exports.createGraphSchema = (parser, resolver) => {
         ${
           Object.entries(fields)
           .filter(([field, fieldDef]) => !fieldDef.by && !fieldDef.immutable)
-          .map(([field, fieldDef]) => `${field}: ${getFieldType(fieldDef, 'InputUpdate')}`)
+          .map(([field, fieldDef]) => `${field}: ${getFieldType(model, field, fieldDef, 'InputUpdate')}`)
         }
       }
 
@@ -60,11 +59,13 @@ exports.createGraphSchema = (parser, resolver) => {
         ${parser.getModelNames(false).map(model => `update${model}(id: ID! data: ${model}InputUpdate!): ${model}!`)}
         ${parser.getModelNames(false).map(model => `delete${model}(id: ID!): ${model}!`)}
         ${parser.getModelNamesAndFields(false).map(([model, fields]) => `
-          ${Object.entries(fields).map(([field, fieldDef]) => {
-            if (fieldDef.by) return [field, null];
-            return [field, getArrayType(getFieldType(fieldDef, 'InputCreate'))];
-          }).filter(([a, b]) => b).map(([fieldName, fieldType]) => {
-            return `add${model}${ucFirst(fieldName)}(id: ID! ${fieldName}: [${fieldType}!]!): ${model}!`;
+          ${Object.entries(fields).filter(([field, fieldDef]) => {
+            if (fieldDef.by) return false;
+            return Parser.getFieldArrayType(fieldDef);
+          }).map(([field, fieldDef]) => {
+            return `
+              add${model}${ucFirst(field)}(id: ID! ${field}: ${getFieldType(model, field, fieldDef, 'InputCreate')}!): ${model}!
+            `;
           })}
         `)}
       }`,
@@ -74,8 +75,8 @@ exports.createGraphSchema = (parser, resolver) => {
         [model]: Object.entries(fields).filter(([field, fieldDef]) => !Parser.isScalarField(fieldDef) && !fieldDef.embedded).reduce((def, [field, fieldDef]) => {
           return Object.assign(def, {
             [field]: (root, args) => {
-              const fieldType = getFieldType(fieldDef);
-              const arrayType = getArrayType(fieldType);
+              const fieldType = getFieldType(model, field, fieldDef);
+              const arrayType = Parser.getFieldArrayType(fieldDef);
 
               if (arrayType) {
                 if (fieldDef.by) return resolver.find(arrayType, { [fieldDef.by]: root.id });

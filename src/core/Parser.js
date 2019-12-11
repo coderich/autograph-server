@@ -36,6 +36,11 @@ module.exports = class Parser {
     return isScalarValue(ref) ? null : ref;
   }
 
+  static getFieldArrayType(field) {
+    const type = Parser.getFieldDataType(field);
+    return Array.isArray(type) ? type[0] : null;
+  }
+
   static getFieldDataType(field) {
     switch (field) {
       case String: return 'String';

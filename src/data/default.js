@@ -39,22 +39,22 @@ module.exports = {
         name: String,
         type: { type: String, enum: ['public', 'private'], required: true },
         location: String,
-        things: [String],
+        configurations: { type: ['Configuration'], embedded: true },
         books: { type: ['Book'], unique: true, onDelete: 'cascade' },
       },
     },
     Network: {
       // id: 'Network',
       fields: {
-        configuration: { type: 'NetworkConfiguration', embedded: true },
+        configuration: { type: 'Configuration', embedded: true },
       },
     },
-    NetworkConfiguration: {
-      // id: 'NetworkConfiguration',
+    Configuration: {
+      // id: 'Configuration',
       hideFromApi: true,
       fields: {
         url: { type: String, required: true },
-        page: { type: 'Page' },
+        pages: { type: ['Page'] },
       },
     },
   },
