@@ -32,16 +32,14 @@ module.exports = class Neo4jStore {
     return this.driver.session().run(`MATCH (n:${model}) WHERE id(n) = $id DELETE n`, doc).then(() => doc);
   }
 
-  // createIndexes(model, indexes) {
-  //   return Promise.all(indexes.map(({ name, type, fields }) => {
-  //     const $fields = fields.reduce((prev, field) => Object.assign(prev, { [field]: 1 }), {});
-
-  //     switch (type) {
-  //       case 'unique': return this.query(model, 'createIndex', $fields, { name, unique: true });
-  //       default: return null;
-  //     }
-  //   }));
-  // }
+  createIndexes(model, indexes) {
+    return Promise.all(indexes.map(({ type, fields }) => {
+      switch (type) {
+        case 'unique': return this.driver.session().run(`CREATE CONSTRAINT on (n:${model}) ASSERT (${fields.map(f => `n.${f}`).join(',')}) IS UNIQUE`);
+        default: return null;
+      }
+    }));
+  }
 
   static idValue(value) {
     return Number(value);
@@ -56,10 +54,5 @@ module.exports = class Neo4jStore {
   // static normalizeFilterValue(value) {
   //   if (Array.isArray(value)) return { $in: value };
   //   return value;
-  // }
-
-  // static idDoc(doc) {
-  //   if (!doc) return undefined;
-  //   return Object.assign(doc, { id: doc._id }); // eslint-disable-line
   // }
 };

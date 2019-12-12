@@ -1,5 +1,10 @@
 const { MongoClient, ObjectID } = require('mongodb');
 
+const toObject = (doc) => {
+  if (!doc) return undefined;
+  return Object.assign(doc, { id: doc._id }); // eslint-disable-line
+};
+
 module.exports = class MongoStore {
   constructor(uri) {
     this.connection = MongoClient.connect(uri, { useUnifiedTopology: true });
@@ -10,23 +15,23 @@ module.exports = class MongoStore {
   }
 
   get(model, id) {
-    return this.query(model, 'findOne', { _id: id }).then(MongoStore.idDoc);
+    return this.query(model, 'findOne', { _id: id }).then(toObject);
   }
 
   find(model, filter = {}) {
-    return this.query(model, 'find', MongoStore.normalizeFilter(filter)).then(results => results.map(MongoStore.idDoc).toArray());
+    return this.query(model, 'find', MongoStore.normalizeFilter(filter)).then(results => results.map(toObject).toArray());
   }
 
   create(model, data) {
-    return this.query(model, 'insertOne', data).then(result => MongoStore.idDoc(Object.assign(data, { _id: result.insertedId })));
+    return this.query(model, 'insertOne', data).then(result => toObject(Object.assign(data, { _id: result.insertedId })));
   }
 
   replace(model, id, doc) {
-    return this.query(model, 'replaceOne', { _id: id }, doc).then(() => MongoStore.idDoc(doc));
+    return this.query(model, 'replaceOne', { _id: id }, doc).then(() => toObject(doc));
   }
 
   delete(model, id, doc) {
-    return this.query(model, 'deleteOne', { _id: id }).then(result => MongoStore.idDoc(doc));
+    return this.query(model, 'deleteOne', { _id: id }).then(() => toObject(doc));
   }
 
   createIndexes(model, indexes) {
@@ -54,10 +59,5 @@ module.exports = class MongoStore {
   static normalizeFilterValue(value) {
     if (Array.isArray(value)) return { $in: value };
     return value;
-  }
-
-  static idDoc(doc) {
-    if (!doc) return undefined;
-    return Object.assign(doc, { id: doc._id }); // eslint-disable-line
   }
 };

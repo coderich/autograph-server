@@ -76,6 +76,10 @@ exports.schema = {
       lastName: String,
       emailAddress: String,
     },
+    indexes: [
+      { type: 'unique', fields: ['emailAddress'] },
+      // { type: 'unique', fields: ['firstName', 'lastName'] },
+    ],
   },
 };
 
@@ -95,7 +99,5 @@ exports.stores = {
   neo4j: {
     type: 'neo4j',
     uri: 'bolt://localhost',
-    user: 'neo4j',
-    pass: 'helloball',
   },
 };

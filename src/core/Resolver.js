@@ -21,7 +21,7 @@ module.exports = class Resolver {
     }), {});
 
     // Create store indexes
-    parser.getModelNamesAndIndexes().forEach(([model, indexes]) => this.getModelStore(model).conn.createIndexes(model, indexes));
+    parser.getModelNamesAndIndexes().forEach(([model, indexes]) => this.getModelStore(model).conn.createIndexes(this.parser.getModelAlias(model), indexes));
   }
 
   get(model, id, required = false) {
