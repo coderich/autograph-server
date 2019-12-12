@@ -30,7 +30,7 @@ exports.schema = {
   Page: {
     fields: {
       number: Number,
-      verbage: { type: String, alias: ['description'] },
+      verbage: String,
       chapter: { type: 'Chapter', required: true },
     },
   },

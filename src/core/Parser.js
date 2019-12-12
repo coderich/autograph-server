@@ -1,5 +1,3 @@
-const { isScalarValue } = require('../service/app.service');
-
 module.exports = class Parser {
   constructor(schema) {
     this.schema = schema;
@@ -46,20 +44,29 @@ module.exports = class Parser {
     return Object.entries(this.schema).filter(([, { indexes }]) => indexes).map(([model, { indexes }]) => [model, indexes]);
   }
 
+  static isScalarValue(value) {
+    return ['String', 'Float', 'Boolean'].indexOf(value) > -1;
+  }
+
   static isScalarField(field) {
     const type = Parser.getFieldDataType(field);
-    return Array.isArray(type) ? isScalarValue(type[0]) : isScalarValue(type);
+    return Array.isArray(type) ? Parser.isScalarValue(type[0]) : Parser.isScalarValue(type);
   }
 
   static getFieldDataRef(field) {
     const val = Parser.getFieldDataType(field);
     const ref = Array.isArray(val) ? val[0] : val;
-    return isScalarValue(ref) ? null : ref;
+    return Parser.isScalarValue(ref) ? null : ref;
   }
 
   static getFieldArrayType(field) {
     const type = Parser.getFieldDataType(field);
     return Array.isArray(type) ? type[0] : null;
+  }
+
+  static getFieldSimpleType(field) {
+    const val = Parser.getFieldDataType(field);
+    return Array.isArray(val) ? val[0] : val;
   }
 
   static getFieldDataType(field) {

@@ -4,7 +4,7 @@ const toObject = (doc) => {
   if (!doc) return undefined;
 
   return Object.defineProperty(doc, 'id', {
-    get: function get() { return this._id; }, // eslint-disable-line
+    get() { return this._id; }, // eslint-disable-line
   });
 };
 

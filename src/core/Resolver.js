@@ -2,7 +2,7 @@ const Boom = require('@hapi/boom');
 const Parser = require('./Parser');
 const MongoStore = require('../store/MongoStore');
 const Neo4jStore = require('../store/Neo4jStore');
-const { isPlainObject, deepMerge, uniq } = require('../service/app.service');
+const { isPlainObject, mergeDeep, uniq } = require('../service/app.service');
 
 module.exports = class Resolver {
   constructor(parser, stores = {}) {
@@ -45,7 +45,7 @@ module.exports = class Resolver {
     const modelAlias = this.parser.getModelAlias(model);
     const store = this.getModelStore(model);
     const idValue = this.storeMap[store.type].idValue(id);
-    return this.validate(model, data).then(() => this.get(model, id, true).then(doc => store.conn.replace(modelAlias, idValue, this.normalizeModelData(model, deepMerge(doc, data)))));
+    return this.validate(model, data).then(() => this.get(model, id, true).then(doc => store.conn.replace(modelAlias, idValue, this.normalizeModelData(model, mergeDeep(doc, data)))));
   }
 
   delete(model, id) {

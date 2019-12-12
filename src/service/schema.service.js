@@ -1,20 +1,45 @@
 const Parser = require('../core/Parser');
-const { ucFirst, isScalarValue } = require('./app.service');
+const { ucFirst } = require('./app.service');
 
 const getFieldType = (model, field, fieldDef, suffix) => {
   const dataType = Parser.getFieldDataType(fieldDef);
   let type = Array.isArray(dataType) ? dataType[0] : dataType;
-  if (suffix && !isScalarValue(type)) type = fieldDef.embedded ? `${type}${suffix}` : 'ID';
+  if (suffix && !Parser.isScalarValue(type)) type = fieldDef.embedded ? `${type}${suffix}` : 'ID';
   if (fieldDef.enum) type = `${model}${ucFirst(field)}Enum`;
   return Array.isArray(dataType) ? `[${type}]` : type;
 };
 
+const objectToGQL = (obj) => {
+  if (Parser.isScalarValue(obj)) return obj;
+
+  const idk = `{
+    ${Object.entries(obj).filter(([key, value]) => key && value).map(([key, value]) => `
+      ${key}: ${objectToGQL(value)}
+    `).join('').trim()}
+  }`;
+
+  console.log(idk);
+  return idk;
+};
+
+      // input ${model}InputQuery ${objectToGQL(buildInputQuery(model, fields))}
+
 /* eslint-disable indent */
 exports.createGraphSchema = (parser, resolver) => {
+  const buildInputQuery = (model, fields, parentType) => {
+    return Object.entries(fields).reduce((prev, [field, fieldDef]) => {
+      const fieldType = Parser.getFieldSimpleType(fieldDef);
+
+      if (fieldType === parentType) return prev;
+      if (Parser.isScalarValue(fieldType)) return Object.assign(prev, { [field]: fieldType });
+      return Object.assign(prev, { [field]: buildInputQuery(fieldType, parser.getModelFields(fieldType), model) });
+    }, {});
+  };
+
   return {
     typeDefs: parser.getModelNamesAndFields().map(([model, fields]) => `
       type ${model} {
-        id: ID!
+        ${parser.getModel(model).hideFromApi ? '' : 'id: ID!'}
         ${
           Object.entries(fields)
           .map(([field, fieldDef]) => `${field}: ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`)
@@ -63,8 +88,12 @@ exports.createGraphSchema = (parser, resolver) => {
             if (fieldDef.by) return false;
             return Parser.getFieldArrayType(fieldDef);
           }).map(([field, fieldDef]) => {
+            const inputType = getFieldType(model, field, fieldDef, 'InputCreate');
+            // const queryType = getFieldType(model, field, fieldDef, 'InputUpdate');
+
             return `
-              add${model}${ucFirst(field)}(id: ID! ${field}: ${getFieldType(model, field, fieldDef, 'InputCreate')}!): ${model}!
+              add${model}${ucFirst(field)}(id: ID! ${field}: ${inputType}!): ${model}!
+              rem${model}${ucFirst(field)}(id: ID! query: ID!): ${model}!
             `;
           })}
         `)}
@@ -93,8 +122,8 @@ exports.createGraphSchema = (parser, resolver) => {
             },
           });
         }, {
-          // ID Resolver
-          id: (root, args) => root.id,
+          // // ID Resolver
+          // id: (root, args) => root.id,
         }),
       });
     }, {
