@@ -92,7 +92,10 @@ exports.createGraphSchema = (parser, resolver) => {
               return resolver.get(dataType, value, fieldDef.required);
             },
           });
-        }, {}),
+        }, {
+          // ID Resolver
+          id: (root, args) => root.id,
+        }),
       });
     }, {
       System: parser.getModelNames(false).reduce((prev, model) => {

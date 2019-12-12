@@ -2,7 +2,10 @@ const { MongoClient, ObjectID } = require('mongodb');
 
 const toObject = (doc) => {
   if (!doc) return undefined;
-  return Object.assign(doc, { id: doc._id }); // eslint-disable-line
+
+  return Object.defineProperty(doc, 'id', {
+    get: function get() { return this._id; }, // eslint-disable-line
+  });
 };
 
 module.exports = class MongoStore {

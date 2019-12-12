@@ -68,9 +68,8 @@ exports.schema = {
     },
   },
   User: {
-    store: 'neo4j',
+    store: 'tst',
     alias: 'user',
-    idType: Number,
     fields: {
       firstName: String,
       lastName: String,
@@ -96,7 +95,7 @@ exports.stores = {
     type: 'mongo',
     uri: 'mongodb://localhost:27017/meteor',
   },
-  neo4j: {
+  tst: {
     type: 'neo4j',
     uri: 'bolt://localhost',
   },

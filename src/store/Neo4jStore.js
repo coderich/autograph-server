@@ -3,7 +3,11 @@ const Neo4j = require('neo4j-driver');
 const toObject = ({ records }) => {
   return records.map((record) => {
     const node = record.get('n');
-    return Object.assign(node.properties, { id: node.identity });
+    const doc = node.properties;
+
+    return Object.defineProperty(doc, 'id', {
+      get: () => node.identity,
+    });
   });
 };
 
@@ -25,11 +29,11 @@ module.exports = class Neo4jStore {
   }
 
   replace(model, id, doc) {
-    return this.driver.session().run(`MATCH (n:${model}) WHERE id(n) = $id SET ${Object.keys(doc).map(k => `n.${k}=$${k}`)} RETURN n`, doc).then(result => toObject(result)[0]);
+    return this.driver.session().run(`MATCH (n:${model}) WHERE id(n) = $id SET ${Object.keys(doc).map(k => `n.${k}=$${k}`)} RETURN n`, { id, ...doc }).then(result => toObject(result)[0]);
   }
 
   delete(model, id, doc) {
-    return this.driver.session().run(`MATCH (n:${model}) WHERE id(n) = $id DELETE n`, doc).then(() => doc);
+    return this.driver.session().run(`MATCH (n:${model}) WHERE id(n) = $id DELETE n`, { id, ...doc }).then(() => doc);
   }
 
   createIndexes(model, indexes) {

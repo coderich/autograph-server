@@ -12,13 +12,7 @@ module.exports = class Resolver {
     this.storeMap = { mongo: MongoStore, neo4j: Neo4jStore };
 
     // Create store instances
-    this.stores = Object.entries(stores).reduce((prev, [key, { type, uri }]) => Object.assign(prev, {
-      [key]: {
-        conn: new this.storeMap[type](uri),
-        type,
-        uri,
-      },
-    }), {});
+    this.stores = Object.entries(stores).reduce((prev, [key, { type, uri }]) => Object.assign(prev, { [key]: { conn: new this.storeMap[type](uri), type, uri } }), {});
 
     // Create store indexes
     parser.getModelNamesAndIndexes().forEach(([model, indexes]) => this.getModelStore(model).conn.createIndexes(this.parser.getModelAlias(model), indexes));
