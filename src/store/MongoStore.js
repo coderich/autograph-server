@@ -1,4 +1,6 @@
+const MicroMatch = require('micromatch');
 const { MongoClient, ObjectID } = require('mongodb');
+const { proxyDeep } = require('../service/app.service');
 
 const toObject = (doc) => {
   if (!doc) return undefined;
@@ -54,13 +56,30 @@ module.exports = class MongoStore {
   }
 
   static normalizeFilter(filter) {
-    return Object.entries(filter).reduce((prev, [key, value]) => {
-      return Object.assign(prev, { [key]: MongoStore.normalizeFilterValue(value) });
-    }, {});
+    return proxyDeep(filter, {
+      get(target, prop, rec) {
+        const value = Reflect.get(target, prop, rec);
+        if (typeof value === 'function') return value.bind(target);
+        if (typeof value === 'string') return MicroMatch.makeRe(value, { nocase: true, lookbehinds: false, regex: true, unescape: true, maxLength: 100 });
+        if (Array.isArray(value)) return { $in: value };
+        return value;
+      },
+    });
   }
 
-  static normalizeFilterValue(value) {
-    if (Array.isArray(value)) return { $in: value };
-    return value;
-  }
+  // static normalizeFilter(filter) {
+  //   return Object.entries(filter).reduce((prev, [key, value]) => {
+  //     return Object.assign(prev, { [key]: MongoStore.normalizeFilterValue(value) });
+  //   }, {});
+  // }
+
+  // static normalizeFilterValue(value) {
+  //   console.log(value);
+  //   if (value instanceof ObjectID) return value;
+  //   if (Array.isArray(value)) return { $in: value };
+  //   if (typeof value === 'object') return value;
+  //   const re = MicroMatch.makeRe(value, { nocase: true, lookbehinds: false, regex: true, unescape: true, maxLength: 100 });
+  //   console.log(re);
+  //   return re;
+  // }
 };

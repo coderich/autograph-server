@@ -29,10 +29,10 @@ module.exports = class Resolver {
     });
   }
 
-  find(model, filter) {
+  find(model, where) {
     const modelAlias = this.parser.getModelAlias(model);
     const store = this.getModelStore(model);
-    return store.conn.find(modelAlias, filter);
+    return store.conn.find(modelAlias, where);
   }
 
   create(model, data) {

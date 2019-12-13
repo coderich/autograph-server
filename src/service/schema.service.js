@@ -9,32 +9,29 @@ const getFieldType = (model, field, fieldDef, suffix) => {
   return Array.isArray(dataType) ? `[${type}]` : type;
 };
 
-const objectToGQL = (obj) => {
-  if (Parser.isScalarValue(obj)) return obj;
+// const objectToGQL = (obj) => {
+//   if (Parser.isScalarValue(obj)) return obj;
 
-  const idk = `{
-    ${Object.entries(obj).filter(([key, value]) => key && value).map(([key, value]) => `
-      ${key}: ${objectToGQL(value)}
-    `).join('').trim()}
-  }`;
+//   return `{
+//     ${Object.entries(obj).filter(([key, value]) => key && value).map(([key, value]) => `
+//       ${key}: ${objectToGQL(value)}
+//     `).join('').trim()}
+//   }`;
+// };
 
-  console.log(idk);
-  return idk;
-};
+// input ${model}InputQuery ${objectToGQL(buildInputQuery(model, fields))}
 
-      // input ${model}InputQuery ${objectToGQL(buildInputQuery(model, fields))}
-
-/* eslint-disable indent */
+/* eslint-disable indent, no-underscore-dangle */
 exports.createGraphSchema = (parser, resolver) => {
-  const buildInputQuery = (model, fields, parentType) => {
-    return Object.entries(fields).reduce((prev, [field, fieldDef]) => {
-      const fieldType = Parser.getFieldSimpleType(fieldDef);
+  // const buildInputQuery = (model, fields, parentType) => {
+  //   return Object.entries(fields).reduce((prev, [field, fieldDef]) => {
+  //     const fieldType = Parser.getFieldSimpleType(fieldDef);
 
-      if (fieldType === parentType) return prev;
-      if (Parser.isScalarValue(fieldType)) return Object.assign(prev, { [field]: fieldType });
-      return Object.assign(prev, { [field]: buildInputQuery(fieldType, parser.getModelFields(fieldType), model) });
-    }, {});
-  };
+  //     if (fieldType === parentType) return prev;
+  //     if (Parser.isScalarValue(fieldType)) return Object.assign(prev, { [field]: fieldType });
+  //     return Object.assign(prev, { [field]: buildInputQuery(fieldType, parser.getModelFields(fieldType), model) });
+  //   }, {});
+  // };
 
   return {
     typeDefs: parser.getModelNamesAndFields().map(([model, fields]) => `
@@ -62,6 +59,15 @@ exports.createGraphSchema = (parser, resolver) => {
         }
       }
 
+      input ${model}InputQuery {
+        ${
+          Object.entries(fields).map(([field, fieldDef]) => {
+            const ref = Parser.getFieldDataRef(fieldDef);
+            return `${field}: ${ref ? `${ucFirst(ref)}InputQuery` : 'String'}`;
+          })
+        }
+      }
+
       ${
         Object.entries(fields).filter(([field, fieldDef]) => fieldDef.enum).map(([field, fieldDef]) => {
           return `
@@ -71,14 +77,16 @@ exports.createGraphSchema = (parser, resolver) => {
       }
     `).concat([
       'scalar Mixed',
-      'input FilterInput { key: String! value: Mixed! }',
+
       `type System {
         ${parser.getModelNames(false).map(model => `get${model}(id: ID!): ${model}`)}
-        ${parser.getModelNames(false).map(model => `find${model}(filter: FilterInput): [${model}]!`)}
+        ${parser.getModelNames(false).map(model => `find${model}(where: ${ucFirst(model)}InputQuery): [${model}]!`)}
       }`,
+
       `type Query {
         System: System!
       }`,
+
       `type Mutation {
         ${parser.getModelNames(false).map(model => `create${model}(data: ${model}InputCreate!): ${model}!`)}
         ${parser.getModelNames(false).map(model => `update${model}(id: ID! data: ${model}InputUpdate!): ${model}!`)}
@@ -130,7 +138,7 @@ exports.createGraphSchema = (parser, resolver) => {
       System: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args) => resolver.get(model, args.id, true),
-          [`find${model}`]: (root, args) => resolver.find(model, args.filter),
+          [`find${model}`]: (root, args) => resolver.find(model, args.where),
         });
       }, {}),
 

@@ -1,4 +1,5 @@
 const { ObjectID } = require('mongodb');
+const MicroMatch = require('micromatch');
 const { isPlainObject, isScalarValue, mergeDeep, proxyDeep, uniq } = require('../../src/service/app.service');
 
 const obj1 = { name: 'name1', friends: ['a', 'b', 'c'] };
@@ -20,6 +21,12 @@ const doc = {
 };
 
 describe('AppService', () => {
+  test('MicroMatch', () => {
+    const glob = 'rich*';
+    const re = MicroMatch.makeRe(glob, { nocase: true, lookbehinds: false, regex: true, unescape: true, maxLength: 100 });
+    expect(re).toEqual('idk');
+  });
+
   test('isPlainObject', () => {
     expect(isPlainObject(ObjectID('abclghalnohe'))).toBe(false);
     expect(isPlainObject([])).toBe(false);
