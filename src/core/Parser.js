@@ -44,6 +44,11 @@ module.exports = class Parser {
     return Object.entries(this.schema).filter(([, { indexes }]) => indexes).map(([model, { indexes }]) => [model, indexes]);
   }
 
+  getModelDataRefs(model) {
+    const fields = this.getModelFields(model);
+    return Object.values(fields).map(field => Parser.getFieldDataRef(field)).filter(ref => ref);
+  }
+
   static isScalarValue(value) {
     return ['String', 'Float', 'Boolean'].indexOf(value) > -1;
   }

@@ -29,7 +29,10 @@ module.exports = class Resolver {
     });
   }
 
-  find(model, where) {
+  async find(model, where) {
+    const resolvedWhere = await this.resolveModelWhereClause(model, where);
+    console.log(JSON.stringify(resolvedWhere.map(r => r.lookups)));
+
     const modelAlias = this.parser.getModelAlias(model);
     const store = this.getModelStore(model);
     return store.conn.find(modelAlias, where);
@@ -128,5 +131,71 @@ module.exports = class Resolver {
 
       return prev;
     }, {});
+  }
+
+  resolveModelWhereClause(model, where, fieldAlias = '', lookups2D = [], index = 0) {
+    const fields = this.parser.getModelFields(model);
+
+    //
+    lookups2D[index] = lookups2D[index] || {
+      parentFieldAlias: fieldAlias,
+      parentModelName: model,
+      parentFields: fields,
+      parentDataRefs: new Set(this.parser.getModelDataRefs(model)),
+      lookups: [],
+    };
+
+    // Depth first traversal to create 2d array of lookups
+    lookups2D[index].lookups.push({
+      modelName: model,
+      modelAlias: this.parser.getModelAlias(model),
+      store: this.getModelStore(model),
+      query: Object.entries(where).reduce((prev, [key, value]) => {
+        const field = fields[key];
+        const ref = Parser.getFieldDataRef(field);
+
+        if (ref) {
+          this.resolveModelWhereClause(ref, value, field.alias || key, lookups2D, index + 1);
+          return prev;
+        }
+
+        return Object.assign(prev, { [key]: value });
+      }, {}),
+    });
+
+    // Index 0 is the top-most query. If we're here it's time to resolve
+    if (index === 0) {
+      return Promise.all(lookups2D.reverse().map(({ lookups }, index2D) => {
+        return Promise.all(lookups.map(({ modelName, modelAlias, store, query }) => {
+          const parentLookup = lookups2D[index2D + 1] || { parentDataRefs: new Set() };
+          const { parentFields, parentModelName, parentFieldAlias, parentDataRefs } = parentLookup;
+          const { parentFields: currentFields, parentFieldAlias: currentFieldAlias } = lookups2D[index2D];
+
+          return store.conn.find(modelAlias, query).then((results) => {
+            if (parentDataRefs.has(modelName)) {
+              parentLookup.lookups.forEach((lookup) => {
+                // Anything with type `modelName` should be added to query
+                Object.entries(parentFields).forEach(([field, fieldDef]) => {
+                  const ref = Parser.getFieldDataRef(fieldDef);
+
+                  if (ref === modelName) {
+                    if (fieldDef.by) {
+                      Object.assign(lookup.query, { id: results.map(result => result[currentFields[fieldDef.by].alias || fieldDef.by]) });
+                    } else {
+                      Object.assign(lookup.query, { [currentFieldAlias]: results.map(result => result.id) });
+                    }
+                  }
+                });
+              });
+            }
+
+            return results;
+          });
+        }));
+      })).then(() => lookups2D);
+    }
+
+    // Must be a nested call; nothing to do
+    return undefined;
   }
 };
