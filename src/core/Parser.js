@@ -44,6 +44,10 @@ module.exports = class Parser {
     return Object.entries(this.schema).filter(([, { indexes }]) => indexes).map(([model, { indexes }]) => [model, indexes]);
   }
 
+  getModelNamesAndStores() {
+    return this.getModelNames().map(modelName => [modelName, this.getModelStore(modelName)]);
+  }
+
   getModelDataRefs(model) {
     const fields = this.getModelFields(model);
     return Object.values(fields).map(field => Parser.getFieldDataRef(field)).filter(ref => ref);

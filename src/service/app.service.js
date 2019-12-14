@@ -2,6 +2,8 @@ const UUID = require('uuid/v4');
 const DeepMerge = require('deepmerge');
 const { ObjectID } = require('mongodb');
 
+let modelStores = {};
+
 exports.id = '3d896496-02a3-4ee5-8e42-2115eb215f7e';
 exports.generateId = () => UUID();
 exports.ucFirst = string => string.charAt(0).toUpperCase() + string.slice(1);
@@ -15,6 +17,14 @@ exports.promiseChain = (promises) => {
   return promises.reduce((chain, promise) => {
     return chain.then(chainResults => promise().then(promiseResult => [...chainResults, promiseResult]));
   }, Promise.resolve([]));
+};
+
+exports.modelStores = (stores) => {
+  if (stores) {
+    modelStores = stores;
+  }
+
+  return modelStores;
 };
 
 exports.proxyDeep = (obj, handler, proxyMap = new WeakMap()) => {

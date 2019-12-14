@@ -16,6 +16,7 @@ class Cypher {
   find(model, where = {}) {
     const $where = Cypher.normalizeWhereClause(where);
     const $wherePart = $where ? `WHERE ${$where}` : '';
+    console.log('find', model, $where);
     return this.query(`MATCH (n:${model}) ${$wherePart} RETURN n`);
   }
 
@@ -81,7 +82,7 @@ exports.Neo4jRest = class Neo4jRest extends Cypher {
 exports.Neo4jDriver = class Neo4jDriver extends Cypher {
   constructor(uri, options) {
     super(uri, options);
-    this.driver = Neo4j.driver(uri, Neo4j.auth.basic('neo4j', 'helloball'), { disableLosslessIntegers: true });
+    this.driver = Neo4j.driver(uri, null, { disableLosslessIntegers: true });
   }
 
   query(query, params) {
