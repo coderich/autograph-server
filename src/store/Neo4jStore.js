@@ -4,8 +4,13 @@ const MicroMatch = require('picomatch');
 const { proxyDeep } = require('../service/app.service');
 
 class Cypher {
+  constructor(uri, options = {}) {
+    this.uri = uri;
+    this.options = options;
+  }
+
   get(model, id) {
-    return this.query(`MATCH (n:${model}) WHERE id(n) = $id RETURN n`, { id }).then(docs => docs[0]);
+    return this.query(`MATCH (n:${model}) WHERE id(n) = { id } RETURN n`, { id }).then(docs => docs[0]);
   }
 
   find(model, where = {}) {
@@ -15,15 +20,15 @@ class Cypher {
   }
 
   create(model, data) {
-    return this.query(`CREATE (n:${model} { ${Object.keys(data).map(k => `${k}:$${k}`)} }) RETURN n`, data).then(docs => docs[0]);
+    return this.query(`CREATE (n:${model} { ${Object.keys(data).map(k => `${k}:{${k}}`)} }) RETURN n`, data).then(docs => docs[0]);
   }
 
   replace(model, id, doc) {
-    return this.query(`MATCH (n:${model}) WHERE id(n) = $id SET ${Object.keys(doc).map(k => `n.${k}=$${k}`)} RETURN n`, { id, ...doc }).then(docs => docs[0]);
+    return this.query(`MATCH (n:${model}) WHERE id(n) = { id } SET ${Object.keys(doc).map(k => `n.${k}={${k}}`)} RETURN n`, { id, ...doc }).then(docs => docs[0]);
   }
 
   delete(model, id, doc) {
-    return this.query(`MATCH (n:${model}) WHERE id(n) = $id DELETE n`, { id, ...doc }).then(() => doc);
+    return this.query(`MATCH (n:${model}) WHERE id(n) = { id } DELETE n`, { id }).then(() => doc);
   }
 
   createIndexes(model, indexes) {
@@ -55,8 +60,8 @@ class Cypher {
 }
 
 exports.Neo4jRest = class Neo4jRest extends Cypher {
-  constructor(uri, options = {}) {
-    super();
+  constructor(uri, options) {
+    super(uri, options);
     this.cypher = Axios.get(`${uri}/db/data/`).then(({ data }) => data.cypher);
   }
 
@@ -74,8 +79,8 @@ exports.Neo4jRest = class Neo4jRest extends Cypher {
 };
 
 exports.Neo4jDriver = class Neo4jDriver extends Cypher {
-  constructor(uri, options = {}) {
-    super();
+  constructor(uri, options) {
+    super(uri, options);
     this.driver = Neo4j.driver(uri, Neo4j.auth.basic('neo4j', 'helloball'), { disableLosslessIntegers: true });
   }
 
