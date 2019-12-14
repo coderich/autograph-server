@@ -1,7 +1,7 @@
 const Boom = require('@hapi/boom');
 const Parser = require('./Parser');
 const MongoStore = require('../store/MongoStore');
-const { Neo4jDriver, Neo4jRest } = require('../store/CypherStore');
+const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
 const { isPlainObject, mergeDeep, promiseChain, uniq } = require('../service/app.service');
 
 module.exports = class Resolver {

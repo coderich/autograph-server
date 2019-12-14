@@ -9,7 +9,7 @@ class Cypher {
   }
 
   find(model, where = {}) {
-    const $where = Cypher.normalizeWhereClause(where) || '1 = 1';
+    const $where = Cypher.normalizeWhereClause(where);
     const $wherePart = $where ? `WHERE ${$where}` : '';
     return this.query(`MATCH (n:${model}) ${$wherePart} RETURN n`);
   }
