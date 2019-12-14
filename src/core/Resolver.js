@@ -1,78 +1,39 @@
 const Boom = require('@hapi/boom');
 const Parser = require('./Parser');
-const MongoStore = require('../store/MongoStore');
-const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
 const { isPlainObject, mergeDeep, promiseChain, uniq } = require('../service/app.service');
 
 module.exports = class Resolver {
-  constructor(parser, stores = {}) {
+  constructor(parser, store) {
     this.parser = parser;
-
-    // Available store types
-    const storeMap = { mongo: MongoStore, neo4j: Neo4jDriver, neo4jRest: Neo4jRest };
-
-    // Create store instances
-    const storesInstances = Object.entries(stores).reduce((prev, [key, { type, uri, options }]) => {
-      return Object.assign(prev, {
-        [key]: {
-          dao: new storeMap[type](uri, options),
-          idValue: storeMap[type].idValue,
-          type,
-          uri,
-        },
-      });
-    }, {});
-
-    // Create model store map
-    this.storeMap = this.parser.getModelNamesAndStores().reduce((prev, [modelName, storeType]) => {
-      return Object.assign(prev, {
-        [modelName]: storesInstances[storeType],
-      });
-    }, {});
-
-    // Create store indexes
-    parser.getModelNamesAndIndexes().forEach(([model, indexes]) => this.storeMap[model].dao.createIndexes(this.parser.getModelAlias(model), indexes));
+    this.store = store;
   }
 
   get(model, id, required = false) {
-    const store = this.storeMap[model];
-    const modelAlias = this.parser.getModelAlias(model);
-
-    return store.dao.get(modelAlias, store.idValue(id)).then((doc) => {
+    return this.store.get(model, id).then((doc) => {
       if (!doc && required) throw Boom.notFound(`${model} Not Found`);
       return doc;
     });
   }
 
   find(model, where = {}) {
-    const store = this.storeMap[model];
-    const modelAlias = this.parser.getModelAlias(model);
-    return store.dao.find(modelAlias, where);
+    return this.store.find(model, where);
   }
 
   async search(model, where = {}) {
-    const store = this.storeMap[model];
-    const modelAlias = this.parser.getModelAlias(model);
     const resolvedWhere = await this.resolveModelWhereClause(model, where);
-    return store.dao.find(modelAlias, resolvedWhere);
+    return this.store.find(model, resolvedWhere);
   }
 
   create(model, data) {
-    const store = this.storeMap[model];
-    const modelAlias = this.parser.getModelAlias(model);
-    return this.validate(model, data).then(() => store.dao.create(modelAlias, this.normalizeModelData(model, data)));
+    return this.validate(model, data).then(() => this.store.create(model, this.normalizeModelData(model, data)));
   }
 
   update(model, id, data) {
-    const store = this.storeMap[model];
-    const modelAlias = this.parser.getModelAlias(model);
-    return this.validate(model, data).then(() => this.get(model, id, true).then(doc => store.dao.replace(modelAlias, store.idValue(id), this.normalizeModelData(model, mergeDeep(doc, data)))));
+    return this.validate(model, data).then(() => this.get(model, id, true).then(doc => this.store.replace(model, id, this.normalizeModelData(model, mergeDeep(doc, data)))));
   }
 
   delete(model, id) {
-    const store = this.storeMap[model];
-    const modelAlias = this.parser.getModelAlias(model);
-    return this.get(model, id, true).then(doc => store.dao.delete(modelAlias, store.idValue(id), doc));
+    return this.get(model, id, true).then(doc => this.store.delete(model, id, doc));
   }
 
   async validate(model, data, path = '') {
@@ -130,15 +91,15 @@ module.exports = class Resolver {
           if (field.embedded) {
             prev[key] = value.map(v => this.normalizeModelData(ref, v));
           } else if (field.unique) {
-            prev[key] = uniq(value).map(v => this.storeMap[ref].idValue(v));
+            prev[key] = uniq(value).map(v => this.store.idValue(ref, v));
           } else {
-            prev[key] = value.map(v => this.storeMap[ref].idValue(v));
+            prev[key] = value.map(v => this.store.idValue(ref, v));
           }
         } else if (field.unique) {
           prev[key] = uniq(value);
         }
       } else if (ref) {
-        prev[key] = this.storeMap[ref].idValue(value);
+        prev[key] = this.store.idValue(ref, value);
       } else {
         prev[key] = value;
       }
@@ -155,7 +116,6 @@ module.exports = class Resolver {
       parentFieldAlias: fieldAlias,
       parentModelName: model,
       parentFields: fields,
-      parentStore: this.storeMap[model],
       parentDataRefs: new Set(this.parser.getModelDataRefs(model)),
       lookups: [],
     };
@@ -163,7 +123,6 @@ module.exports = class Resolver {
     // Depth first traversal to create 2d array of lookups
     lookups2D[index].lookups.push({
       modelName: model,
-      modelAlias: this.parser.getModelAlias(model),
       query: Object.entries(where).reduce((prev, [key, value]) => {
         const field = fields[key];
         const ref = Parser.getFieldDataRef(field);
@@ -179,27 +138,26 @@ module.exports = class Resolver {
 
     if (index === 0) {
       return promiseChain(lookups2D.reverse().map(({ lookups }, index2D) => {
-        return () => Promise.all(lookups.map(async ({ modelName, modelAlias, query }) => {
+        return () => Promise.all(lookups.map(async ({ modelName, query }) => {
           const parentLookup = lookups2D[index2D + 1] || { parentDataRefs: new Set() };
-          const { parentStore, parentFields, parentDataRefs } = parentLookup;
-          const { parentStore: currentStore, parentFields: currentFields, parentFieldAlias: currentFieldAlias } = lookups2D[index2D];
+          const { parentModelName, parentFields, parentDataRefs } = parentLookup;
+          const { parentFields: currentFields, parentFieldAlias: currentFieldAlias } = lookups2D[index2D];
 
-          return currentStore.dao.find(modelAlias, query).then((results) => {
+          return this.store.find(modelName, query).then((results) => {
             if (parentDataRefs.has(modelName)) {
               parentLookup.lookups.forEach((lookup) => {
                 // Anything with type `modelName` should be added to query
                 Object.entries(parentFields).forEach(([field, fieldDef]) => {
                   const ref = Parser.getFieldDataRef(fieldDef);
-                  const store = parentStore;
 
                   if (ref === modelName) {
                     if (fieldDef.by) {
                       Object.assign(lookup.query, {
-                        _id: results.map(result => store.idValue(result[currentFields[fieldDef.by].alias || fieldDef.by])),
+                        _id: results.map(result => this.store.idValue(parentModelName, result[currentFields[fieldDef.by].alias || fieldDef.by])),
                       });
                     } else {
                       Object.assign(lookup.query, {
-                        [currentFieldAlias]: results.map(result => store.idValue(result.id)),
+                        [currentFieldAlias]: results.map(result => this.store.idValue(parentModelName, result.id)),
                       });
                     }
                   }

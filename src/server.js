@@ -8,7 +8,7 @@ const { schema, stores } = require('./schema');
 
 const parser = new Parser(schema);
 const store = new Store(parser, stores);
-const resolver = new Resolver(parser, stores);
+const resolver = new Resolver(parser, store);
 const hapiServer = Hapi.server({ port: 3000 });
 const graphSchema = SchemaService.createGraphSchema(parser, resolver);
 const executableSchema = makeExecutableSchema(graphSchema);

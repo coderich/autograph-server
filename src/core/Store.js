@@ -3,6 +3,8 @@ const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
 
 module.exports = class Store {
   constructor(parser, stores) {
+    this.parser = parser;
+
     const availableStores = { mongo: MongoStore, neo4j: Neo4jDriver, neo4jRest: Neo4jRest };
 
     // Create store instances
@@ -23,31 +25,41 @@ module.exports = class Store {
     }, {});
 
     // Create store indexes
-    // parser.getModelNamesAndIndexes().forEach(([model, indexes]) => this.storeMap[model].dao.createIndexes(this.parser.getModelAlias(model), indexes));
+    parser.getModelNamesAndIndexes().forEach(([model, indexes]) => this.storeMap[model].dao.createIndexes(this.parser.getModelAlias(model), indexes));
   }
 
   get(model, id) {
     const store = this.storeMap[model];
-    return store.dao.get(model, store.idValue(id));
+    const modelAlias = this.parser.getModelAlias(model);
+    return store.dao.get(modelAlias, store.idValue(id));
   }
 
   find(model, where = {}) {
     const store = this.storeMap[model];
-    return store.dao.find(model, where);
+    const modelAlias = this.parser.getModelAlias(model);
+    return store.dao.find(modelAlias, where);
   }
 
   create(model, data) {
     const store = this.storeMap[model];
-    return store.dao.create(model, data);
+    const modelAlias = this.parser.getModelAlias(model);
+    return store.dao.create(modelAlias, data);
   }
 
   update(model, id, data, doc) {
     const store = this.storeMap[model];
-    return store.dao.replace(model, store.idValue(id), data, doc);
+    const modelAlias = this.parser.getModelAlias(model);
+    return store.dao.replace(modelAlias, store.idValue(id), data, doc);
   }
 
   delete(model, id, doc) {
     const store = this.storeMap[model];
-    return store.dao.delete(model, store.idValue(id), doc);
+    const modelAlias = this.parser.getModelAlias(model);
+    return store.dao.delete(modelAlias, store.idValue(id), doc);
+  }
+
+  idValue(model, id) {
+    const store = this.storeMap[model];
+    return store.idValue(id);
   }
 };
