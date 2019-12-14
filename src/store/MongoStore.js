@@ -24,7 +24,7 @@ module.exports = class MongoStore {
   }
 
   find(model, where = {}) {
-    const $where = MongoStore.normalizeFilter(where);
+    const $where = MongoStore.normalizeWhereClause(where);
     return this.query(model, 'find', $where).then(results => results.map(toObject).toArray());
   }
 
@@ -56,28 +56,15 @@ module.exports = class MongoStore {
     return ObjectID(value);
   }
 
-  // static normalizeFilter(filter) {
-  //   return proxyDeep(filter, {
-  //     get(target, prop, rec) {
-  //       const value = Reflect.get(target, prop, rec);
-  //       if (typeof value === 'function') return value.bind(target);
-  //       if (typeof value === 'string') return MicroMatch.makeRe(value, { nocase: true, lookbehinds: false, regex: true, unescape: true, maxLength: 100 });
-  //       if (Array.isArray(value)) return { $in: value };
-  //       return value;
-  //     },
-  //   }).toObject();
-  // }
-
-  static normalizeFilter(filter) {
-    return Object.entries(filter).reduce((prev, [key, value]) => {
-      return Object.assign(prev, { [key]: MongoStore.normalizeFilterValue(value) });
-    }, {});
-  }
-
-  static normalizeFilterValue(value) {
-    if (value instanceof ObjectID) return value;
-    if (Array.isArray(value)) return { $in: value };
-    if (typeof value === 'object') return value;
-    return MicroMatch.makeRe(value, { nocase: true, lookbehinds: false, regex: true, unescape: true, maxLength: 100 });
+  static normalizeWhereClause(where) {
+    return proxyDeep(where, {
+      get(target, prop, rec) {
+        const value = Reflect.get(target, prop, rec);
+        if (Array.isArray(value)) return { $in: value };
+        if (typeof value === 'function') return value.bind(target);
+        if (typeof value === 'string') return MicroMatch.makeRe(value, { nocase: true, lookbehinds: false, regex: true, unescape: true, maxLength: 100 });
+        return value;
+      },
+    });
   }
 };

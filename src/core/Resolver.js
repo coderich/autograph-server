@@ -29,7 +29,7 @@ module.exports = class Resolver {
     });
   }
 
-  async find(model, where = {}) {
+  find(model, where = {}) {
     const modelAlias = this.parser.getModelAlias(model);
     const store = this.getModelStore(model);
     return store.conn.find(modelAlias, where);

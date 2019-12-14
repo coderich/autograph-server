@@ -21,7 +21,7 @@ exports.proxyDeep = (obj, handler, proxyMap = new WeakMap()) => {
   if (proxyMap.has(obj)) return proxyMap.get(obj);
 
   const proxy = new Proxy(Object.entries(obj).reduce((prev, [key, value]) => {
-    if (Array.isArray(value)) return Object.assign(prev, { [key]: value.map(v => (typeof v === 'object' ? exports.proxyDeep(v, handler, proxyMap) : v)) });
+    if (Array.isArray(value)) return Object.assign(prev, { [key]: value.map(v => (exports.isPlainObject(v) ? exports.proxyDeep(v, handler, proxyMap) : v)) });
     if (exports.isPlainObject(value)) return Object.assign(prev, { [key]: exports.proxyDeep(value, handler, proxyMap) });
     return Object.assign(prev, { [key]: value });
   }, {}), handler);
