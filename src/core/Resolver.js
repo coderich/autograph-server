@@ -200,7 +200,7 @@ module.exports = class Resolver {
             return results;
           });
         }));
-      })).then((results) => {
+      })).then(() => {
         const lastLookup = lookups2D[lookups2D.length - 1].lookups[0];
         return lastLookup.query;
       });

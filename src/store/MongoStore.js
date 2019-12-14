@@ -1,4 +1,4 @@
-const MicroMatch = require('micromatch');
+const MicroMatch = require('picomatch');
 const { MongoClient, ObjectID } = require('mongodb');
 const { proxyDeep } = require('../service/app.service');
 
@@ -62,7 +62,7 @@ module.exports = class MongoStore {
         const value = Reflect.get(target, prop, rec);
         if (Array.isArray(value)) return { $in: value };
         if (typeof value === 'function') return value.bind(target);
-        if (typeof value === 'string') return MicroMatch.makeRe(value, { nocase: true, lookbehinds: false, regex: true, unescape: true, maxLength: 100 });
+        if (typeof value === 'string') return MicroMatch.makeRe(value, { nocase: true, regex: true, unescape: true, maxLength: 100 });
         return value;
       },
     });
