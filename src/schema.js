@@ -68,6 +68,15 @@ exports.schema = {
     },
   },
   User: {
+    store: 'tristatetennis',
+    alias: 'user',
+    fields: {
+      firstName: String,
+      lastName: String,
+      emailAddress: String,
+    },
+  },
+  Player: {
     store: 'tst',
     alias: 'user',
     fields: {
@@ -75,10 +84,6 @@ exports.schema = {
       lastName: String,
       emailAddress: String,
     },
-    indexes: [
-      { type: 'unique', fields: ['emailAddress'] },
-      // { type: 'unique', fields: ['firstName', 'lastName'] },
-    ],
   },
 };
 
@@ -96,6 +101,10 @@ exports.stores = {
     uri: 'mongodb://localhost:27017/meteor',
   },
   tst: {
+    type: 'neo4jRest',
+    uri: 'http://localhost:8888',
+  },
+  tristatetennis: {
     type: 'neo4j',
     uri: 'bolt://localhost',
   },

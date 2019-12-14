@@ -1,7 +1,7 @@
 const Boom = require('@hapi/boom');
 const Parser = require('./Parser');
 const MongoStore = require('../store/MongoStore');
-const Neo4jStore = require('../store/Neo4jStore');
+const { Neo4jDriver, Neo4jRest } = require('../store/CypherStore');
 const { isPlainObject, mergeDeep, promiseChain, uniq } = require('../service/app.service');
 
 module.exports = class Resolver {
@@ -9,7 +9,7 @@ module.exports = class Resolver {
     this.parser = parser;
 
     // Available store types
-    this.storeMap = { mongo: MongoStore, neo4j: Neo4jStore };
+    this.storeMap = { mongo: MongoStore, neo4j: Neo4jDriver, neo4jRest: Neo4jRest };
 
     // Create store instances
     this.stores = Object.entries(stores).reduce((prev, [key, { type, uri }]) => Object.assign(prev, { [key]: { conn: new this.storeMap[type](uri), type, uri } }), {});
