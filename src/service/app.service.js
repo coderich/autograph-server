@@ -9,6 +9,13 @@ exports.isPlainObject = obj => typeof obj === 'object' && !Array.isArray(obj) &&
 exports.isScalarValue = value => typeof value !== 'object' && typeof value !== 'function';
 exports.mergeDeep = (...args) => DeepMerge.all(args, { isMergeableObject: obj => exports.isPlainObject(obj) || Array.isArray(obj) });
 exports.uniq = arr => [...new Set(arr.map(a => `${a}`))];
+exports.timeout = ms => new Promise(res => setTimeout(res, ms));
+
+exports.promiseChain = (promises) => {
+  return promises.reduce((chain, promise) => {
+    return chain.then(chainResults => promise().then(promiseResult => [...chainResults, promiseResult]));
+  }, Promise.resolve([]));
+};
 
 exports.proxyDeep = (obj, handler, proxyMap = new WeakMap()) => {
   if (proxyMap.has(obj)) return proxyMap.get(obj);

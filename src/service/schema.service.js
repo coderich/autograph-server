@@ -9,30 +9,8 @@ const getFieldType = (model, field, fieldDef, suffix) => {
   return Array.isArray(dataType) ? `[${type}]` : type;
 };
 
-// const objectToGQL = (obj) => {
-//   if (Parser.isScalarValue(obj)) return obj;
-
-//   return `{
-//     ${Object.entries(obj).filter(([key, value]) => key && value).map(([key, value]) => `
-//       ${key}: ${objectToGQL(value)}
-//     `).join('').trim()}
-//   }`;
-// };
-
-// input ${model}InputQuery ${objectToGQL(buildInputQuery(model, fields))}
-
 /* eslint-disable indent, no-underscore-dangle */
 exports.createGraphSchema = (parser, resolver) => {
-  // const buildInputQuery = (model, fields, parentType) => {
-  //   return Object.entries(fields).reduce((prev, [field, fieldDef]) => {
-  //     const fieldType = Parser.getFieldSimpleType(fieldDef);
-
-  //     if (fieldType === parentType) return prev;
-  //     if (Parser.isScalarValue(fieldType)) return Object.assign(prev, { [field]: fieldType });
-  //     return Object.assign(prev, { [field]: buildInputQuery(fieldType, parser.getModelFields(fieldType), model) });
-  //   }, {});
-  // };
-
   return {
     typeDefs: parser.getModelNamesAndFields().map(([model, fields]) => `
       type ${model} {
@@ -138,7 +116,7 @@ exports.createGraphSchema = (parser, resolver) => {
       System: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args) => resolver.get(model, args.id, true),
-          [`find${model}`]: (root, args) => resolver.find(model, args.where),
+          [`find${model}`]: (root, args) => resolver.search(model, args.where),
         });
       }, {}),
 
