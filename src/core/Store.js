@@ -13,6 +13,7 @@ module.exports = class Store {
         [key]: {
           dao: new availableStores[type](uri, options),
           idValue: availableStores[type].idValue,
+          idField: type === 'mongo' ? '_id' : 'id',
         },
       });
     }, {});
@@ -61,5 +62,9 @@ module.exports = class Store {
   idValue(model, id) {
     const store = this.storeMap[model];
     return store.idValue(id);
+  }
+
+  idField(model) {
+    return this.storeMap[model].idField;
   }
 };

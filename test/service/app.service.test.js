@@ -1,6 +1,6 @@
 const { ObjectID } = require('mongodb');
-const MicroMatch = require('micromatch');
-const { isPlainObject, isScalarValue, mergeDeep, proxyDeep, uniq } = require('../../src/service/app.service');
+const MicroMatch = require('picomatch');
+const { isPlainObject, isScalarValue, mergeDeep, proxyDeep, uniq, hashObject } = require('../../src/service/app.service');
 
 const obj1 = { name: 'name1', friends: ['a', 'b', 'c'] };
 const obj2 = { name: 'name2', friends: ['d', 'e', 'f'] };
@@ -18,6 +18,20 @@ const doc = {
     obj2,
     obj3,
   },
+};
+
+const doc2 = {
+  workplace: {
+    name: 'gozio',
+    address: 'gozio st',
+    obj2,
+    obj1,
+    obj3,
+  },
+  name: 'Richard',
+  age: 100,
+  family: [obj1, obj2, obj3],
+  letters: ['a', 'c', 'b'],
 };
 
 describe('AppService', () => {
@@ -42,6 +56,13 @@ describe('AppService', () => {
     expect(obj1).toEqual({ name: 'name1', friends: ['a', 'b', 'c'] });
     expect(obj2).toEqual({ name: 'name2', friends: ['d', 'e', 'f'] });
     expect(obj3).toEqual({ name: 'name3', friends: ['a', 'e', 'b'] });
+  });
+
+  test('hashObject', () => {
+    const o1 = { a: 'hello', b: 'ball' };
+    const o2 = { b: 'ball', a: 'hello' };
+    expect(hashObject(o1)).toEqual(hashObject(o2));
+    expect(hashObject(doc)).toEqual(hashObject(doc2));
   });
 
   test('uniq', () => {

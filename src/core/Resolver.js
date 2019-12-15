@@ -3,37 +3,36 @@ const Parser = require('./Parser');
 const { isPlainObject, mergeDeep, promiseChain, uniq } = require('../service/app.service');
 
 module.exports = class Resolver {
-  constructor(parser, store) {
+  constructor(parser) {
     this.parser = parser;
-    this.store = store;
+
+    this.get = ({ store }, model, id, required = false) => {
+      return store.get(model, id).then((doc) => {
+        if (!doc && required) throw Boom.notFound(`${model} Not Found`);
+        return doc;
+      });
+    };
+
+    this.find = ({ store }, model, where = {}) => {
+      return store.find(model, where);
+    };
   }
 
-  get(model, id, required = false) {
-    return this.store.get(model, id).then((doc) => {
-      if (!doc && required) throw Boom.notFound(`${model} Not Found`);
-      return doc;
-    });
+  async search({ store }, model, where = {}) {
+    const resolvedWhere = await this.resolveModelWhereClause(store, model, where);
+    return store.find(model, resolvedWhere);
   }
 
-  find(model, where = {}) {
-    return this.store.find(model, where);
+  create({ store }, model, data) {
+    return this.validate(model, data).then(() => store.create(model, this.normalizeModelData(store, model, data)));
   }
 
-  async search(model, where = {}) {
-    const resolvedWhere = await this.resolveModelWhereClause(model, where);
-    return this.store.find(model, resolvedWhere);
+  update({ store }, model, id, data) {
+    return this.validate(model, data).then(() => this.get(model, id, true).then(doc => store.replace(model, id, this.normalizeModelData(store, model, mergeDeep(doc, data)))));
   }
 
-  create(model, data) {
-    return this.validate(model, data).then(() => this.store.create(model, this.normalizeModelData(model, data)));
-  }
-
-  update(model, id, data) {
-    return this.validate(model, data).then(() => this.get(model, id, true).then(doc => this.store.replace(model, id, this.normalizeModelData(model, mergeDeep(doc, data)))));
-  }
-
-  delete(model, id) {
-    return this.get(model, id, true).then(doc => this.store.delete(model, id, doc));
+  delete({ store }, model, id) {
+    return this.get(model, id, true).then(doc => store.delete(model, id, doc));
   }
 
   async validate(model, data, path = '') {
@@ -77,7 +76,7 @@ module.exports = class Resolver {
     return Promise.all(promises);
   }
 
-  normalizeModelData(model, data) {
+  normalizeModelData(store, model, data) {
     const fields = this.parser.getModelFields(model);
 
     return Object.entries(data).reduce((prev, [key, value]) => {
@@ -91,15 +90,15 @@ module.exports = class Resolver {
           if (field.embedded) {
             prev[key] = value.map(v => this.normalizeModelData(ref, v));
           } else if (field.unique) {
-            prev[key] = uniq(value).map(v => this.store.idValue(ref, v));
+            prev[key] = uniq(value).map(v => store.idValue(ref, v));
           } else {
-            prev[key] = value.map(v => this.store.idValue(ref, v));
+            prev[key] = value.map(v => store.idValue(ref, v));
           }
         } else if (field.unique) {
           prev[key] = uniq(value);
         }
       } else if (ref) {
-        prev[key] = this.store.idValue(ref, value);
+        prev[key] = store.idValue(ref, value);
       } else {
         prev[key] = value;
       }
@@ -108,7 +107,7 @@ module.exports = class Resolver {
     }, {});
   }
 
-  async resolveModelWhereClause(model, where = {}, fieldAlias = '', lookups2D = [], index = 0) {
+  async resolveModelWhereClause(store, model, where = {}, fieldAlias = '', lookups2D = [], index = 0) {
     const fields = this.parser.getModelFields(model);
 
     //
@@ -128,7 +127,7 @@ module.exports = class Resolver {
         const ref = Parser.getFieldDataRef(field);
 
         if (ref) {
-          this.resolveModelWhereClause(ref, value, field.alias || key, lookups2D, index + 1);
+          this.resolveModelWhereClause(store, ref, value, field.alias || key, lookups2D, index + 1);
           return prev;
         }
 
@@ -143,7 +142,7 @@ module.exports = class Resolver {
           const { parentModelName, parentFields, parentDataRefs } = parentLookup;
           const { parentFields: currentFields, parentFieldAlias: currentFieldAlias } = lookups2D[index2D];
 
-          return this.store.find(modelName, query).then((results) => {
+          return store.find(modelName, query).then((results) => {
             if (parentDataRefs.has(modelName)) {
               parentLookup.lookups.forEach((lookup) => {
                 // Anything with type `modelName` should be added to query
@@ -153,11 +152,11 @@ module.exports = class Resolver {
                   if (ref === modelName) {
                     if (fieldDef.by) {
                       Object.assign(lookup.query, {
-                        _id: results.map(result => this.store.idValue(parentModelName, result[currentFields[fieldDef.by].alias || fieldDef.by])),
+                        [store.idField(parentModelName)]: results.map(result => store.idValue(parentModelName, result[currentFields[fieldDef.by].alias || fieldDef.by])),
                       });
                     } else {
                       Object.assign(lookup.query, {
-                        [currentFieldAlias]: results.map(result => this.store.idValue(parentModelName, result.id)),
+                        [currentFieldAlias]: results.map(result => store.idValue(parentModelName, result.id)),
                       });
                     }
                   }

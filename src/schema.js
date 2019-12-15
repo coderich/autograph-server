@@ -83,12 +83,22 @@ exports.schema = {
       firstName: String,
       lastName: String,
       emailAddress: String,
+      contacts: { type: ['Contact'], by: 'user' },
+    },
+  },
+  Contact: {
+    store: 'tst-mongo',
+    alias: 'contact',
+    fields: {
+      user: 'Player',
+      name: String,
+      emailAddress: String,
+      phoneNumber: String,
     },
   },
 };
 
 exports.actions = {
-
 };
 
 exports.stores = {
@@ -107,5 +117,9 @@ exports.stores = {
   'tst-legacy': {
     type: 'neo4jRest',
     uri: 'http://localhost:8888',
+  },
+  'tst-mongo': {
+    type: 'mongo',
+    uri: 'mongodb://localhost:9999/tst_challenge',
   },
 };

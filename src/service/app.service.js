@@ -1,8 +1,7 @@
 const UUID = require('uuid/v4');
 const DeepMerge = require('deepmerge');
 const { ObjectID } = require('mongodb');
-
-let modelStores = {};
+const ObjectHash = require('object-hash');
 
 exports.id = '3d896496-02a3-4ee5-8e42-2115eb215f7e';
 exports.generateId = () => UUID();
@@ -12,19 +11,12 @@ exports.isScalarValue = value => typeof value !== 'object' && typeof value !== '
 exports.mergeDeep = (...args) => DeepMerge.all(args, { isMergeableObject: obj => exports.isPlainObject(obj) || Array.isArray(obj) });
 exports.uniq = arr => [...new Set(arr.map(a => `${a}`))];
 exports.timeout = ms => new Promise(res => setTimeout(res, ms));
+exports.hashObject = obj => ObjectHash(obj, { respectType: false, respectFunctionNames: false, respectFunctionProperties: false, unorderedArrays: true });
 
 exports.promiseChain = (promises) => {
   return promises.reduce((chain, promise) => {
     return chain.then(chainResults => promise().then(promiseResult => [...chainResults, promiseResult]));
   }, Promise.resolve([]));
-};
-
-exports.modelStores = (stores) => {
-  if (stores) {
-    modelStores = stores;
-  }
-
-  return modelStores;
 };
 
 exports.proxyDeep = (obj, handler, proxyMap = new WeakMap()) => {
