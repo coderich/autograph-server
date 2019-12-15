@@ -1,7 +1,7 @@
 const Axios = require('axios');
 const Neo4j = require('neo4j-driver');
 const MicroMatch = require('picomatch');
-const { proxyDeep } = require('../service/app.service');
+const { proxyDeep, isScalarValue } = require('../service/app.service');
 
 class Cypher {
   constructor(uri, options = {}) {
@@ -16,8 +16,13 @@ class Cypher {
   find(model, where = {}) {
     const $where = Cypher.normalizeWhereClause(where);
     const $wherePart = $where ? `WHERE ${$where}` : '';
-    console.log('find', model, $wherePart);
     return this.query(`MATCH (n:${model}) ${$wherePart} RETURN n`);
+  }
+
+  count(model, where = {}) {
+    const $where = Cypher.normalizeWhereClause(where);
+    const $wherePart = $where ? `WHERE ${$where}` : '';
+    return this.query(`MATCH (n:${model}) ${$wherePart} RETURN count(n) AS n`).then(counts => counts[0]);
   }
 
   create(model, data) {
@@ -58,6 +63,26 @@ class Cypher {
 
     return Object.values(obj).join(' AND ');
   }
+
+  static proxyData(data) {
+    return proxyDeep(data, {
+      get(target, prop, rec) {
+        const value = Reflect.get(target, prop, rec);
+
+        if (typeof value === 'function') return value.bind(target);
+
+        if (typeof value === 'string') {
+          try {
+            const val = JSON.parse(value); return val;
+          } catch (e) {
+            return value;
+          }
+        }
+
+        return value;
+      },
+    });
+  }
 }
 
 exports.Neo4jRest = class Neo4jRest extends Cypher {
@@ -71,8 +96,11 @@ exports.Neo4jRest = class Neo4jRest extends Cypher {
   }
 
   static toObject(records) {
-    return records.map(([{ metadata, data }]) => {
-      return Object.defineProperty(data, 'id', {
+    return records.map(([result]) => {
+      if (isScalarValue(result)) return result;
+
+      const { metadata, data } = result;
+      return Object.defineProperty(Neo4jRest.proxyData(data), 'id', {
         get: () => metadata.id,
       });
     });
@@ -92,9 +120,10 @@ exports.Neo4jDriver = class Neo4jDriver extends Cypher {
   static toObject({ records }) {
     return records.map((record) => {
       const node = record.get('n');
-      const doc = node.properties;
+      if (isScalarValue(node)) return node;
 
-      return Object.defineProperty(doc, 'id', {
+      const doc = node.properties;
+      return Object.defineProperty(Neo4jDriver.proxyData(doc), 'id', {
         get: () => node.identity,
       });
     });

@@ -1,6 +1,6 @@
 {
   "name": "redis-graphql",
-  "author": "",
+  "author": "Richard Livolsi (coderich)",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",

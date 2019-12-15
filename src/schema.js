@@ -84,6 +84,7 @@ exports.schema = {
       lastName: String,
       emailAddress: String,
       contacts: { type: ['Contact'], by: 'user' },
+      facebook: { type: 'Facebook', embedded: true },
     },
   },
   Contact: {
@@ -94,6 +95,15 @@ exports.schema = {
       name: String,
       emailAddress: String,
       phoneNumber: String,
+    },
+  },
+  Facebook: {
+    hideFromApi: true,
+    fields: {
+      id: String,
+      firstName: { type: String, alias: 'first_name' },
+      lastName: { type: String, alias: 'last_name' },
+      link: String,
     },
   },
 };

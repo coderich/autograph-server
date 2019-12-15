@@ -23,6 +23,11 @@ module.exports = class Resolver {
     return store.find(model, resolvedWhere);
   }
 
+  async count({ store }, model, where = {}) {
+    const resolvedWhere = await this.resolveModelWhereClause(store, model, where);
+    return store.count(model, resolvedWhere);
+  }
+
   create({ store }, model, data) {
     return this.validate(model, data).then(() => store.create(model, this.normalizeModelData(store, model, data)));
   }
@@ -136,6 +141,8 @@ module.exports = class Resolver {
     });
 
     if (index === 0) {
+      if (lookups2D.length === 1) return lookups2D[0].lookups[0].query; // Nothing nested to traverse!
+
       return promiseChain(lookups2D.reverse().map(({ lookups }, index2D) => {
         return () => Promise.all(lookups.map(async ({ modelName, query }) => {
           const parentLookup = lookups2D[index2D + 1] || { parentDataRefs: new Set() };

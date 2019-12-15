@@ -41,6 +41,13 @@ module.exports = class Store {
     return store.dao.find(modelAlias, where);
   }
 
+  count(model, where = {}) {
+    const store = this.storeMap[model];
+    const modelAlias = this.parser.getModelAlias(model);
+    return store.dao.count(modelAlias, where);
+  }
+
+
   create(model, data) {
     const store = this.storeMap[model];
     const modelAlias = this.parser.getModelAlias(model);

@@ -59,6 +59,7 @@ exports.createGraphSchema = (parser, resolver) => {
       `type System {
         ${parser.getModelNames(false).map(model => `get${model}(id: ID!): ${model}`)}
         ${parser.getModelNames(false).map(model => `find${model}(where: ${ucFirst(model)}InputQuery): [${model}]!`)}
+        ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputQuery): Int!`)}
       }`,
 
       `type Query {
@@ -117,6 +118,7 @@ exports.createGraphSchema = (parser, resolver) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
           [`find${model}`]: (root, args, context) => resolver.search(context, model, args.where),
+          [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
         });
       }, {}),
 

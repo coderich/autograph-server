@@ -20,6 +20,10 @@ module.exports = class {
     return this.loader.load({ op: 'find', model, data: where });
   }
 
+  count(model, where = {}) {
+    return this.loader.load({ op: 'count', model, data: where });
+  }
+
   create(model, data) {
     return this.store.create(model, data);
   }
