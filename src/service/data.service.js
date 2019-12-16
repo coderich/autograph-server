@@ -19,7 +19,7 @@ exports.validateModelData = (parser, store, model, data, path = '') => {
     const fullPath = `${model}.${key}`;
 
     // Required
-    if (field.required && value === null) throw Boom.badRequest(`${fullPath} cannot be null`);
+    if (field.required && value === null) throw Boom.badRequest(`${fullPath} cannot be set to null`);
 
     // Recursive
     if (isPlainObject(value) && ref) {
@@ -150,4 +150,11 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
 
   // Must be a nested call; nothing to do
   return undefined;
+};
+
+exports.resolveReferentialIntegrity = async (parser, store, model, id) => {
+  const onDeletes = parser.getModelOnDeletes(model);
+  const doc = await store.get(model, id);
+  console.log(onDeletes);
+  return doc;
 };

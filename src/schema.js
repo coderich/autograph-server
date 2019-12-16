@@ -2,7 +2,7 @@ exports.schema = {
   Person: {
     fields: {
       name: { type: String, required: true },
-      books: { type: ['Book'], by: 'author' },
+      authored: { type: ['Book'], by: 'author' },
       friends: { type: ['Person'], unique: true, onDelete: 'cascade' },
     },
     indexes: [
@@ -26,6 +26,9 @@ exports.schema = {
       book: { type: 'Book', required: true },
       pages: { type: ['Page'], by: 'chapter' },
     },
+    indexes: [
+      { name: 'uix_chapter', type: 'unique', fields: ['name', 'book'] },
+    ],
   },
   Page: {
     fields: {
@@ -33,77 +36,39 @@ exports.schema = {
       verbage: String,
       chapter: { type: 'Chapter', required: true },
     },
+    indexes: [
+      { name: 'uix_page', type: 'unique', fields: ['number', 'chapter'] },
+    ],
+  },
+  BookStore: {
+    fields: {
+      name: { type: String, required: true },
+      location: String,
+      books: { type: ['Book'], unique: true, onDelete: 'cascade' },
+      building: { type: 'Building', required: true, embedded: true, onDelete: 'cascade' },
+    },
+    indexes: [
+      { name: 'uix_bookstore', type: 'unique', fields: ['name'] },
+    ],
   },
   Library: {
     fields: {
-      name: String,
-      type: { type: String, enum: ['public', 'private'], required: true },
-      location: String,
-      configurations: { type: ['Configuration'], embedded: true },
-      books: { type: ['Book'], unique: true, onDelete: 'cascade' },
-    },
-  },
-  Configuration: {
-    hideFromApi: true,
-    fields: {
-      url: { type: String, required: true },
-      pages: { type: ['Page'] },
-    },
-  },
-  Network: {
-    store: 'gozio',
-    alias: 'networks',
-    fields: {
       name: { type: String, required: true },
-      humanName: { alias: 'human_name', type: String, required: true },
-      placeholder: { type: ['NetworkPlaceholder'], by: 'network' },
+      location: String,
+      books: { type: ['Book'], unique: true, onDelete: 'cascade' },
+      building: { type: 'Building', required: true, embedded: true, onDelete: 'cascade' },
     },
+    indexes: [
+      { name: 'uix_libraary', type: 'unique', fields: ['name'] },
+    ],
   },
-  NetworkPlaceholder: {
-    store: 'gozio',
-    alias: 'network_placeholder',
-    fields: {
-      network: { alias: 'network_id', type: 'Network', required: true },
-      type: { type: String, required: true },
-    },
-  },
-  User: {
-    store: 'tst',
-    alias: 'user',
-    fields: {
-      firstName: String,
-      lastName: String,
-      emailAddress: String,
-    },
-  },
-  Player: {
-    store: 'tst-legacy',
-    alias: 'user',
-    fields: {
-      firstName: String,
-      lastName: String,
-      emailAddress: String,
-      contacts: { type: ['Contact'], by: 'user' },
-      facebook: { type: 'Facebook', embedded: true },
-    },
-  },
-  Contact: {
-    store: 'tst-mongo',
-    alias: 'contact',
-    fields: {
-      user: 'Player',
-      name: String,
-      emailAddress: String,
-      phoneNumber: String,
-    },
-  },
-  Facebook: {
+  Building: {
     hideFromApi: true,
     fields: {
-      id: String,
-      firstName: { type: String, alias: 'first_name' },
-      lastName: { type: String, alias: 'last_name' },
-      link: String,
+      year: Number,
+      type: { type: String, enum: ['home', 'office', 'business'], required: true },
+      tenants: { type: ['Person'], unique: true, onDelete: 'cascade' },
+      landlord: 'Person',
     },
   },
 };
@@ -115,21 +80,5 @@ exports.stores = {
   default: {
     type: 'mongo',
     uri: 'mongodb://localhost:27017/graphql',
-  },
-  gozio: {
-    type: 'mongo',
-    uri: 'mongodb://localhost:27017/meteor',
-  },
-  tst: {
-    type: 'neo4j',
-    uri: 'bolt://localhost',
-  },
-  'tst-legacy': {
-    type: 'neo4jRest',
-    uri: 'http://localhost:8888',
-  },
-  'tst-mongo': {
-    type: 'mongo',
-    uri: 'mongodb://localhost:9999/tst_challenge',
   },
 };

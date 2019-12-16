@@ -53,6 +53,10 @@ module.exports = class Parser {
     return Object.values(fields).map(field => Parser.getFieldDataRef(field)).filter(ref => ref);
   }
 
+  getModelOnDeletes(model) {
+    return Parser.identifyOnDeletes(this.schema)[model];
+  }
+
   static isScalarValue(value) {
     return ['String', 'Float', 'Boolean'].indexOf(value) > -1;
   }
@@ -89,5 +93,24 @@ module.exports = class Parser {
         return field;
       }
     }
+  }
+
+  static identifyOnDeletes(schema) {
+    return Object.keys(schema).reduce((prev, modelName) => {
+      const arr = [];
+
+      Object.entries(schema).forEach(([model, modelDef]) => {
+        Object.entries(modelDef.fields).forEach(([field, fieldDef]) => {
+          const ref = Parser.getFieldDataRef(fieldDef);
+          const { onDelete } = fieldDef;
+
+          if (ref === modelName && onDelete) {
+            arr.push({ model, field, isArray: Boolean(Parser.getFieldArrayType(fieldDef)), onDelete });
+          }
+        });
+      });
+
+      return Object.assign(prev, { [modelName]: arr });
+    }, {});
   }
 };

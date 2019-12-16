@@ -2,7 +2,7 @@ const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
 const { mergeDeep } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
-const { ensureModel, validateModelData, normalizeModelData, resolveModelWhereClause } = require('../service/data.service');
+const { ensureModel, validateModelData, normalizeModelData, resolveModelWhereClause, resolveReferentialIntegrity } = require('../service/data.service');
 
 module.exports = class Store {
   constructor(parser, stores) {
@@ -33,39 +33,54 @@ module.exports = class Store {
   }
 
   get(model, id) {
+    const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = this.parser.getModelAlias(model);
-    return store.dao.get(modelAlias, store.idValue(id));
+
+    return createSystemEvent('Query', { method: 'get', model, store: this, parser, id }, async () => {
+      return store.dao.get(modelAlias, store.idValue(id));
+    });
   }
 
   find(model, where = {}) {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    return store.dao.find(modelAlias, where);
+
+    return createSystemEvent('Query', { method: 'find', model, store: this, parser, where }, async () => {
+      return store.dao.find(modelAlias, where);
+    });
   }
 
   async search(model, where = {}) {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
-    return store.dao.find(modelAlias, resolvedWhere);
+
+    // console.log(model, parser.getModelOnDeletes(model));
+
+    return createSystemEvent('Query', { method: 'search', model, store: this, parser, where }, async () => {
+      const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
+      return store.dao.find(modelAlias, resolvedWhere);
+    });
   }
 
   async count(model, where = {}) {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
-    return store.dao.count(modelAlias, resolvedWhere);
+
+    return createSystemEvent('Query', { method: 'count', model, store: this, parser, where }, async () => {
+      const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
+      return store.dao.count(modelAlias, resolvedWhere);
+    });
   }
 
-  create(model, data) {
+  async create(model, data) {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    validateModelData(parser, this, model, data);
+    await validateModelData(parser, this, model, data);
     normalizeModelData(parser, this, model, data);
 
     return createSystemEvent('Mutation', { method: 'create', model, store: this, parser, data }, () => {
@@ -77,7 +92,7 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    validateModelData(parser, this, model, data);
+    await validateModelData(parser, this, model, data);
     const doc = await ensureModel(this, model, id);
     normalizeModelData(parser, this, model, data);
 
@@ -94,7 +109,7 @@ module.exports = class Store {
     const doc = await ensureModel(this, model, id);
 
     return createSystemEvent('Mutation', { method: 'delete', model, store: this, parser, id }, () => {
-      return store.dao.delete(modelAlias, store.idValue(id), doc);
+      return resolveReferentialIntegrity(parser, this, model, id).then(() => store.dao.delete(modelAlias, store.idValue(id), doc));
     });
   }
 
