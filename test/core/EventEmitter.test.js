@@ -6,7 +6,7 @@ describe('EventEmitter', () => {
     const em = new EventEmitter();
 
     const cb1 = jest.fn(async (data, next) => {
-      await timeout(1000);
+      await timeout(500);
       expect(data).toEqual('world');
       next();
     });

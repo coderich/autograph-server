@@ -49,24 +49,27 @@ module.exports = class Store {
   }
 
   create(model, data) {
-    return createSystemEvent('Mutation', { method: 'create', model, data }, () => {
-      const store = this.storeMap[model];
+    const store = this.storeMap[model];
+
+    return createSystemEvent('Mutation', { method: 'create', model, store, data }, () => {
       const modelAlias = this.parser.getModelAlias(model);
       return store.dao.create(modelAlias, data);
     });
   }
 
-  update(model, id, data, doc) {
-    return createSystemEvent('Mutation', { method: 'update', model, id, data, doc }, () => {
-      const store = this.storeMap[model];
+  update(model, id, data) {
+    const store = this.storeMap[model];
+
+    return createSystemEvent('Mutation', { method: 'update', model, store, id, data }, () => {
       const modelAlias = this.parser.getModelAlias(model);
-      return store.dao.replace(modelAlias, store.idValue(id), data, doc);
+      return store.dao.replace(modelAlias, store.idValue(id), data);
     });
   }
 
   delete(model, id, doc) {
-    return createSystemEvent('Mutation', { method: 'delete', model, id, doc }, () => {
-      const store = this.storeMap[model];
+    const store = this.storeMap[model];
+
+    return createSystemEvent('Mutation', { method: 'delete', model, store, id, doc }, () => {
       const modelAlias = this.parser.getModelAlias(model);
       return store.dao.delete(modelAlias, store.idValue(id), doc);
     });

@@ -4,7 +4,7 @@ const { timeout } = require('../../src/service/app.service');
 describe('EventService', () => {
   test('createSystemEvent', async (done) => {
     const cb1 = jest.fn(async (data, next) => {
-      await timeout(1000);
+      await timeout(500);
       next();
     });
 

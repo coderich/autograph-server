@@ -1,17 +1,52 @@
 const EventEmitter = require('../core/EventEmitter');
 const { ucFirst } = require('./app.service');
 
-exports.internalEvent = new EventEmitter();
-exports.externalEvent = new EventEmitter();
+//
+const internalEvent = new EventEmitter();
+const externalEvent = new EventEmitter();
 
 const systemEvent = new EventEmitter().on('system', async (event, next) => {
   const { type, data } = event;
-  await exports.internalEvent.emit(type, data);
-  await exports.externalEvent.emit(type, data);
+  await internalEvent.emit(type, data);
+  await externalEvent.emit(type, data);
   next();
 });
 
-exports.createSystemEvent = (name, event, thunk = () => {}) => {
+// Validate model
+internalEvent.on('preMutation', (event, next) => {
+  const { method, model, store } = event;
+
+  switch (method) {
+    case 'create': case 'update': {
+      console.log('Validate');
+      next();
+      break;
+    }
+    default: {
+      next();
+    }
+  }
+});
+
+internalEvent.on('preMutation', (event, next) => {
+  const { method, model, store } = event;
+
+  switch (method) {
+    case 'delete': {
+      console.log('onDelete Ref Integrity');
+      next();
+      break;
+    }
+    default: {
+      next();
+    }
+  }
+});
+
+//
+exports.internalEvent = internalEvent;
+exports.externalEvent = externalEvent;
+exports.createSystemEvent = (name, event = {}, thunk = () => {}) => {
   const type = ucFirst(name);
 
   return systemEvent.emit('system', { type: `pre${type}`, data: event }).then(() => thunk()).then((result) => {

@@ -33,7 +33,7 @@ module.exports = class Resolver {
   }
 
   update({ store }, model, id, data) {
-    return this.validate(store, model, data).then(() => this.get({ store }, model, id, true).then(doc => store.replace(model, id, this.normalizeModelData(store, model, mergeDeep(doc, data)))));
+    return this.validate(store, model, data).then(() => this.get({ store }, model, id, true).then(doc => store.update(model, id, this.normalizeModelData(store, model, mergeDeep(doc, data)))));
   }
 
   delete({ store }, model, id) {

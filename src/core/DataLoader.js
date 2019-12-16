@@ -29,7 +29,7 @@ module.exports = class {
   }
 
   update(model, id, data, doc) {
-    return this.store.replace(model, id, data, doc);
+    return this.store.update(model, id, data, doc);
   }
 
   delete(model, id, doc) {
