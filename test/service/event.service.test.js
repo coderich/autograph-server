@@ -10,10 +10,10 @@ describe('EventService', () => {
 
     const cb2 = jest.fn((data) => {});
 
-    internalEvent.on('preMutation', cb1);
-    externalEvent.once('preMutation', cb2);
-    await createSystemEvent('Mutation');
-    await createSystemEvent('Mutation');
+    internalEvent.on('preTest', cb1);
+    externalEvent.once('preTest', cb2);
+    await createSystemEvent('test');
+    await createSystemEvent('test');
     expect(cb1).toHaveBeenCalledTimes(2);
     expect(cb2).toHaveBeenCalledTimes(1);
     done();

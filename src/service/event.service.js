@@ -2,10 +2,9 @@ const EventEmitter = require('../core/EventEmitter');
 const { validate } = require('./validation.service');
 const { ucFirst } = require('./app.service');
 
-//
+// Event emitters
 const internalEvent = new EventEmitter();
 const externalEvent = new EventEmitter();
-
 const systemEvent = new EventEmitter().on('system', async (event, next) => {
   const { type, data } = event;
   await internalEvent.emit(type, data);
@@ -23,16 +22,6 @@ internalEvent.on('preMutation', async (event, next) => {
       next();
       break;
     }
-    default: {
-      next();
-    }
-  }
-});
-
-internalEvent.on('preMutation', (event, next) => {
-  const { method, model, store } = event;
-
-  switch (method) {
     case 'delete': {
       console.log('onDelete Ref Integrity');
       next();
