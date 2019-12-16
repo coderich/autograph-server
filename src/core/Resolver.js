@@ -1,6 +1,6 @@
 const Boom = require('@hapi/boom');
 const Parser = require('./Parser');
-const { isPlainObject, mergeDeep, promiseChain, uniq } = require('../service/app.service');
+const { promiseChain } = require('../service/app.service');
 
 module.exports = class Resolver {
   constructor(parser) {
@@ -13,9 +13,10 @@ module.exports = class Resolver {
       });
     };
 
-    this.find = ({ store }, model, where = {}) => {
-      return store.find(model, where);
-    };
+    this.find = ({ store }, model, where = {}) => store.find(model, where);
+    this.create = ({ store }, model, data) => store.create(model, data);
+    this.update = ({ store }, model, id, data) => store.update(model, id, data);
+    this.delete = ({ store }, model, id) => store.delete(model, id);
   }
 
   async search({ store }, model, where = {}) {
@@ -26,49 +27,6 @@ module.exports = class Resolver {
   async count({ store }, model, where = {}) {
     const resolvedWhere = await this.resolveModelWhereClause(store, model, where);
     return store.count(model, resolvedWhere);
-  }
-
-  create({ store }, model, data) {
-    return store.create(model, this.normalizeModelData(store, model, data));
-  }
-
-  update({ store }, model, id, data) {
-    return this.get({ store }, model, id, true).then(doc => store.update(model, id, data, this.normalizeModelData(store, model, mergeDeep(doc, data))));
-  }
-
-  delete({ store }, model, id) {
-    return this.get({ store }, model, id, true).then(doc => store.delete(model, id, doc));
-  }
-
-  normalizeModelData(store, model, data) {
-    const fields = this.parser.getModelFields(model);
-
-    return Object.entries(data).reduce((prev, [key, value]) => {
-      const field = fields[key];
-      const ref = Parser.getFieldDataRef(field);
-
-      if (isPlainObject(value) && ref) {
-        prev[key] = this.normalizeModelData(ref, value);
-      } else if (Array.isArray(value)) {
-        if (ref) {
-          if (field.embedded) {
-            prev[key] = value.map(v => this.normalizeModelData(ref, v));
-          } else if (field.unique) {
-            prev[key] = uniq(value).map(v => store.idValue(ref, v));
-          } else {
-            prev[key] = value.map(v => store.idValue(ref, v));
-          }
-        } else if (field.unique) {
-          prev[key] = uniq(value);
-        }
-      } else if (ref) {
-        prev[key] = store.idValue(ref, value);
-      } else {
-        prev[key] = value;
-      }
-
-      return prev;
-    }, {});
   }
 
   async resolveModelWhereClause(store, model, where = {}, fieldAlias = '', lookups2D = [], index = 0) {
@@ -134,8 +92,7 @@ module.exports = class Resolver {
           });
         }));
       })).then(() => {
-        const lastLookup = lookups2D[lookups2D.length - 1].lookups[0];
-        return lastLookup.query;
+        return lookups2D[lookups2D.length - 1].lookups[0].query;
       });
     }
 

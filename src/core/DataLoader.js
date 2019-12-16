@@ -28,12 +28,12 @@ module.exports = class {
     return this.store.create(model, data);
   }
 
-  update(model, id, data, doc) {
-    return this.store.update(model, id, data, doc);
+  update(model, id, data) {
+    return this.store.update(model, id, data);
   }
 
-  delete(model, id, doc) {
-    return this.store.delete(model, id, doc);
+  delete(model, id) {
+    return this.store.delete(model, id);
   }
 
   idValue(model, id) {

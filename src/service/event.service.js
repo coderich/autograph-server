@@ -1,5 +1,5 @@
 const EventEmitter = require('../core/EventEmitter');
-const { validate } = require('./validation.service');
+const { validateModelData, normalizeModelData } = require('./data.service');
 const { ucFirst } = require('./app.service');
 
 // Event emitters
@@ -18,7 +18,8 @@ internalEvent.on('preMutation', async (event, next) => {
 
   switch (method) {
     case 'create': case 'update': {
-      await validate(parser, store, model, data);
+      await validateModelData(parser, store, model, data);
+      await normalizeModelData(parser, store, model, data);
       next();
       break;
     }

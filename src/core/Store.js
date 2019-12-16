@@ -1,6 +1,8 @@
 const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
+const { mergeDeep } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
+const { ensureModel, normalizeModelData } = require('../service/data.service');
 
 module.exports = class Store {
   constructor(parser, stores) {
@@ -51,29 +53,33 @@ module.exports = class Store {
   create(model, data) {
     const { parser } = this;
     const store = this.storeMap[model];
+    const modelAlias = parser.getModelAlias(model);
 
     return createSystemEvent('Mutation', { method: 'create', model, store: this, parser, data }, () => {
-      const modelAlias = parser.getModelAlias(model);
       return store.dao.create(modelAlias, data);
     });
   }
 
-  update(model, id, data, doc) {
+  async update(model, id, data) {
     const { parser } = this;
     const store = this.storeMap[model];
+    const modelAlias = parser.getModelAlias(model);
+    const doc = await ensureModel(this, model, id);
 
-    return createSystemEvent('Mutation', { method: 'update', model, store: this, parser, id, data }, () => {
-      const modelAlias = parser.getModelAlias(model);
-      return store.dao.replace(modelAlias, store.idValue(id), data, doc);
+    return createSystemEvent('Mutation', { method: 'update', model, store: this, parser, id, data }, async () => {
+      const merged = mergeDeep(doc, data);
+      normalizeModelData(parser, this, model, merged);
+      return store.dao.replace(modelAlias, store.idValue(id), data, merged);
     });
   }
 
-  delete(model, id, doc) {
+  async delete(model, id) {
     const { parser } = this;
     const store = this.storeMap[model];
+    const modelAlias = parser.getModelAlias(model);
+    const doc = await ensureModel(this, model, id);
 
     return createSystemEvent('Mutation', { method: 'delete', model, store: this, parser, id, doc }, () => {
-      const modelAlias = parser.getModelAlias(model);
       return store.dao.delete(modelAlias, store.idValue(id), doc);
     });
   }
