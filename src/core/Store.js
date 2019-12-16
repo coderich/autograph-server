@@ -2,7 +2,7 @@ const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
 const { mergeDeep } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
-const { ensureModel, normalizeModelData } = require('../service/data.service');
+const { ensureModel, normalizeModelData, resolveModelWhereClause } = require('../service/data.service');
 
 module.exports = class Store {
   constructor(parser, stores) {
@@ -39,15 +39,26 @@ module.exports = class Store {
   }
 
   find(model, where = {}) {
+    const { parser } = this;
     const store = this.storeMap[model];
-    const modelAlias = this.parser.getModelAlias(model);
+    const modelAlias = parser.getModelAlias(model);
     return store.dao.find(modelAlias, where);
   }
 
-  count(model, where = {}) {
+  async search(model, where = {}) {
+    const { parser } = this;
     const store = this.storeMap[model];
-    const modelAlias = this.parser.getModelAlias(model);
-    return store.dao.count(modelAlias, where);
+    const modelAlias = parser.getModelAlias(model);
+    const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
+    return store.dao.find(modelAlias, resolvedWhere);
+  }
+
+  async count(model, where = {}) {
+    const { parser } = this;
+    const store = this.storeMap[model];
+    const modelAlias = parser.getModelAlias(model);
+    const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
+    return store.dao.count(modelAlias, resolvedWhere);
   }
 
   create(model, data) {

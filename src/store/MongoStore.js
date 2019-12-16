@@ -30,7 +30,7 @@ module.exports = class MongoStore {
 
   count(model, where = {}) {
     const $where = MongoStore.normalizeWhereClause(where);
-    return this.query(model, 'count', $where);
+    return this.query(model, 'countDocuments', $where);
   }
 
   create(model, data) {
