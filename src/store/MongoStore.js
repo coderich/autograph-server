@@ -37,8 +37,8 @@ module.exports = class MongoStore {
     return this.query(model, 'insertOne', data).then(result => toObject(Object.assign(data, { _id: result.insertedId })));
   }
 
-  replace(model, id, data) {
-    return this.query(model, 'replaceOne', { _id: id }, data).then(() => toObject(data));
+  replace(model, id, data, doc) {
+    return this.query(model, 'replaceOne', { _id: id }, doc).then(() => toObject(doc));
   }
 
   delete(model, id, doc) {

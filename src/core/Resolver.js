@@ -29,56 +29,15 @@ module.exports = class Resolver {
   }
 
   create({ store }, model, data) {
-    return this.validate(store, model, data).then(() => store.create(model, this.normalizeModelData(store, model, data)));
+    return store.create(model, this.normalizeModelData(store, model, data));
   }
 
   update({ store }, model, id, data) {
-    return this.validate(store, model, data).then(() => this.get({ store }, model, id, true).then(doc => store.update(model, id, this.normalizeModelData(store, model, mergeDeep(doc, data)))));
+    return this.get({ store }, model, id, true).then(doc => store.update(model, id, data, this.normalizeModelData(store, model, mergeDeep(doc, data))));
   }
 
   delete({ store }, model, id) {
     return this.get({ store }, model, id, true).then(doc => store.delete(model, id, doc));
-  }
-
-  async validate(store, model, data, path = '') {
-    const promises = [];
-    const fields = this.parser.getModelFields(model);
-
-    Object.entries(data).forEach(([key, value]) => {
-      const field = fields[key];
-      const ref = Parser.getFieldDataRef(field);
-      const fullPath = `${model}.${key}`;
-
-      // Required
-      if (field.required && value === null) throw Boom.badRequest(`${fullPath} cannot be null`);
-
-      // Recursive
-      if (isPlainObject(value) && ref) {
-        promises.push(this.validate(store, ref, value));
-      } else if (Array.isArray(value)) {
-        if (ref) {
-          if (field.embedded) {
-            promises.push(...value.map(v => this.validate(store, ref, v)));
-          } else {
-            promises.push(...value.map(v => this.get({ store }, ref, v, true)));
-          }
-        } else {
-          value.forEach(v => this.validate(store, key, v));
-        }
-      } else if (ref) {
-        if (field.embedded) {
-          promises.push(this.validate(store, ref, value));
-        } else {
-          promises.push(this.get({ store }, ref, value, true));
-        }
-      } else {
-        // Scalar value validation
-        if (field.enum && field.enum.indexOf(value) === -1) throw Boom.badRequest(`${fullPath} must be enum: { ${field.enum.join(' ')} }, found '${value}'`);
-        if (false) throw Boom.badRequest();
-      }
-    });
-
-    return Promise.all(promises);
   }
 
   normalizeModelData(store, model, data) {

@@ -1,4 +1,5 @@
 const EventEmitter = require('../core/EventEmitter');
+const { validate } = require('./validation.service');
 const { ucFirst } = require('./app.service');
 
 //
@@ -13,12 +14,12 @@ const systemEvent = new EventEmitter().on('system', async (event, next) => {
 });
 
 // Validate model
-internalEvent.on('preMutation', (event, next) => {
-  const { method, model, store } = event;
+internalEvent.on('preMutation', async (event, next) => {
+  const { method, model, store, parser, data } = event;
 
   switch (method) {
     case 'create': case 'update': {
-      console.log('Validate');
+      await validate(parser, store, model, data);
       next();
       break;
     }

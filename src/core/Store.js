@@ -49,28 +49,31 @@ module.exports = class Store {
   }
 
   create(model, data) {
+    const { parser } = this;
     const store = this.storeMap[model];
 
-    return createSystemEvent('Mutation', { method: 'create', model, store, data }, () => {
-      const modelAlias = this.parser.getModelAlias(model);
+    return createSystemEvent('Mutation', { method: 'create', model, store: this, parser, data }, () => {
+      const modelAlias = parser.getModelAlias(model);
       return store.dao.create(modelAlias, data);
     });
   }
 
-  update(model, id, data) {
+  update(model, id, data, doc) {
+    const { parser } = this;
     const store = this.storeMap[model];
 
-    return createSystemEvent('Mutation', { method: 'update', model, store, id, data }, () => {
-      const modelAlias = this.parser.getModelAlias(model);
-      return store.dao.replace(modelAlias, store.idValue(id), data);
+    return createSystemEvent('Mutation', { method: 'update', model, store: this, parser, id, data }, () => {
+      const modelAlias = parser.getModelAlias(model);
+      return store.dao.replace(modelAlias, store.idValue(id), data, doc);
     });
   }
 
   delete(model, id, doc) {
+    const { parser } = this;
     const store = this.storeMap[model];
 
-    return createSystemEvent('Mutation', { method: 'delete', model, store, id, doc }, () => {
-      const modelAlias = this.parser.getModelAlias(model);
+    return createSystemEvent('Mutation', { method: 'delete', model, store: this, parser, id, doc }, () => {
+      const modelAlias = parser.getModelAlias(model);
       return store.dao.delete(modelAlias, store.idValue(id), doc);
     });
   }

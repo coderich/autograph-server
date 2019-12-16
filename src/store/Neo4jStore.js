@@ -29,8 +29,8 @@ class Cypher {
     return this.query(`CREATE (n:${model} { ${Object.keys(data).map(k => `${k}:{${k}}`)} }) RETURN n`, data).then(docs => docs[0]);
   }
 
-  replace(model, id, data) {
-    return this.query(`MATCH (n:${model}) WHERE id(n) = { id } SET ${Object.keys(data).map(k => `n.${k}={${k}}`)} RETURN n`, { id, ...data }).then(docs => docs[0]);
+  replace(model, id, data, doc) {
+    return this.query(`MATCH (n:${model}) WHERE id(n) = { id } SET ${Object.keys(doc).map(k => `n.${k}={${k}}`)} RETURN n`, { id, ...doc }).then(docs => docs[0]);
   }
 
   delete(model, id, doc) {

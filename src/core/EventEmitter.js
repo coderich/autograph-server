@@ -4,10 +4,10 @@ const EventEmitter = require('events');
 module.exports = class extends EventEmitter {
   async emit(event, data) {
     for (const wrapper of this.rawListeners(event)) {
-      await new Promise((resolve) => {
+      await new Promise((resolve, reject) => {
         const next = () => resolve();
         const numArgs = (wrapper.listener || wrapper).length;
-        wrapper(data, next);
+        wrapper(data, next).catch(e => reject(e));
         if (numArgs === 1) resolve();
       });
     }
