@@ -1,7 +1,7 @@
 const EventEmitter = require('events');
 
 /* eslint-disable no-restricted-syntax,no-await-in-loop */
-module.exports = class MyEmitter extends EventEmitter {
+module.exports = class extends EventEmitter {
   async emit(event, data) {
     for (const wrapper of this.rawListeners(event)) {
       await new Promise((resolve) => {

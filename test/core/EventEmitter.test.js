@@ -2,20 +2,25 @@ const EventEmitter = require('../../src/core/EventEmitter');
 const { timeout } = require('../../src/service/app.service');
 
 describe('EventEmitter', () => {
-  test('Sanity', (done) => {
+  test('Sequential Order', async (done) => {
     const em = new EventEmitter();
 
-    em.on('hello', async (data, next) => {
+    const cb1 = jest.fn(async (data, next) => {
       await timeout(1000);
       expect(data).toEqual('world');
       next();
     });
 
-    em.once('hello', (data) => {
+    const cb2 = jest.fn((data) => {
       expect(data).toEqual('world');
-      done();
     });
 
-    em.emit('hello', 'world');
+    em.on('hello', cb1);
+    em.once('hello', cb2);
+    await em.emit('hello', 'world');
+    await em.emit('hello', 'world');
+    expect(cb1).toHaveBeenCalledTimes(2);
+    expect(cb2).toHaveBeenCalledTimes(1);
+    done();
   });
 });

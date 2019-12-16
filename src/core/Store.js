@@ -1,5 +1,6 @@
 const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
+const { createSystemEvent } = require('../service/event.service');
 
 module.exports = class Store {
   constructor(parser, stores) {
@@ -47,23 +48,28 @@ module.exports = class Store {
     return store.dao.count(modelAlias, where);
   }
 
-
   create(model, data) {
-    const store = this.storeMap[model];
-    const modelAlias = this.parser.getModelAlias(model);
-    return store.dao.create(modelAlias, data);
+    return createSystemEvent('Mutation', { method: 'create', model, data }, () => {
+      const store = this.storeMap[model];
+      const modelAlias = this.parser.getModelAlias(model);
+      return store.dao.create(modelAlias, data);
+    });
   }
 
   update(model, id, data, doc) {
-    const store = this.storeMap[model];
-    const modelAlias = this.parser.getModelAlias(model);
-    return store.dao.replace(modelAlias, store.idValue(id), data, doc);
+    return createSystemEvent('Mutation', { method: 'update', model, id, data, doc }, () => {
+      const store = this.storeMap[model];
+      const modelAlias = this.parser.getModelAlias(model);
+      return store.dao.replace(modelAlias, store.idValue(id), data, doc);
+    });
   }
 
   delete(model, id, doc) {
-    const store = this.storeMap[model];
-    const modelAlias = this.parser.getModelAlias(model);
-    return store.dao.delete(modelAlias, store.idValue(id), doc);
+    return createSystemEvent('Mutation', { method: 'delete', model, id, doc }, () => {
+      const store = this.storeMap[model];
+      const modelAlias = this.parser.getModelAlias(model);
+      return store.dao.delete(modelAlias, store.idValue(id), doc);
+    });
   }
 
   idValue(model, id) {

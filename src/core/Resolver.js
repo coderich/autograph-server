@@ -29,18 +29,18 @@ module.exports = class Resolver {
   }
 
   create({ store }, model, data) {
-    return this.validate(model, data).then(() => store.create(model, this.normalizeModelData(store, model, data)));
+    return this.validate(store, model, data).then(() => store.create(model, this.normalizeModelData(store, model, data)));
   }
 
   update({ store }, model, id, data) {
-    return this.validate(model, data).then(() => this.get(model, id, true).then(doc => store.replace(model, id, this.normalizeModelData(store, model, mergeDeep(doc, data)))));
+    return this.validate(store, model, data).then(() => this.get({ store }, model, id, true).then(doc => store.replace(model, id, this.normalizeModelData(store, model, mergeDeep(doc, data)))));
   }
 
   delete({ store }, model, id) {
-    return this.get(model, id, true).then(doc => store.delete(model, id, doc));
+    return this.get({ store }, model, id, true).then(doc => store.delete(model, id, doc));
   }
 
-  async validate(model, data, path = '') {
+  async validate(store, model, data, path = '') {
     const promises = [];
     const fields = this.parser.getModelFields(model);
 
@@ -54,22 +54,22 @@ module.exports = class Resolver {
 
       // Recursive
       if (isPlainObject(value) && ref) {
-        promises.push(this.validate(ref, value));
+        promises.push(this.validate(store, ref, value));
       } else if (Array.isArray(value)) {
         if (ref) {
           if (field.embedded) {
-            promises.push(...value.map(v => this.validate(ref, v)));
+            promises.push(...value.map(v => this.validate(store, ref, v)));
           } else {
-            promises.push(...value.map(v => this.get(ref, v, true)));
+            promises.push(...value.map(v => this.get({ store }, ref, v, true)));
           }
         } else {
-          value.forEach(v => this.validate(key, v));
+          value.forEach(v => this.validate(store, key, v));
         }
       } else if (ref) {
         if (field.embedded) {
-          promises.push(this.validate(ref, value));
+          promises.push(this.validate(store, ref, value));
         } else {
-          promises.push(this.get(ref, value, true));
+          promises.push(this.get({ store }, ref, value, true));
         }
       } else {
         // Scalar value validation
