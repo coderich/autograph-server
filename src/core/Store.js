@@ -2,7 +2,7 @@ const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
 const { mergeDeep } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
-const { ensureModel, normalizeModelData, resolveModelWhereClause } = require('../service/data.service');
+const { ensureModel, validateModelData, normalizeModelData, resolveModelWhereClause } = require('../service/data.service');
 
 module.exports = class Store {
   constructor(parser, stores) {
@@ -65,6 +65,8 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
+    validateModelData(parser, this, model, data);
+    normalizeModelData(parser, this, model, data);
 
     return createSystemEvent('Mutation', { method: 'create', model, store: this, parser, data }, () => {
       return store.dao.create(modelAlias, data);
@@ -75,11 +77,12 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
+    validateModelData(parser, this, model, data);
     const doc = await ensureModel(this, model, id);
+    normalizeModelData(parser, this, model, data);
 
     return createSystemEvent('Mutation', { method: 'update', model, store: this, parser, id, data }, async () => {
-      const merged = mergeDeep(doc, data);
-      normalizeModelData(parser, this, model, merged);
+      const merged = normalizeModelData(parser, this, model, mergeDeep(doc, data));
       return store.dao.replace(modelAlias, store.idValue(id), data, merged);
     });
   }
@@ -90,7 +93,7 @@ module.exports = class Store {
     const modelAlias = parser.getModelAlias(model);
     const doc = await ensureModel(this, model, id);
 
-    return createSystemEvent('Mutation', { method: 'delete', model, store: this, parser, id, doc }, () => {
+    return createSystemEvent('Mutation', { method: 'delete', model, store: this, parser, id }, () => {
       return store.dao.delete(modelAlias, store.idValue(id), doc);
     });
   }
