@@ -147,7 +147,7 @@ module.exports = class Resolver {
         return () => Promise.all(lookups.map(async ({ modelName, query }) => {
           const parentLookup = lookups2D[index2D + 1] || { parentDataRefs: new Set() };
           const { parentModelName, parentFields, parentDataRefs } = parentLookup;
-          const { parentFields: currentFields, parentFieldAlias: currentFieldAlias } = lookups2D[index2D];
+          const { parentModelName: currentModelName, parentFields: currentFields, parentFieldAlias: currentFieldAlias } = lookups2D[index2D];
 
           return store.find(modelName, query).then((results) => {
             if (parentDataRefs.has(modelName)) {
@@ -163,7 +163,7 @@ module.exports = class Resolver {
                       });
                     } else {
                       Object.assign(lookup.query, {
-                        [currentFieldAlias]: results.map(result => store.idValue(parentModelName, result.id)),
+                        [currentFieldAlias]: results.map(result => store.idValue(currentModelName, result.id)),
                       });
                     }
                   }
