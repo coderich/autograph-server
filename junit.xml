@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="@coderich/autograph" tests="10" failures="0" time="2.108">
+  <testsuite name="EventEmitter" errors="0" failures="0" skipped="1" timestamp="2019-12-17T04:29:41" time="0.518" tests="1">
+    <testcase classname="EventEmitter Sequential Order" name="EventEmitter Sequential Order" time="0">
+      <skipped/>
+    </testcase>
+  </testsuite>
+  <testsuite name="EventService" errors="0" failures="0" skipped="1" timestamp="2019-12-17T04:29:42" time="0.085" tests="1">
+    <testcase classname="EventService createSystemEvent" name="EventService createSystemEvent" time="0">
+      <skipped/>
+    </testcase>
+  </testsuite>
+  <testsuite name="Store" errors="0" failures="0" skipped="0" timestamp="2019-12-17T04:29:42" time="0.604" tests="2">
+    <testcase classname="Store PersonSchema" name="Store PersonSchema" time="0.084">
+    </testcase>
+    <testcase classname="Store BookSchema" name="Store BookSchema" time="0.006">
+    </testcase>
+  </testsuite>
+  <testsuite name="AppService" errors="0" failures="0" skipped="6" timestamp="2019-12-17T04:29:42" time="0.078" tests="6">
+    <testcase classname="AppService MicroMatch" name="AppService MicroMatch" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="AppService isPlainObject" name="AppService isPlainObject" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="AppService mergeDeep" name="AppService mergeDeep" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="AppService hashObject" name="AppService hashObject" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="AppService uniq" name="AppService uniq" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="AppService proxyDeep" name="AppService proxyDeep" time="0">
+      <skipped/>
+    </testcase>
+  </testsuite>
+</testsuites>

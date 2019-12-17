@@ -1,4 +1,5 @@
 const Boom = require('@hapi/boom');
+const Case = require('change-case');
 const Parser = require('../core/Parser');
 const { uniq, isPlainObject, promiseChain } = require('../service/app.service');
 
@@ -13,13 +14,14 @@ exports.validateModelData = (parser, store, model, data, path = '') => {
   const promises = [];
   const fields = parser.getModelFields(model);
 
-  Object.entries(data).forEach(([key, value]) => {
-    const field = fields[key];
+  Object.entries(fields).forEach(([key, field]) => {
+    const value = data[key];
     const ref = Parser.getFieldDataRef(field);
     const fullPath = `${model}.${key}`;
 
     // Required
-    if (field.required && value === null) throw Boom.badRequest(`${fullPath} cannot be set to null`);
+    if (field.required && value == null) throw Boom.badRequest(`${fullPath} cannot be set to null`);
+    if (!Object.prototype.hasOwnProperty.call(data, field)) return;
 
     // Recursive
     if (isPlainObject(value) && ref) {
@@ -74,6 +76,13 @@ exports.normalizeModelData = (parser, store, model, data) => {
     } else if (ref) {
       prev[key] = store.idValue(ref, value);
     } else {
+      if (field) {
+        switch (field.case) {
+          case 'lower': value = value.toLowerCase(); break;
+          case 'title': value = Case.capitalCase(value); break;
+          default: break;
+        }
+      }
       prev[key] = value;
     }
 

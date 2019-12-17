@@ -8,7 +8,11 @@ module.exports = class Store {
   constructor(parser, stores) {
     this.parser = parser;
 
-    const availableStores = { mongo: MongoStore, neo4j: Neo4jDriver, neo4jRest: Neo4jRest };
+    const availableStores = {
+      mongo: MongoStore,
+      neo4j: Neo4jDriver,
+      neo4jRest: Neo4jRest,
+    };
 
     // Create store instances
     const storesInstances = Object.entries(stores).reduce((prev, [key, { type, uri, options }]) => {

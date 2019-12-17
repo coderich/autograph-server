@@ -3,6 +3,7 @@
   "extends": "airbnb",
   "rules": {
     "arrow-body-style": ["warn", "as-needed"],
+    "arrow-parens": ["warn", "as-needed", { "requireForBlockBody": true }],
     "no-unused-vars": ["error", { "args": "none" }],
     "max-len": ["error", { "code": 200 }],
     "no-param-reassign": 0,

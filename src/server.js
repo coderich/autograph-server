@@ -5,7 +5,7 @@ const Resolver = require('./core/Resolver');
 const Store = require('./core/Store');
 const DataLoader = require('./core/DataLoader');
 const SchemaService = require('./service/schema.service');
-const { schema, stores } = require('./schema');
+const { schema, stores } = require('../schema');
 
 const parser = new Parser(schema);
 const store = new Store(parser, stores);

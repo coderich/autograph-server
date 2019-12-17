@@ -1,7 +1,7 @@
 exports.schema = {
   Person: {
     fields: {
-      name: { type: String, required: true },
+      name: { type: String, required: true, case: 'title' },
       authored: { type: ['Book'], by: 'author' },
       friends: { type: ['Person'], unique: true, onDelete: 'cascade' },
     },
@@ -11,7 +11,7 @@ exports.schema = {
   },
   Book: {
     fields: {
-      name: { type: String, required: true },
+      name: { type: String, case: 'title', required: true },
       price: { type: Number, required: true },
       author: { type: 'Person', onDelete: 'cascade', required: true, immutable: true },
       chapters: { type: ['Chapter'], by: 'book' },
@@ -71,9 +71,6 @@ exports.schema = {
       landlord: 'Person',
     },
   },
-};
-
-exports.actions = {
 };
 
 exports.stores = {

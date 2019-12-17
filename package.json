@@ -1,5 +1,5 @@
 {
-  "name": "redis-graphql",
+  "name": "@coderich/autograph",
   "author": "Richard Livolsi (coderich)",
   "version": "1.0.0",
   "description": "",
@@ -7,13 +7,13 @@
   "license": "ISC",
   "scripts": {
     "start": "node ./src/server",
-    "test": "ratchet test",
-    "ratchet": "ratchet",
+    "test": "jest test --passWithNoTests --detectOpenHandles --forceExit",
     "uuid": "uuid"
   },
   "dependencies": {
     "@hapi/boom": "^8.0.1",
     "axios": "^0.19.0",
+    "change-case": "^4.1.0",
     "dataloader": "^2.0.0",
     "deepmerge": "^4.2.2",
     "mongodb": "^3.3.5",
@@ -24,8 +24,37 @@
     "uuid": "^3.3.3"
   },
   "devDependencies": {
-    "@coderich/ratchet": "^1.2.2",
     "@hapi/hapi": "^18.4.0",
-    "apollo-server-hapi": "^2.9.13"
+    "apollo-server-hapi": "^2.9.13",
+    "eslint": "^6.7.2",
+    "eslint-config-airbnb": "^18.0.1",
+    "eslint-plugin-import": "^2.19.1",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-react": "^7.17.0",
+    "jest": "^24.9.0",
+    "jest-junit": "^10.0.0",
+    "mongodb-memory-server": "^6.0.2"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "verbose": true,
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "src/*/**/*.js"
+    ],
+    "reporters": [
+      "default",
+      [
+        "jest-junit",
+        {
+          "suiteName": "@coderich/autograph",
+          "output": "<rootDir>/coverage/test-reports/junit/junit.xml"
+        }
+      ]
+    ],
+    "setupFilesAfterEnv": [],
+    "testPathIgnorePatterns": [
+      "<rootDir>/test/integration"
+    ]
   }
 }
