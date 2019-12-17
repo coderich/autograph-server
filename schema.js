@@ -12,7 +12,7 @@ exports.schema = {
   Book: {
     fields: {
       name: { type: String, case: 'title', required: true },
-      price: { type: Number, required: true },
+      price: { type: Number, required: true, min: 0, max: 100 },
       author: { type: 'Person', onDelete: 'cascade', required: true, immutable: true },
       chapters: { type: ['Chapter'], by: 'book' },
     },
@@ -22,7 +22,7 @@ exports.schema = {
   },
   Chapter: {
     fields: {
-      name: String,
+      name: { type: String, case: 'title', required: true },
       book: { type: 'Book', required: true },
       pages: { type: ['Page'], by: 'chapter' },
     },

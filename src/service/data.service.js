@@ -79,7 +79,7 @@ exports.normalizeModelData = (parser, store, model, data) => {
       if (field) {
         switch (field.case) {
           case 'lower': value = value.toLowerCase(); break;
-          case 'title': value = Case.capitalCase(value); break;
+          case 'title': value = Case.capitalCase(value.toLowerCase()); break;
           default: break;
         }
       }

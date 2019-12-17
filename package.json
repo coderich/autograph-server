@@ -31,6 +31,9 @@
     "eslint-plugin-import": "^2.19.1",
     "eslint-plugin-jsx-a11y": "^6.2.3",
     "eslint-plugin-react": "^7.17.0",
+    "graphql": "^14.5.8",
+    "graphql-request": "^1.8.2",
+    "graphql-tag": "^2.10.1",
     "jest": "^24.9.0",
     "jest-junit": "^10.0.0",
     "mongodb-memory-server": "^6.0.2"
