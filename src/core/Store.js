@@ -84,7 +84,7 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    await validateModelData(parser, this, model, data);
+    await validateModelData(parser, this, model, data, 'create');
     normalizeModelData(parser, this, model, data);
 
     return createSystemEvent('Mutation', { method: 'create', model, store: this, parser, data }, () => {
@@ -96,12 +96,12 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    await validateModelData(parser, this, model, data);
+    await validateModelData(parser, this, model, data, 'update');
     const doc = await ensureModel(this, model, id);
     normalizeModelData(parser, this, model, data);
 
     return createSystemEvent('Mutation', { method: 'update', model, store: this, parser, id, data }, async () => {
-      const merged = normalizeModelData(parser, this, model, mergeDeep(doc, data));
+      const merged = normalizeModelData(parser, this, model, mergeDeep(doc, data), 'create');
       return store.dao.replace(modelAlias, store.idValue(id), data, merged);
     });
   }

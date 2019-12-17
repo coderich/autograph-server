@@ -10,7 +10,7 @@ exports.ensureModel = (store, model, id) => {
   });
 };
 
-exports.validateModelData = (parser, store, model, data, path = '') => {
+exports.validateModelData = (parser, store, model, data, op, path = '') => {
   const promises = [];
   const fields = parser.getModelFields(model);
 
@@ -20,25 +20,31 @@ exports.validateModelData = (parser, store, model, data, path = '') => {
     const fullPath = `${model}.${key}`;
 
     // Required
-    if (field.required && value == null) throw Boom.badRequest(`${fullPath} cannot be set to null`);
-    if (!Object.prototype.hasOwnProperty.call(data, field)) return;
+    if (field.required && op === 'create' && value == null) throw Boom.badRequest(`${fullPath} is a required field`);
+    if (field.required && op === 'update' && value === null) throw Boom.badRequest(`${fullPath} cannot be set to null`);
+
+    // Immutable
+    if (field.immutable && op === 'update' && value !== undefined) throw Boom.badRequest(`${fullPath} is immutable; cannot be changed once set`);
+
+    // The data may not be defined for this key
+    if (!Object.prototype.hasOwnProperty.call(data, key)) return;
 
     // Recursive
     if (isPlainObject(value) && ref) {
-      promises.push(exports.validateModelData(parser, store, ref, value));
+      promises.push(exports.validateModelData(parser, store, ref, value, op));
     } else if (Array.isArray(value)) {
       if (ref) {
         if (field.embedded) {
-          promises.push(...value.map(v => exports.validateModelData(parser, store, ref, v)));
+          promises.push(...value.map(v => exports.validateModelData(parser, store, ref, v, op)));
         } else {
           promises.push(...value.map(v => exports.ensureModel(store, ref, v)));
         }
       } else {
-        value.forEach(v => exports.validateModelData(parser, store, key, v));
+        value.forEach(v => exports.validateModelData(parser, store, key, v, op));
       }
     } else if (ref) {
       if (field.embedded) {
-        promises.push(exports.validateModelData(parser, store, ref, value));
+        promises.push(exports.validateModelData(parser, store, ref, value, op));
       } else {
         promises.push(exports.ensureModel(store, ref, value));
       }
