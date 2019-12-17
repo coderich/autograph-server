@@ -109,6 +109,7 @@ module.exports = (name) => {
       await expect(dao.create('Book', { name: 'The Bible', price: 1.99 })).rejects.toThrow();
       await expect(dao.create('Book', { name: 'MoBY DiCK', price: 1.99, author: richard.id })).rejects.toThrow();
       await expect(dao.create('Book', { name: 'The Bible', price: 1.99, author: mobyDick.id })).rejects.toThrow();
+      await expect(dao.create('Book', { name: 'The Bible', price: 1.99, author: [christie.id] })).rejects.toThrow();
       await expect(dao.update('Book', mobyDick.id, { author: christie.id })).rejects.toThrow();
       // await expect(dao.update('Book', mobyDick.id, { author: richard.id })).resolves!!!;
       // await expect(dao.create('Book', { name: 'Great Book', price: -1, author: christie.id })).rejects.toThrow();
@@ -132,6 +133,88 @@ module.exports = (name) => {
       await expect(dao.create('Chapter', { name: 'chapter3' })).rejects.toThrow();
       await expect(dao.create('Chapter', { name: 'chapter1', book: healthBook.id })).rejects.toThrow();
       await expect(dao.create('Chapter', { name: 'chapter3', book: christie.id })).rejects.toThrow();
+    });
+
+    test('PageSchema', async () => {
+      const [chapter1, chapter2] = await dao.find('Chapter');
+      expect(chapter1.name).toEqual('Chapter1');
+      expect(chapter2.name).toEqual('Chapter2');
+
+      const page1 = await dao.create('Page', { number: 1, chapter: chapter1.id });
+      const page2 = await dao.create('Page', { number: 2, chapter: chapter1.id });
+      const page3 = await dao.create('Page', { number: 1, chapter: chapter2.id });
+      const page4 = await dao.create('Page', { number: 2, chapter: chapter2.id });
+      expect(page1.id).toBeDefined();
+      expect(page2.id).toBeDefined();
+      expect(page3.id).toBeDefined();
+      expect(page4.id).toBeDefined();
+
+      // Integrity Constriants
+      await expect(dao.create('Page')).rejects.toThrow();
+      await expect(dao.create('Page', { number: 3 })).rejects.toThrow();
+      await expect(dao.create('Page', { number: 1, chapter: chapter1 })).rejects.toThrow();
+      await expect(dao.create('Page', { number: 1, chapter: chapter1.id })).rejects.toThrow();
+      await expect(dao.create('Page', { number: 1, chapter: page4.id })).rejects.toThrow();
+      await expect(dao.update('Page', page1.id, { number: 2 })).rejects.toThrow();
+    });
+
+    test('BuildingSchema', async () => {
+      const bookstore = await dao.create('Building', { year: 1990, type: 'business' });
+      const library = await dao.create('Building', { type: 'business' });
+      const apartment = await dao.create('Building', { type: 'home', tenants: [richard.id, christie.id], landlord: richard.id });
+      const office = await dao.create('Building', { type: 'office' });
+      expect(bookstore.id).toBeDefined();
+      expect(bookstore.year).toEqual(1990);
+      expect(library.id).toBeDefined();
+      expect(apartment.id).toBeDefined();
+      expect(apartment.landlord).toEqual(richard.id);
+      expect(apartment.tenants).toEqual([richard.id, christie.id]);
+      expect(office.id).toBeDefined();
+
+      // Integrity Constriants
+      await expect(dao.create('Building')).rejects.toThrow();
+      await expect(dao.create('Building', { type: 'bad-type' })).rejects.toThrow();
+      await expect(dao.create('Building', { type: 'business', landlord: bookstore.id })).rejects.toThrow();
+      await expect(dao.create('Building', { type: 'business', tenants: richard.id })).rejects.toThrow();
+      await expect(dao.create('Building', { type: 'business', tenants: [richard.id, bookstore.id] })).rejects.toThrow();
+    });
+
+    test('BookStoreSchema', async () => {
+      const [mobyDick, healthBook] = await dao.find('Book');
+      const [building, library] = await dao.find('Building');
+      const bookstore1 = await dao.create('BookStore', { name: 'Best Books Ever', books: [mobyDick.id, mobyDick.id, healthBook.id], building });
+      const bookstore2 = await dao.create('BookStore', { name: 'New Books', books: [mobyDick.id], building });
+      expect(bookstore1.id).toBeDefined();
+      expect(bookstore1.books.length).toEqual(3);
+      expect(bookstore1.building.type).toEqual('business');
+      expect(bookstore2.id).toBeDefined();
+      expect(bookstore2.books.length).toEqual(1);
+      expect(bookstore2.building.type).toEqual('business');
+
+      // Integrity Constriants
+      await expect(dao.create('BookStore')).rejects.toThrow();
+      await expect(dao.create('BookStore', { name: 'New Books' })).rejects.toThrow();
+      await expect(dao.create('BookStore', { name: 'New Books', building: 'bad-building' })).rejects.toThrow();
+      await expect(dao.create('BookStore', { name: 'besT bookS eveR', building })).rejects.toThrow();
+      await expect(dao.create('BookStore', { name: 'Best Books Ever', building: library })).rejects.toThrow();
+      await expect(dao.create('BookStore', { name: 'More More Books', building, books: building.id })).rejects.toThrow();
+      await expect(dao.create('BookStore', { name: 'More More Books', building, books: [building.id] })).rejects.toThrow();
+      await expect(dao.create('BookStore', { name: 'More More Books', building, books: [mobyDick.id, building] })).rejects.toThrow();
+    });
+
+    test('LibrarySchema', async () => {
+      const [mobyDick, healthBook] = await dao.find('Book');
+      const [, lib] = await dao.find('Building');
+      const library = await dao.create('Library', { name: 'Public Library', books: [mobyDick.id, healthBook.id, healthBook.id], building: lib });
+      expect(library.id).toBeDefined();
+      expect(library.books.length).toEqual(3);
+      expect(library.building.type).toEqual('business');
+
+      // Integrity Constriants
+      await expect(dao.create('Library')).rejects.toThrow();
+      await expect(dao.create('Library', { name: 'New Library' })).rejects.toThrow();
+      await expect(dao.create('Library', { name: 'New Library', building: 'bad-building' })).rejects.toThrow();
+      await expect(dao.create('Library', { name: 'New Library', building: lib })).rejects.toThrow();
     });
   });
 };

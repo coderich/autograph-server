@@ -1,35 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="@coderich/autograph" tests="14" failures="0" time="6.137">
-  <testsuite name="Store" errors="0" failures="0" skipped="0" timestamp="2019-12-17T20:06:51" time="2.179" tests="3">
-    <testcase classname="Store PersonSchema" name="Store PersonSchema" time="0.081">
+<testsuites name="@coderich/autograph" tests="22" failures="0" time="5.6">
+  <testsuite name="Store" errors="0" failures="0" skipped="0" timestamp="2019-12-17T21:41:08" time="2.112" tests="7">
+    <testcase classname="Store PersonSchema" name="Store PersonSchema" time="0.092">
     </testcase>
-    <testcase classname="Store BookSchema" name="Store BookSchema" time="0.013">
+    <testcase classname="Store BookSchema" name="Store BookSchema" time="0.016">
     </testcase>
-    <testcase classname="Store ChapterSchema" name="Store ChapterSchema" time="0.014">
+    <testcase classname="Store ChapterSchema" name="Store ChapterSchema" time="0.012">
     </testcase>
-  </testsuite>
-  <testsuite name="EventService" errors="0" failures="0" skipped="0" timestamp="2019-12-17T20:06:54" time="1.08" tests="1">
-    <testcase classname="EventService createSystemEvent" name="EventService createSystemEvent" time="1.009">
+    <testcase classname="Store PageSchema" name="Store PageSchema" time="0.018">
     </testcase>
-  </testsuite>
-  <testsuite name="EventEmitter" errors="0" failures="0" skipped="0" timestamp="2019-12-17T20:06:55" time="1.113" tests="1">
-    <testcase classname="EventEmitter Sequential Order" name="EventEmitter Sequential Order" time="1.015">
+    <testcase classname="Store BuildingSchema" name="Store BuildingSchema" time="0.015">
     </testcase>
-  </testsuite>
-  <testsuite name="DataLoader" errors="0" failures="0" skipped="0" timestamp="2019-12-17T20:06:56" time="0.641" tests="3">
-    <testcase classname="DataLoader PersonSchema" name="DataLoader PersonSchema" time="0.089">
+    <testcase classname="Store BookStoreSchema" name="Store BookStoreSchema" time="0.015">
     </testcase>
-    <testcase classname="DataLoader BookSchema" name="DataLoader BookSchema" time="0.02">
-    </testcase>
-    <testcase classname="DataLoader ChapterSchema" name="DataLoader ChapterSchema" time="0.022">
+    <testcase classname="Store LibrarySchema" name="Store LibrarySchema" time="0.01">
     </testcase>
   </testsuite>
-  <testsuite name="AppService" errors="0" failures="0" skipped="0" timestamp="2019-12-17T20:06:56" time="0.114" tests="6">
-    <testcase classname="AppService MicroMatch" name="AppService MicroMatch" time="0.003">
+  <testsuite name="EventService" errors="0" failures="0" skipped="0" timestamp="2019-12-17T21:41:10" time="1.082" tests="1">
+    <testcase classname="EventService createSystemEvent" name="EventService createSystemEvent" time="1.012">
+    </testcase>
+  </testsuite>
+  <testsuite name="EventEmitter" errors="0" failures="0" skipped="0" timestamp="2019-12-17T21:41:11" time="1.094" tests="1">
+    <testcase classname="EventEmitter Sequential Order" name="EventEmitter Sequential Order" time="1.01">
+    </testcase>
+  </testsuite>
+  <testsuite name="DataLoader" errors="0" failures="0" skipped="0" timestamp="2019-12-17T21:41:12" time="0.509" tests="7">
+    <testcase classname="DataLoader PersonSchema" name="DataLoader PersonSchema" time="0.073">
+    </testcase>
+    <testcase classname="DataLoader BookSchema" name="DataLoader BookSchema" time="0.012">
+    </testcase>
+    <testcase classname="DataLoader ChapterSchema" name="DataLoader ChapterSchema" time="0.013">
+    </testcase>
+    <testcase classname="DataLoader PageSchema" name="DataLoader PageSchema" time="0.022">
+    </testcase>
+    <testcase classname="DataLoader BuildingSchema" name="DataLoader BuildingSchema" time="0.013">
+    </testcase>
+    <testcase classname="DataLoader BookStoreSchema" name="DataLoader BookStoreSchema" time="0.026">
+    </testcase>
+    <testcase classname="DataLoader LibrarySchema" name="DataLoader LibrarySchema" time="0.007">
+    </testcase>
+  </testsuite>
+  <testsuite name="AppService" errors="0" failures="0" skipped="0" timestamp="2019-12-17T21:41:12" time="0.076" tests="6">
+    <testcase classname="AppService MicroMatch" name="AppService MicroMatch" time="0.002">
     </testcase>
     <testcase classname="AppService isPlainObject" name="AppService isPlainObject" time="0.001">
     </testcase>
-    <testcase classname="AppService mergeDeep" name="AppService mergeDeep" time="0.002">
+    <testcase classname="AppService mergeDeep" name="AppService mergeDeep" time="0.004">
     </testcase>
     <testcase classname="AppService hashObject" name="AppService hashObject" time="0.001">
     </testcase>

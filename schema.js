@@ -32,7 +32,7 @@ exports.schema = {
   },
   Page: {
     fields: {
-      number: Number,
+      number: { type: Number, min: 1, required: true },
       verbage: String,
       chapter: { type: 'Chapter', required: true },
     },
@@ -42,9 +42,9 @@ exports.schema = {
   },
   BookStore: {
     fields: {
-      name: { type: String, required: true },
+      name: { type: String, case: 'title', required: true },
       location: String,
-      books: { type: ['Book'], unique: true, onDelete: 'cascade' },
+      books: { type: ['Book'], onDelete: 'cascade' },
       building: { type: 'Building', required: true, embedded: true, onDelete: 'cascade' },
     },
     indexes: [
@@ -53,13 +53,14 @@ exports.schema = {
   },
   Library: {
     fields: {
-      name: { type: String, required: true },
+      name: { type: String, case: 'title', required: true },
       location: String,
-      books: { type: ['Book'], unique: true, onDelete: 'cascade' },
+      books: { type: ['Book'], onDelete: 'cascade' },
       building: { type: 'Building', required: true, embedded: true, onDelete: 'cascade' },
     },
     indexes: [
-      { name: 'uix_libraary', type: 'unique', fields: ['name'] },
+      { name: 'uix_libraay', type: 'unique', fields: ['name'] },
+      { name: 'uix_library_bulding', type: 'unique', fields: ['building'] },
     ],
   },
   Building: {

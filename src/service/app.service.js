@@ -8,6 +8,7 @@ exports.generateId = () => UUID();
 exports.ucFirst = string => string.charAt(0).toUpperCase() + string.slice(1);
 exports.isPlainObject = obj => typeof obj === 'object' && !Array.isArray(obj) && !(obj instanceof ObjectID);
 exports.isScalarValue = value => typeof value !== 'object' && typeof value !== 'function';
+exports.isIdValue = value => exports.isScalarValue(value) || value instanceof ObjectID;
 exports.mergeDeep = (...args) => DeepMerge.all(args, { isMergeableObject: obj => exports.isPlainObject(obj) || Array.isArray(obj) });
 exports.uniq = arr => [...new Set(arr.map(a => `${a}`))];
 exports.timeout = ms => new Promise(res => setTimeout(res, ms));
