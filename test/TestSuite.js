@@ -30,6 +30,8 @@ let bookstore1;
 let bookstore2;
 let library;
 
+const sorter = (a, b) => `${a.id}` - `${b.id}`;
+
 const makeApolloServer = (executableSchema, store, useDataLoader = false) => {
   return new ApolloServer({
     schema: executableSchema,
@@ -238,17 +240,41 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.find('Book', { author: christie.id })).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
       });
 
-      // test('Chapter', async () => {
-      //   expect(await dao.find('Chapter', chapter1.id)).toMatchObject({ id: chapter1.id, name: 'Chapter1', book: healthBook.id });
-      //   expect(await dao.find('Chapter', chapter2.id)).toMatchObject({ id: chapter2.id, name: 'Chapter2', book: healthBook.id });
-      // });
+      test('Chapter', async () => {
+        expect((await dao.find('Chapter')).length).toBe(2);
+        expect(await dao.find('Chapter', { name: 'cHAPter1' })).toMatchObject([{ id: chapter1.id, name: 'Chapter1', book: healthBook.id }]);
+        expect(await dao.find('Chapter', { name: 'cHAPteR2' })).toMatchObject([{ id: chapter2.id, name: 'Chapter2', book: healthBook.id }]);
+        expect(await dao.find('Chapter', { name: 'cHAPteR3' })).toEqual([]);
+        expect(await dao.find('Chapter', { book: mobyDick.id })).toEqual([]);
+        // expect(await dao.find('Chapter', { book: 'some-odd-id' })).toEqual([]);
+        expect((await dao.find('Chapter', { book: healthBook.id })).sort(sorter)).toMatchObject([
+          { id: chapter1.id, name: 'Chapter1', book: healthBook.id },
+          { id: chapter2.id, name: 'Chapter2', book: healthBook.id },
+        ].sort(sorter));
+      });
 
-      // test('Page', async () => {
-      //   expect(await dao.find('Page', page1.id)).toMatchObject({ id: page1.id, number: 1, chapter: chapter1.id });
-      //   expect(await dao.find('Page', page2.id)).toMatchObject({ id: page2.id, number: 2, chapter: chapter1.id });
-      //   expect(await dao.find('Page', page3.id)).toMatchObject({ id: page3.id, number: 1, chapter: chapter2.id });
-      //   expect(await dao.find('Page', page4.id)).toMatchObject({ id: page4.id, number: 2, chapter: chapter2.id });
-      // });
+      test('Page', async () => {
+        expect((await dao.find('Page')).length).toBe(4);
+        expect((await dao.find('Page', { chapter: chapter1.id })).length).toBe(2);
+        expect((await dao.find('Page', { chapter: chapter2.id })).length).toBe(2);
+        expect((await dao.find('Page', { number: 1 })).sort(sorter)).toMatchObject([
+          { id: page1.id, chapter: chapter1.id },
+          { id: page3.id, chapter: chapter2.id },
+        ].sort(sorter));
+        expect((await dao.find('Page', { number: '2' })).sort(sorter)).toMatchObject([
+          { id: page2.id, chapter: chapter1.id },
+          { id: page4.id, chapter: chapter2.id },
+        ].sort(sorter));
+      });
+
+      test('Building', async () => {
+        expect((await dao.find('Building')).length).toBe(3);
+        expect((await dao.find('Building', { tenants: [richard.id] })).length).toBe(1);
+        expect((await dao.find('Building', { tenants: [christie.id] })).length).toBe(1);
+        expect((await dao.find('Building', { tenants: [richard.id, christie.id] })).length).toBe(1);
+        expect((await dao.find('Building', { tenants: [richard.id, christie.id], landlord: richard.id })).length).toBe(1);
+        expect((await dao.find('Building', { tenants: [richard.id, christie.id], landlord: christie.id })).length).toBe(0);
+      });
 
       // test('Building', async () => {
       //   expect(await dao.find('Building', bookBuilding.id)).toMatchObject({ id: bookBuilding.id, year: 1990, type: 'business' });
