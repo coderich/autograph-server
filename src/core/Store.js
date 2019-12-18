@@ -119,6 +119,13 @@ module.exports = class Store {
     });
   }
 
+  dropModel(model) {
+    const { parser } = this;
+    const store = this.storeMap[model];
+    const modelAlias = parser.getModelAlias(model);
+    return store.dao.dropModel(modelAlias);
+  }
+
   idValue(model, id) {
     const store = this.storeMap[model];
     return store.idValue(id);

@@ -37,6 +37,10 @@ class Cypher {
     return this.query(`MATCH (n:${model}) WHERE id(n) = { id } DELETE n`, { id }).then(() => doc);
   }
 
+  dropModel(model) {
+    return this.query(`MATCH (n:${model}) DELETE n`);
+  }
+
   createIndexes(model, indexes) {
     return Promise.all(indexes.map(({ type, fields }) => {
       if (fields.length > 1) return null;
@@ -85,7 +89,8 @@ class Cypher {
 
         if (typeof value === 'string') {
           try {
-            const val = JSON.parse(value); return val;
+            const val = JSON.parse(value);
+            return val;
           } catch (e) {
             return value;
           }

@@ -40,6 +40,10 @@ module.exports = class {
     return this.store.delete(model, id);
   }
 
+  dropModel(model) {
+    return this.store.dropModel(model);
+  }
+
   idValue(model, id) {
     return this.store.idValue(model, id);
   }

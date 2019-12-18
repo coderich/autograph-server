@@ -5,7 +5,7 @@
     "arrow-body-style": ["warn", "as-needed"],
     "arrow-parens": ["warn", "as-needed", { "requireForBlockBody": true }],
     "max-classes-per-file": 0,
-    "max-len": ["error", { "code": 200 }],
+    "max-len": 0,
     "no-param-reassign": 0,
     "no-plusplus": 0,
     "newline-per-chained-call": ["error", { "ignoreChainWithDepth": 10 }],

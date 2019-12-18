@@ -19,8 +19,13 @@ let mobyDick;
 let healthBook;
 let chapter1;
 let chapter2;
+let page1;
+let page2;
+let page3;
+let page4;
 let bookBuilding;
 let libraryBuilding;
+let apartmentBuilding;
 let bookstore1;
 let bookstore2;
 let library;
@@ -97,7 +102,7 @@ module.exports = (name, db = 'mongo') => {
 
       //
       await timeout(2000);
-      // await Promise.all(parser.getModelNames().map(model => store.find(model).then(docs => docs.map(doc => store.delete(model, doc.id)))));
+      await Promise.all(parser.getModelNames().map(model => store.dropModel(model)));
     });
 
     describe('Create', () => {
@@ -135,10 +140,10 @@ module.exports = (name, db = 'mongo') => {
       });
 
       test('Page', async () => {
-        const page1 = await dao.create('Page', { number: 1, chapter: chapter1.id });
-        const page2 = await dao.create('Page', { number: 2, chapter: chapter1.id });
-        const page3 = await dao.create('Page', { number: 1, chapter: chapter2.id });
-        const page4 = await dao.create('Page', { number: 2, chapter: chapter2.id });
+        page1 = await dao.create('Page', { number: 1, chapter: chapter1.id });
+        page2 = await dao.create('Page', { number: 2, chapter: chapter1.id });
+        page3 = await dao.create('Page', { number: 1, chapter: chapter2.id });
+        page4 = await dao.create('Page', { number: 2, chapter: chapter2.id });
         expect(page1.id).toBeDefined();
         expect(page2.id).toBeDefined();
         expect(page3.id).toBeDefined();
@@ -148,15 +153,13 @@ module.exports = (name, db = 'mongo') => {
       test('Building', async () => {
         bookBuilding = await dao.create('Building', { year: 1990, type: 'business' });
         libraryBuilding = await dao.create('Building', { type: 'business' });
-        const apartment = await dao.create('Building', { type: 'home', tenants: [richard.id, christie.id], landlord: richard.id });
-        const office = await dao.create('Building', { type: 'office' });
+        apartmentBuilding = await dao.create('Building', { type: 'home', tenants: [richard.id, christie.id], landlord: richard.id });
         expect(bookBuilding.id).toBeDefined();
         expect(bookBuilding.year).toEqual(1990);
         expect(libraryBuilding.id).toBeDefined();
-        expect(apartment.id).toBeDefined();
-        expect(apartment.landlord).toEqual(richard.id);
-        expect(apartment.tenants).toEqual([richard.id, christie.id]);
-        expect(office.id).toBeDefined();
+        expect(apartmentBuilding.id).toBeDefined();
+        expect(apartmentBuilding.landlord).toEqual(richard.id);
+        expect(apartmentBuilding.tenants).toEqual([richard.id, christie.id]);
       });
 
       test('BookStore', async () => {
@@ -175,6 +178,45 @@ module.exports = (name, db = 'mongo') => {
         expect(library.id).toBeDefined();
         expect(library.books.length).toEqual(3);
         expect(library.building.type).toEqual('business');
+      });
+    });
+
+    describe('Get', () => {
+      test('Person', async () => {
+        expect(await dao.get('Person', richard.id)).toMatchObject({ id: richard.id, name: richard.name });
+        expect(await dao.get('Person', christie.id)).toMatchObject({ id: christie.id, name: christie.name, friends: [richard.id] });
+      });
+
+      test('Book', async () => {
+        expect(await dao.get('Book', mobyDick.id)).toMatchObject({ id: mobyDick.id, name: 'Moby Dick', author: richard.id });
+        expect(await dao.get('Book', healthBook.id)).toMatchObject({ id: healthBook.id, name: 'Health And Wellness', author: christie.id });
+      });
+
+      test('Chapter', async () => {
+        expect(await dao.get('Chapter', chapter1.id)).toMatchObject({ id: chapter1.id, name: 'Chapter1', book: healthBook.id });
+        expect(await dao.get('Chapter', chapter2.id)).toMatchObject({ id: chapter2.id, name: 'Chapter2', book: healthBook.id });
+      });
+
+      test('Page', async () => {
+        expect(await dao.get('Page', page1.id)).toMatchObject({ id: page1.id, number: 1, chapter: chapter1.id });
+        expect(await dao.get('Page', page2.id)).toMatchObject({ id: page2.id, number: 2, chapter: chapter1.id });
+        expect(await dao.get('Page', page3.id)).toMatchObject({ id: page3.id, number: 1, chapter: chapter2.id });
+        expect(await dao.get('Page', page4.id)).toMatchObject({ id: page4.id, number: 2, chapter: chapter2.id });
+      });
+
+      test('Building', async () => {
+        expect(await dao.get('Building', bookBuilding.id)).toMatchObject({ id: bookBuilding.id, year: 1990, type: 'business' });
+        expect(await dao.get('Building', libraryBuilding.id)).toMatchObject({ id: libraryBuilding.id, type: 'business' });
+        expect(await dao.get('Building', apartmentBuilding.id)).toMatchObject({ id: apartmentBuilding.id, type: 'home', tenants: [richard.id, christie.id], landlord: richard.id });
+      });
+
+      test('BookStore', async () => {
+        expect(await dao.get('BookStore', bookstore1.id)).toMatchObject({ id: bookstore1.id, name: 'Best Books Ever', books: [mobyDick.id, mobyDick.id, healthBook.id], building: expect.objectContaining(bookBuilding) });
+        expect(await dao.get('BookStore', bookstore2.id)).toMatchObject({ id: bookstore2.id, name: 'New Books', books: [mobyDick.id], building: expect.objectContaining(bookBuilding) });
+      });
+
+      test('Library', async () => {
+        expect(await dao.get('Library', library.id)).toMatchObject({ id: library.id, name: 'Public Library', books: [mobyDick.id, healthBook.id, healthBook.id], building: expect.objectContaining(libraryBuilding) });
       });
     });
 

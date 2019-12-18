@@ -45,6 +45,10 @@ module.exports = class MongoStore {
     return this.query(model, 'deleteOne', { _id: id }).then(() => doc);
   }
 
+  dropModel(model) {
+    return this.query(model, 'deleteMany');
+  }
+
   createIndexes(model, indexes) {
     return Promise.all(indexes.map(({ name, type, fields }) => {
       const $fields = fields.reduce((prev, field) => Object.assign(prev, { [field]: 1 }), {});
