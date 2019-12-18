@@ -85,6 +85,12 @@ exports.normalizeModelData = (parser, store, model, data) => {
       prev[key] = store.idValue(ref, value);
     } else {
       if (field) {
+        switch (Parser.getFieldSimpleType(field)) {
+          case 'String': value = `${value}`; break;
+          case 'Number': case 'Float': value = Number(value); break;
+          case 'Boolean': value = Boolean(value); break;
+          default: break;
+        }
         switch (field.case) {
           case 'lower': value = value.toLowerCase(); break;
           case 'title': value = Case.capitalCase(value.toLowerCase()); break;

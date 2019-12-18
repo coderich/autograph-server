@@ -52,6 +52,7 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
+    normalizeModelData(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'find', model, store: this, parser, where }, async () => {
       return store.dao.find(modelAlias, where);
@@ -62,8 +63,7 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-
-    // console.log(model, parser.getModelOnDeletes(model));
+    normalizeModelData(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'search', model, store: this, parser, where }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
@@ -75,6 +75,7 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
+    normalizeModelData(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'count', model, store: this, parser, where }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);

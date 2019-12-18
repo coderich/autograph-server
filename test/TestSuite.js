@@ -105,6 +105,7 @@ module.exports = (name, db = 'mongo') => {
       await Promise.all(parser.getModelNames().map(model => store.dropModel(model)));
     });
 
+
     describe('Create', () => {
       test('Person', async () => {
         richard = await dao.create('Person', { name: 'Richard' });
@@ -123,7 +124,7 @@ module.exports = (name, db = 'mongo') => {
         expect(mobyDick.price).toBe(9.99);
         expect(mobyDick.author).toBe(richard.id);
 
-        healthBook = await dao.create('Book', { name: 'Health and Wellness', price: 29.99, author: christie.id });
+        healthBook = await dao.create('Book', { name: 'Health and Wellness', price: '29.99', author: christie.id });
         expect(healthBook.id).toBeDefined();
         expect(healthBook.name).toEqual('Health And Wellness');
         expect(healthBook.price).toEqual(29.99);
@@ -181,6 +182,7 @@ module.exports = (name, db = 'mongo') => {
       });
     });
 
+
     describe('Get', () => {
       test('Person', async () => {
         expect(await dao.get('Person', richard.id)).toMatchObject({ id: richard.id, name: richard.name });
@@ -218,6 +220,50 @@ module.exports = (name, db = 'mongo') => {
       test('Library', async () => {
         expect(await dao.get('Library', library.id)).toMatchObject({ id: library.id, name: 'Public Library', books: [mobyDick.id, healthBook.id, healthBook.id], building: expect.objectContaining(libraryBuilding) });
       });
+    });
+
+
+    describe('Find', () => {
+      test('Person', async () => {
+        expect((await dao.find('Person')).length).toBe(2);
+        expect(await dao.find('Person', { name: 'richard' })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dao.find('Person', { name: 'Christie' })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+      });
+
+      test('Book', async () => {
+        expect((await dao.find('Book')).length).toBe(2);
+        expect(await dao.find('Book', { author: richard.id })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dao.find('Book', { price: 9.99 })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dao.find('Book', { price: '9.99' })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dao.find('Book', { author: christie.id })).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
+      });
+
+      // test('Chapter', async () => {
+      //   expect(await dao.find('Chapter', chapter1.id)).toMatchObject({ id: chapter1.id, name: 'Chapter1', book: healthBook.id });
+      //   expect(await dao.find('Chapter', chapter2.id)).toMatchObject({ id: chapter2.id, name: 'Chapter2', book: healthBook.id });
+      // });
+
+      // test('Page', async () => {
+      //   expect(await dao.find('Page', page1.id)).toMatchObject({ id: page1.id, number: 1, chapter: chapter1.id });
+      //   expect(await dao.find('Page', page2.id)).toMatchObject({ id: page2.id, number: 2, chapter: chapter1.id });
+      //   expect(await dao.find('Page', page3.id)).toMatchObject({ id: page3.id, number: 1, chapter: chapter2.id });
+      //   expect(await dao.find('Page', page4.id)).toMatchObject({ id: page4.id, number: 2, chapter: chapter2.id });
+      // });
+
+      // test('Building', async () => {
+      //   expect(await dao.find('Building', bookBuilding.id)).toMatchObject({ id: bookBuilding.id, year: 1990, type: 'business' });
+      //   expect(await dao.find('Building', libraryBuilding.id)).toMatchObject({ id: libraryBuilding.id, type: 'business' });
+      //   expect(await dao.find('Building', apartmentBuilding.id)).toMatchObject({ id: apartmentBuilding.id, type: 'home', tenants: [richard.id, christie.id], landlord: richard.id });
+      // });
+
+      // test('BookStore', async () => {
+      //   expect(await dao.find('BookStore', bookstore1.id)).toMatchObject({ id: bookstore1.id, name: 'Best Books Ever', books: [mobyDick.id, mobyDick.id, healthBook.id], building: expect.objectContaining(bookBuilding) });
+      //   expect(await dao.find('BookStore', bookstore2.id)).toMatchObject({ id: bookstore2.id, name: 'New Books', books: [mobyDick.id], building: expect.objectContaining(bookBuilding) });
+      // });
+
+      // test('Library', async () => {
+      //   expect(await dao.find('Library', library.id)).toMatchObject({ id: library.id, name: 'Public Library', books: [mobyDick.id, healthBook.id, healthBook.id], building: expect.objectContaining(libraryBuilding) });
+      // });
     });
 
 
