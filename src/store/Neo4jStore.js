@@ -39,6 +39,8 @@ class Cypher {
 
   createIndexes(model, indexes) {
     return Promise.all(indexes.map(({ type, fields }) => {
+      if (fields.length > 1) return null;
+
       switch (type) {
         case 'unique': return this.query(`CREATE CONSTRAINT on (n:${model}) ASSERT (${fields.map(f => `n.${f}`).join(',')}) IS UNIQUE`);
         default: return null;
@@ -64,11 +66,21 @@ class Cypher {
     return Object.values(obj).join(' AND ');
   }
 
-  static proxyData(data) {
+  static serialize(data) {
     return proxyDeep(data, {
       get(target, prop, rec) {
         const value = Reflect.get(target, prop, rec);
+        if (typeof value === 'function') return value.bind(target);
+        if (typeof value === 'object') return JSON.stringify(value);
+        return value;
+      },
+    }).toObject();
+  }
 
+  static deserialize(data) {
+    return proxyDeep(data, {
+      get(target, prop, rec) {
+        const value = Reflect.get(target, prop, rec);
         if (typeof value === 'function') return value.bind(target);
 
         if (typeof value === 'string') {
@@ -91,8 +103,8 @@ exports.Neo4jRest = class Neo4jRest extends Cypher {
     this.cypher = Axios.get(`${uri}/db/data/`).then(({ data }) => data.cypher);
   }
 
-  query(query, params) {
-    return this.cypher.then(url => Axios.post(url, { query, params }).then(({ data }) => Neo4jRest.toObject(data.data || [])));
+  query(query, params = {}) {
+    return this.cypher.then(url => Axios.post(url, { query, params: Neo4jRest.serialize(params) }).then(({ data }) => Neo4jRest.toObject(data.data || [])));
   }
 
   static toObject(records) {
@@ -100,7 +112,7 @@ exports.Neo4jRest = class Neo4jRest extends Cypher {
       if (isScalarValue(result)) return result;
 
       const { metadata, data } = result;
-      return Object.defineProperty(Neo4jRest.proxyData(data), 'id', {
+      return Object.defineProperty(Neo4jRest.deserialize(data), 'id', {
         get: () => metadata.id,
       });
     });
@@ -113,8 +125,8 @@ exports.Neo4jDriver = class Neo4jDriver extends Cypher {
     this.driver = Neo4j.driver(uri, null, { disableLosslessIntegers: true });
   }
 
-  query(query, params) {
-    return this.driver.session().run(query, params).then(Neo4jDriver.toObject);
+  query(query, params = {}) {
+    return this.driver.session().run(query, Neo4jDriver.serialize(params)).then(Neo4jDriver.toObject);
   }
 
   static toObject({ records }) {
@@ -123,7 +135,7 @@ exports.Neo4jDriver = class Neo4jDriver extends Cypher {
       if (isScalarValue(node)) return node;
 
       const doc = node.properties;
-      return Object.defineProperty(Neo4jDriver.proxyData(doc), 'id', {
+      return Object.defineProperty(Neo4jDriver.deserialize(doc), 'id', {
         get: () => node.identity,
       });
     });

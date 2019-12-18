@@ -1,3 +1,4 @@
+const RedisStore = require('../store/RedisStore');
 const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
 const { mergeDeep } = require('../service/app.service');
@@ -5,20 +6,21 @@ const { createSystemEvent } = require('../service/event.service');
 const { ensureModel, validateModelData, normalizeModelData, resolveModelWhereClause, resolveReferentialIntegrity } = require('../service/data.service');
 
 module.exports = class Store {
-  constructor(parser, stores) {
+  constructor(parser, stores, storeArgs = {}) {
     this.parser = parser;
 
     const availableStores = {
       mongo: MongoStore,
       neo4j: Neo4jDriver,
       neo4jRest: Neo4jRest,
+      redis: RedisStore,
     };
 
     // Create store instances
     const storesInstances = Object.entries(stores).reduce((prev, [key, { type, uri, options }]) => {
       return Object.assign(prev, {
         [key]: {
-          dao: new availableStores[type](uri, options),
+          dao: new availableStores[type](uri, options, storeArgs[type]),
           idValue: availableStores[type].idValue,
           idField: type === 'mongo' ? '_id' : 'id',
         },

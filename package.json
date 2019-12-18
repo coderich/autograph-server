@@ -36,7 +36,9 @@
     "graphql-tag": "^2.10.1",
     "jest": "^24.9.0",
     "jest-junit": "^10.0.0",
-    "mongodb-memory-server": "^6.0.2"
+    "mongodb-memory-server": "^6.0.2",
+    "neodb": "^3.0.0",
+    "redis-mock": "^0.47.0"
   },
   "jest": {
     "testEnvironment": "node",

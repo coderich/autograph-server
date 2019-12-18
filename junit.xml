@@ -1,55 +1,71 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="@coderich/autograph" tests="22" failures="0" time="5.6">
-  <testsuite name="Store" errors="0" failures="0" skipped="0" timestamp="2019-12-17T21:41:08" time="2.112" tests="7">
-    <testcase classname="Store PersonSchema" name="Store PersonSchema" time="0.092">
+<testsuites name="@coderich/autograph" tests="29" failures="0" time="11.594">
+  <testsuite name="StoreNeo4j-neo4jRest" errors="0" failures="0" skipped="0" timestamp="2019-12-18T03:17:13" time="4.034" tests="7">
+    <testcase classname="StoreNeo4j-neo4jRest Create Person" name="StoreNeo4j-neo4jRest Create Person" time="0.025">
     </testcase>
-    <testcase classname="Store BookSchema" name="Store BookSchema" time="0.016">
+    <testcase classname="StoreNeo4j-neo4jRest Create Book" name="StoreNeo4j-neo4jRest Create Book" time="0.024">
     </testcase>
-    <testcase classname="Store ChapterSchema" name="Store ChapterSchema" time="0.012">
+    <testcase classname="StoreNeo4j-neo4jRest Create Chapter" name="StoreNeo4j-neo4jRest Create Chapter" time="0.019">
     </testcase>
-    <testcase classname="Store PageSchema" name="Store PageSchema" time="0.018">
+    <testcase classname="StoreNeo4j-neo4jRest Create Page" name="StoreNeo4j-neo4jRest Create Page" time="0.038">
     </testcase>
-    <testcase classname="Store BuildingSchema" name="Store BuildingSchema" time="0.015">
+    <testcase classname="StoreNeo4j-neo4jRest Create Building" name="StoreNeo4j-neo4jRest Create Building" time="0.029">
     </testcase>
-    <testcase classname="Store BookStoreSchema" name="Store BookStoreSchema" time="0.015">
+    <testcase classname="StoreNeo4j-neo4jRest Create BookStore" name="StoreNeo4j-neo4jRest Create BookStore" time="0.025">
     </testcase>
-    <testcase classname="Store LibrarySchema" name="Store LibrarySchema" time="0.01">
-    </testcase>
-  </testsuite>
-  <testsuite name="EventService" errors="0" failures="0" skipped="0" timestamp="2019-12-17T21:41:10" time="1.082" tests="1">
-    <testcase classname="EventService createSystemEvent" name="EventService createSystemEvent" time="1.012">
+    <testcase classname="StoreNeo4j-neo4jRest Create Library" name="StoreNeo4j-neo4jRest Create Library" time="0.014">
     </testcase>
   </testsuite>
-  <testsuite name="EventEmitter" errors="0" failures="0" skipped="0" timestamp="2019-12-17T21:41:11" time="1.094" tests="1">
-    <testcase classname="EventEmitter Sequential Order" name="EventEmitter Sequential Order" time="1.01">
+  <testsuite name="DataLoader-undefined" errors="0" failures="0" skipped="0" timestamp="2019-12-18T03:17:17" time="2.531" tests="7">
+    <testcase classname="DataLoader-undefined Create Person" name="DataLoader-undefined Create Person" time="0.016">
+    </testcase>
+    <testcase classname="DataLoader-undefined Create Book" name="DataLoader-undefined Create Book" time="0.012">
+    </testcase>
+    <testcase classname="DataLoader-undefined Create Chapter" name="DataLoader-undefined Create Chapter" time="0.01">
+    </testcase>
+    <testcase classname="DataLoader-undefined Create Page" name="DataLoader-undefined Create Page" time="0.015">
+    </testcase>
+    <testcase classname="DataLoader-undefined Create Building" name="DataLoader-undefined Create Building" time="0.019">
+    </testcase>
+    <testcase classname="DataLoader-undefined Create BookStore" name="DataLoader-undefined Create BookStore" time="0.011">
+    </testcase>
+    <testcase classname="DataLoader-undefined Create Library" name="DataLoader-undefined Create Library" time="0.007">
     </testcase>
   </testsuite>
-  <testsuite name="DataLoader" errors="0" failures="0" skipped="0" timestamp="2019-12-17T21:41:12" time="0.509" tests="7">
-    <testcase classname="DataLoader PersonSchema" name="DataLoader PersonSchema" time="0.073">
+  <testsuite name="StoreMongo-mongo" errors="0" failures="0" skipped="0" timestamp="2019-12-18T03:17:20" time="2.444" tests="7">
+    <testcase classname="StoreMongo-mongo Create Person" name="StoreMongo-mongo Create Person" time="0.011">
     </testcase>
-    <testcase classname="DataLoader BookSchema" name="DataLoader BookSchema" time="0.012">
+    <testcase classname="StoreMongo-mongo Create Book" name="StoreMongo-mongo Create Book" time="0.009">
     </testcase>
-    <testcase classname="DataLoader ChapterSchema" name="DataLoader ChapterSchema" time="0.013">
+    <testcase classname="StoreMongo-mongo Create Chapter" name="StoreMongo-mongo Create Chapter" time="0.011">
     </testcase>
-    <testcase classname="DataLoader PageSchema" name="DataLoader PageSchema" time="0.022">
+    <testcase classname="StoreMongo-mongo Create Page" name="StoreMongo-mongo Create Page" time="0.014">
     </testcase>
-    <testcase classname="DataLoader BuildingSchema" name="DataLoader BuildingSchema" time="0.013">
+    <testcase classname="StoreMongo-mongo Create Building" name="StoreMongo-mongo Create Building" time="0.012">
     </testcase>
-    <testcase classname="DataLoader BookStoreSchema" name="DataLoader BookStoreSchema" time="0.026">
+    <testcase classname="StoreMongo-mongo Create BookStore" name="StoreMongo-mongo Create BookStore" time="0.01">
     </testcase>
-    <testcase classname="DataLoader LibrarySchema" name="DataLoader LibrarySchema" time="0.007">
+    <testcase classname="StoreMongo-mongo Create Library" name="StoreMongo-mongo Create Library" time="0.006">
     </testcase>
   </testsuite>
-  <testsuite name="AppService" errors="0" failures="0" skipped="0" timestamp="2019-12-17T21:41:12" time="0.076" tests="6">
+  <testsuite name="EventEmitter" errors="0" failures="0" skipped="0" timestamp="2019-12-18T03:17:22" time="1.071" tests="1">
+    <testcase classname="EventEmitter Sequential Order" name="EventEmitter Sequential Order" time="1.008">
+    </testcase>
+  </testsuite>
+  <testsuite name="EventService" errors="0" failures="0" skipped="0" timestamp="2019-12-18T03:17:23" time="1.097" tests="1">
+    <testcase classname="EventService createSystemEvent" name="EventService createSystemEvent" time="1.007">
+    </testcase>
+  </testsuite>
+  <testsuite name="AppService" errors="0" failures="0" skipped="0" timestamp="2019-12-18T03:17:24" time="0.092" tests="6">
     <testcase classname="AppService MicroMatch" name="AppService MicroMatch" time="0.002">
     </testcase>
     <testcase classname="AppService isPlainObject" name="AppService isPlainObject" time="0.001">
     </testcase>
-    <testcase classname="AppService mergeDeep" name="AppService mergeDeep" time="0.004">
+    <testcase classname="AppService mergeDeep" name="AppService mergeDeep" time="0.002">
     </testcase>
-    <testcase classname="AppService hashObject" name="AppService hashObject" time="0.001">
+    <testcase classname="AppService hashObject" name="AppService hashObject" time="0.003">
     </testcase>
-    <testcase classname="AppService uniq" name="AppService uniq" time="0.001">
+    <testcase classname="AppService uniq" name="AppService uniq" time="0">
     </testcase>
     <testcase classname="AppService proxyDeep" name="AppService proxyDeep" time="0.002">
     </testcase>
