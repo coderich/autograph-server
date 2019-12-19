@@ -1,40 +1,54 @@
 const Redis = require('redis');
-const { promisify } = require('util');
-const { generateId } = require('../service/app.service');
+const { generateId, proxyDeep } = require('../service/app.service');
+
+const toPromise = (caller, fn, ...args) => {
+  return new Promise((resolve, reject) => {
+    caller[fn](...args, (err, result) => {
+      if (err) return reject(err);
+
+      try {
+        const results = Array.isArray(result) ? result : [result];
+        const parsed = results.map(r => JSON.parse(r));
+        return resolve(Array.isArray(result) ? parsed : parsed[0]);
+      } catch (e) {
+        return resolve(result);
+      }
+    });
+  });
+};
 
 module.exports = class {
   constructor(uri, options, mockClient) {
-    const client = mockClient || Redis.createClient();
-    this.getter = promisify(client.get);
-    this.setter = promisify(client.set);
+    this.client = mockClient || Redis.createClient();
     this.indexes = {};
   }
 
   get(model, id) {
-    return this.getter(`${model}.${id}`).then(doc => JSON.parse(doc));
+    return toPromise(this.client, 'get', `${model}.${id}`);
+  }
+
+  find(model, where) {
+    return toPromise(this.client, 'smembers', model).then(ids => Promise.all(ids.map(id => this.get(model, id))));
   }
 
   create(model, data) {
     const id = generateId();
     const doc = Object.assign(data, { id });
     const serialized = JSON.stringify(doc);
-    return this.setter(`${model}.${id}`, serialized).then(() => doc);
+    return toPromise(this.client, 'set', `${model}.${id}`, serialized).then(() => toPromise(this.client, 'sadd', model, id)).then(() => doc);
   }
 
   replace(model, id, data, doc) {
-    return this.setter(`${model}.${id}`, JSON.stringify(doc)).then(() => doc);
+    return toPromise(this.client, 'set', `${model}.${id}`, JSON.stringify(doc)).then(() => doc);
   }
 
   createIndexes(model, indexes) {
     this.indexes[model] = indexes;
   }
 
-  // enforceIndexes(model) {
-  //   const indexes = this.indexes[model] || [];
-
-  //   return Promise.all(indexes.map(({ name, type, fields }) => {
-  //   }));
-  // }
+  dropModel(model) {
+    return toPromise(this.client, 'smembers', model).then(id => toPromise(this.client, 'del', `${model}.${id}`)).then(() => toPromise(this.client, 'del', model));
+  }
 
   static idValue(id) {
     return id;

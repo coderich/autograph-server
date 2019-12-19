@@ -49,9 +49,9 @@ module.exports = (name, db = 'mongo') => {
       // Start in-memory db
       switch (db) {
         case 'redis': {
-          const redisClient = Redis.createClient();
+          // const redisClient = Redis.createClient();
           stores.default.type = 'redis';
-          storeArgs.redis = redisClient;
+          // storeArgs.redis = redisClient;
           break;
         }
         case 'neo4j': {

@@ -20,12 +20,12 @@ exports.promiseChain = (promises) => {
   }, Promise.resolve([]));
 };
 
-exports.proxyDeep = (obj, handler, proxyMap = new WeakMap()) => {
+exports.proxyDeep = (obj, handler, proxyMap = new WeakMap(), path = '') => {
   if (proxyMap.has(obj)) return proxyMap.get(obj);
 
   const proxy = new Proxy(Object.entries(obj).reduce((prev, [key, value]) => {
-    if (Array.isArray(value)) return Object.assign(prev, { [key]: value.map(v => (exports.isPlainObject(v) ? exports.proxyDeep(v, handler, proxyMap) : v)) });
-    if (exports.isPlainObject(value)) return Object.assign(prev, { [key]: exports.proxyDeep(value, handler, proxyMap) });
+    if (Array.isArray(value)) return Object.assign(prev, { [key]: value.map(v => (exports.isPlainObject(v) ? exports.proxyDeep(v, handler, proxyMap, path) : v)) });
+    if (exports.isPlainObject(value)) return Object.assign(prev, { [key]: exports.proxyDeep(value, handler, proxyMap, path) });
     return Object.assign(prev, { [key]: value });
   }, {}), handler);
 

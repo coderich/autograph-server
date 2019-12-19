@@ -62,7 +62,6 @@ class Cypher {
         const value = Reflect.get(target, prop, rec);
         if (typeof value === 'function') return value.bind(target);
         if (Array.isArray(value)) return `any (x IN n.${prop} WHERE x IN [${value.join(',')}])`;
-        // if (Array.isArray(value)) return `n.${prop} IN [${value.join(',')}]`;
         if (typeof value === 'string') return `n.${prop} =~ '(?i)${MicroMatch.makeRe(value, { unescape: true, regex: true, maxLength: 100 }).toString().slice(1, -1).replace(/\\/g, '\\\\')}'`;
         return `n.${prop} = ${value}`;
       },
