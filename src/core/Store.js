@@ -66,6 +66,8 @@ module.exports = class Store {
     const modelAlias = parser.getModelAlias(model);
     normalizeModelData(parser, this, model, where);
 
+    // console.log(where);
+
     return createSystemEvent('Query', { method: 'count', model, store: this, parser, where }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
       return store.dao.count(modelAlias, resolvedWhere);

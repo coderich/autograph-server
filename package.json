@@ -45,14 +45,14 @@
     "verbose": true,
     "collectCoverage": true,
     "collectCoverageFrom": [
-      "src/*/**/*.js"
+      "./src/*/**/*.js"
     ],
     "reporters": [
       "default",
       [
         "jest-junit",
         {
-          "suiteName": "@coderich/autograph",
+          "suiteName": "autograph",
           "output": "<rootDir>/coverage/test-reports/junit/junit.xml"
         }
       ]

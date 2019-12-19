@@ -64,7 +64,7 @@ exports.normalizeModelData = (parser, store, model, data) => {
   const fields = parser.getModelFields(model);
 
   return Object.entries(data).reduce((prev, [key, value]) => {
-    const field = fields[key] = {};
+    const field = fields[key] || {};
     const ref = Parser.getFieldDataRef(field);
 
     if (isPlainObject(value) && ref) {
@@ -84,19 +84,19 @@ exports.normalizeModelData = (parser, store, model, data) => {
     } else if (ref) {
       prev[key] = store.idValue(ref, value);
     } else {
-      if (field) {
-        switch (Parser.getFieldSimpleType(field)) {
-          case 'String': value = `${value}`; break;
-          case 'Number': case 'Float': value = Number(value); break;
-          case 'Boolean': value = Boolean(value); break;
-          default: break;
-        }
-        switch (field.case) {
-          case 'lower': value = value.toLowerCase(); break;
-          case 'title': value = Case.capitalCase(value.toLowerCase(), { stripRegexp: null }); break;
-          default: break;
-        }
+      switch (Parser.getFieldSimpleType(field)) {
+        case 'String': value = `${value}`; break;
+        case 'Number': case 'Float': value = Number(value); break;
+        case 'Boolean': value = Boolean(value); break;
+        default: break;
       }
+
+      switch (field.case) {
+        case 'lower': value = value.toLowerCase(); break;
+        case 'title': value = Case.capitalCase(value.toLowerCase(), { stripRegexp: new RegExp('[^A-Z0-9\\[\\]?*{}.!]', 'gi') }); break;
+        default: break;
+      }
+
       prev[key] = value;
     }
 

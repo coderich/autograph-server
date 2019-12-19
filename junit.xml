@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="@coderich/autograph" tests="120" failures="0" time="14.855">
-  <testsuite name="StoreNeo4j-neo4j" errors="0" failures="0" skipped="0" timestamp="2019-12-19T15:09:51" time="4.208" tests="28">
-    <testcase classname="StoreNeo4j-neo4j Create Person" name="StoreNeo4j-neo4j Create Person" time="0.017">
+<testsuites name="autograph" tests="120" failures="0" time="15.841">
+  <testsuite name="StoreNeo4j-neo4j" errors="0" failures="0" skipped="0" timestamp="2019-12-19T17:00:53" time="4.934" tests="28">
+    <testcase classname="StoreNeo4j-neo4j Create Person" name="StoreNeo4j-neo4j Create Person" time="0.018">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Create Book" name="StoreNeo4j-neo4j Create Book" time="0.013">
+    <testcase classname="StoreNeo4j-neo4j Create Book" name="StoreNeo4j-neo4j Create Book" time="0.011">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Create Chapter" name="StoreNeo4j-neo4j Create Chapter" time="0.008">
+    <testcase classname="StoreNeo4j-neo4j Create Chapter" name="StoreNeo4j-neo4j Create Chapter" time="0.009">
     </testcase>
     <testcase classname="StoreNeo4j-neo4j Create Page" name="StoreNeo4j-neo4j Create Page" time="0.014">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Create Building" name="StoreNeo4j-neo4j Create Building" time="0.011">
+    <testcase classname="StoreNeo4j-neo4j Create Building" name="StoreNeo4j-neo4j Create Building" time="0.013">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Create BookStore" name="StoreNeo4j-neo4j Create BookStore" time="0.011">
+    <testcase classname="StoreNeo4j-neo4j Create BookStore" name="StoreNeo4j-neo4j Create BookStore" time="0.014">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Create Library" name="StoreNeo4j-neo4j Create Library" time="0.007">
+    <testcase classname="StoreNeo4j-neo4j Create Library" name="StoreNeo4j-neo4j Create Library" time="0.008">
     </testcase>
     <testcase classname="StoreNeo4j-neo4j Get Person" name="StoreNeo4j-neo4j Get Person" time="0.004">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Get Book" name="StoreNeo4j-neo4j Get Book" time="0.006">
+    <testcase classname="StoreNeo4j-neo4j Get Book" name="StoreNeo4j-neo4j Get Book" time="0.004">
     </testcase>
     <testcase classname="StoreNeo4j-neo4j Get Chapter" name="StoreNeo4j-neo4j Get Chapter" time="0.003">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Get Page" name="StoreNeo4j-neo4j Get Page" time="0.006">
+    <testcase classname="StoreNeo4j-neo4j Get Page" name="StoreNeo4j-neo4j Get Page" time="0.005">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Get Building" name="StoreNeo4j-neo4j Get Building" time="0.004">
+    <testcase classname="StoreNeo4j-neo4j Get Building" name="StoreNeo4j-neo4j Get Building" time="0.005">
     </testcase>
     <testcase classname="StoreNeo4j-neo4j Get BookStore" name="StoreNeo4j-neo4j Get BookStore" time="0.004">
     </testcase>
@@ -31,103 +31,103 @@
     </testcase>
     <testcase classname="StoreNeo4j-neo4j Find Person" name="StoreNeo4j-neo4j Find Person" time="0.008">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Find Book" name="StoreNeo4j-neo4j Find Book" time="0.008">
+    <testcase classname="StoreNeo4j-neo4j Find Book" name="StoreNeo4j-neo4j Find Book" time="0.01">
     </testcase>
     <testcase classname="StoreNeo4j-neo4j Find Chapter" name="StoreNeo4j-neo4j Find Chapter" time="0.013">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Find Page" name="StoreNeo4j-neo4j Find Page" time="0.014">
+    <testcase classname="StoreNeo4j-neo4j Find Page" name="StoreNeo4j-neo4j Find Page" time="0.011">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Find Building" name="StoreNeo4j-neo4j Find Building" time="0.021">
+    <testcase classname="StoreNeo4j-neo4j Find Building" name="StoreNeo4j-neo4j Find Building" time="0.017">
     </testcase>
     <testcase classname="StoreNeo4j-neo4j Find BookStore" name="StoreNeo4j-neo4j Find BookStore" time="0.01">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Find Library" name="StoreNeo4j-neo4j Find Library" time="0.002">
+    <testcase classname="StoreNeo4j-neo4j Find Library" name="StoreNeo4j-neo4j Find Library" time="0.001">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Count (find) Person" name="StoreNeo4j-neo4j Count (find) Person" time="0.006">
+    <testcase classname="StoreNeo4j-neo4j Count (find) Person" name="StoreNeo4j-neo4j Count (find) Person" time="0.005">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Count (find) Book" name="StoreNeo4j-neo4j Count (find) Book" time="0.013">
+    <testcase classname="StoreNeo4j-neo4j Count (find) Book" name="StoreNeo4j-neo4j Count (find) Book" time="0.011">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Count (find) Chapter" name="StoreNeo4j-neo4j Count (find) Chapter" time="0.015">
+    <testcase classname="StoreNeo4j-neo4j Count (find) Chapter" name="StoreNeo4j-neo4j Count (find) Chapter" time="0.013">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Count (find) Page" name="StoreNeo4j-neo4j Count (find) Page" time="0.011">
+    <testcase classname="StoreNeo4j-neo4j Count (find) Page" name="StoreNeo4j-neo4j Count (find) Page" time="0.013">
     </testcase>
     <testcase classname="StoreNeo4j-neo4j Count (find) Building" name="StoreNeo4j-neo4j Count (find) Building" time="0.023">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4j Count (find) BookStore" name="StoreNeo4j-neo4j Count (find) BookStore" time="0.009">
+    <testcase classname="StoreNeo4j-neo4j Count (find) BookStore" name="StoreNeo4j-neo4j Count (find) BookStore" time="0.01">
     </testcase>
     <testcase classname="StoreNeo4j-neo4j Count (find) Library" name="StoreNeo4j-neo4j Count (find) Library" time="0.002">
     </testcase>
   </testsuite>
-  <testsuite name="StoreNeo4j-neo4jRest" errors="0" failures="0" skipped="0" timestamp="2019-12-19T15:09:55" time="2.799" tests="28">
-    <testcase classname="StoreNeo4j-neo4jRest Create Person" name="StoreNeo4j-neo4jRest Create Person" time="0.021">
+  <testsuite name="StoreNeo4j-neo4jRest" errors="0" failures="0" skipped="0" timestamp="2019-12-19T17:00:58" time="2.843" tests="28">
+    <testcase classname="StoreNeo4j-neo4jRest Create Person" name="StoreNeo4j-neo4jRest Create Person" time="0.019">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Create Book" name="StoreNeo4j-neo4jRest Create Book" time="0.017">
+    <testcase classname="StoreNeo4j-neo4jRest Create Book" name="StoreNeo4j-neo4jRest Create Book" time="0.018">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Create Chapter" name="StoreNeo4j-neo4jRest Create Chapter" time="0.015">
+    <testcase classname="StoreNeo4j-neo4jRest Create Chapter" name="StoreNeo4j-neo4jRest Create Chapter" time="0.017">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Create Page" name="StoreNeo4j-neo4jRest Create Page" time="0.031">
+    <testcase classname="StoreNeo4j-neo4jRest Create Page" name="StoreNeo4j-neo4jRest Create Page" time="0.032">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Create Building" name="StoreNeo4j-neo4jRest Create Building" time="0.02">
+    <testcase classname="StoreNeo4j-neo4jRest Create Building" name="StoreNeo4j-neo4jRest Create Building" time="0.026">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Create BookStore" name="StoreNeo4j-neo4jRest Create BookStore" time="0.019">
+    <testcase classname="StoreNeo4j-neo4jRest Create BookStore" name="StoreNeo4j-neo4jRest Create BookStore" time="0.02">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Create Library" name="StoreNeo4j-neo4jRest Create Library" time="0.012">
+    <testcase classname="StoreNeo4j-neo4jRest Create Library" name="StoreNeo4j-neo4jRest Create Library" time="0.014">
     </testcase>
     <testcase classname="StoreNeo4j-neo4jRest Get Person" name="StoreNeo4j-neo4jRest Get Person" time="0.007">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Get Book" name="StoreNeo4j-neo4jRest Get Book" time="0.006">
+    <testcase classname="StoreNeo4j-neo4jRest Get Book" name="StoreNeo4j-neo4jRest Get Book" time="0.008">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Get Chapter" name="StoreNeo4j-neo4jRest Get Chapter" time="0.006">
+    <testcase classname="StoreNeo4j-neo4jRest Get Chapter" name="StoreNeo4j-neo4jRest Get Chapter" time="0.007">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Get Page" name="StoreNeo4j-neo4jRest Get Page" time="0.015">
+    <testcase classname="StoreNeo4j-neo4jRest Get Page" name="StoreNeo4j-neo4jRest Get Page" time="0.016">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Get Building" name="StoreNeo4j-neo4jRest Get Building" time="0.01">
+    <testcase classname="StoreNeo4j-neo4jRest Get Building" name="StoreNeo4j-neo4jRest Get Building" time="0.013">
     </testcase>
     <testcase classname="StoreNeo4j-neo4jRest Get BookStore" name="StoreNeo4j-neo4jRest Get BookStore" time="0.007">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Get Library" name="StoreNeo4j-neo4jRest Get Library" time="0.003">
+    <testcase classname="StoreNeo4j-neo4jRest Get Library" name="StoreNeo4j-neo4jRest Get Library" time="0.004">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Find Person" name="StoreNeo4j-neo4jRest Find Person" time="0.01">
+    <testcase classname="StoreNeo4j-neo4jRest Find Person" name="StoreNeo4j-neo4jRest Find Person" time="0.012">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Find Book" name="StoreNeo4j-neo4jRest Find Book" time="0.02">
+    <testcase classname="StoreNeo4j-neo4jRest Find Book" name="StoreNeo4j-neo4jRest Find Book" time="0.025">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Find Chapter" name="StoreNeo4j-neo4jRest Find Chapter" time="0.021">
+    <testcase classname="StoreNeo4j-neo4jRest Find Chapter" name="StoreNeo4j-neo4jRest Find Chapter" time="0.027">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Find Page" name="StoreNeo4j-neo4jRest Find Page" time="0.018">
+    <testcase classname="StoreNeo4j-neo4jRest Find Page" name="StoreNeo4j-neo4jRest Find Page" time="0.022">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Find Building" name="StoreNeo4j-neo4jRest Find Building" time="0.03">
+    <testcase classname="StoreNeo4j-neo4jRest Find Building" name="StoreNeo4j-neo4jRest Find Building" time="0.037">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Find BookStore" name="StoreNeo4j-neo4jRest Find BookStore" time="0.012">
+    <testcase classname="StoreNeo4j-neo4jRest Find BookStore" name="StoreNeo4j-neo4jRest Find BookStore" time="0.015">
     </testcase>
     <testcase classname="StoreNeo4j-neo4jRest Find Library" name="StoreNeo4j-neo4jRest Find Library" time="0.004">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Count (find) Person" name="StoreNeo4j-neo4jRest Count (find) Person" time="0.009">
+    <testcase classname="StoreNeo4j-neo4jRest Count (find) Person" name="StoreNeo4j-neo4jRest Count (find) Person" time="0.011">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Count (find) Book" name="StoreNeo4j-neo4jRest Count (find) Book" time="0.021">
+    <testcase classname="StoreNeo4j-neo4jRest Count (find) Book" name="StoreNeo4j-neo4jRest Count (find) Book" time="0.025">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Count (find) Chapter" name="StoreNeo4j-neo4jRest Count (find) Chapter" time="0.024">
+    <testcase classname="StoreNeo4j-neo4jRest Count (find) Chapter" name="StoreNeo4j-neo4jRest Count (find) Chapter" time="0.029">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Count (find) Page" name="StoreNeo4j-neo4jRest Count (find) Page" time="0.015">
+    <testcase classname="StoreNeo4j-neo4jRest Count (find) Page" name="StoreNeo4j-neo4jRest Count (find) Page" time="0.022">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Count (find) Building" name="StoreNeo4j-neo4jRest Count (find) Building" time="0.032">
+    <testcase classname="StoreNeo4j-neo4jRest Count (find) Building" name="StoreNeo4j-neo4jRest Count (find) Building" time="0.04">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Count (find) BookStore" name="StoreNeo4j-neo4jRest Count (find) BookStore" time="0.013">
+    <testcase classname="StoreNeo4j-neo4jRest Count (find) BookStore" name="StoreNeo4j-neo4jRest Count (find) BookStore" time="0.014">
     </testcase>
-    <testcase classname="StoreNeo4j-neo4jRest Count (find) Library" name="StoreNeo4j-neo4jRest Count (find) Library" time="0.003">
+    <testcase classname="StoreNeo4j-neo4jRest Count (find) Library" name="StoreNeo4j-neo4jRest Count (find) Library" time="0.004">
     </testcase>
   </testsuite>
-  <testsuite name="DataLoader-mongo" errors="0" failures="0" skipped="0" timestamp="2019-12-19T15:09:58" time="2.6" tests="28">
+  <testsuite name="DataLoader-mongo" errors="0" failures="0" skipped="0" timestamp="2019-12-19T17:01:01" time="2.706" tests="28">
     <testcase classname="DataLoader-mongo Create Person" name="DataLoader-mongo Create Person" time="0.015">
     </testcase>
-    <testcase classname="DataLoader-mongo Create Book" name="DataLoader-mongo Create Book" time="0.01">
+    <testcase classname="DataLoader-mongo Create Book" name="DataLoader-mongo Create Book" time="0.014">
     </testcase>
-    <testcase classname="DataLoader-mongo Create Chapter" name="DataLoader-mongo Create Chapter" time="0.01">
+    <testcase classname="DataLoader-mongo Create Chapter" name="DataLoader-mongo Create Chapter" time="0.007">
     </testcase>
     <testcase classname="DataLoader-mongo Create Page" name="DataLoader-mongo Create Page" time="0.012">
     </testcase>
-    <testcase classname="DataLoader-mongo Create Building" name="DataLoader-mongo Create Building" time="0.009">
+    <testcase classname="DataLoader-mongo Create Building" name="DataLoader-mongo Create Building" time="0.01">
     </testcase>
-    <testcase classname="DataLoader-mongo Create BookStore" name="DataLoader-mongo Create BookStore" time="0.009">
+    <testcase classname="DataLoader-mongo Create BookStore" name="DataLoader-mongo Create BookStore" time="0.008">
     </testcase>
     <testcase classname="DataLoader-mongo Create Library" name="DataLoader-mongo Create Library" time="0.008">
     </testcase>
@@ -135,21 +135,21 @@
     </testcase>
     <testcase classname="DataLoader-mongo Get Book" name="DataLoader-mongo Get Book" time="0.004">
     </testcase>
-    <testcase classname="DataLoader-mongo Get Chapter" name="DataLoader-mongo Get Chapter" time="0.003">
+    <testcase classname="DataLoader-mongo Get Chapter" name="DataLoader-mongo Get Chapter" time="0.004">
     </testcase>
     <testcase classname="DataLoader-mongo Get Page" name="DataLoader-mongo Get Page" time="0.006">
     </testcase>
-    <testcase classname="DataLoader-mongo Get Building" name="DataLoader-mongo Get Building" time="0.005">
+    <testcase classname="DataLoader-mongo Get Building" name="DataLoader-mongo Get Building" time="0.006">
     </testcase>
-    <testcase classname="DataLoader-mongo Get BookStore" name="DataLoader-mongo Get BookStore" time="0.004">
+    <testcase classname="DataLoader-mongo Get BookStore" name="DataLoader-mongo Get BookStore" time="0.003">
     </testcase>
-    <testcase classname="DataLoader-mongo Get Library" name="DataLoader-mongo Get Library" time="0.003">
+    <testcase classname="DataLoader-mongo Get Library" name="DataLoader-mongo Get Library" time="0.002">
     </testcase>
-    <testcase classname="DataLoader-mongo Find Person" name="DataLoader-mongo Find Person" time="0.007">
+    <testcase classname="DataLoader-mongo Find Person" name="DataLoader-mongo Find Person" time="0.008">
     </testcase>
-    <testcase classname="DataLoader-mongo Find Book" name="DataLoader-mongo Find Book" time="0.009">
+    <testcase classname="DataLoader-mongo Find Book" name="DataLoader-mongo Find Book" time="0.008">
     </testcase>
-    <testcase classname="DataLoader-mongo Find Chapter" name="DataLoader-mongo Find Chapter" time="0.009">
+    <testcase classname="DataLoader-mongo Find Chapter" name="DataLoader-mongo Find Chapter" time="0.011">
     </testcase>
     <testcase classname="DataLoader-mongo Find Page" name="DataLoader-mongo Find Page" time="0.008">
     </testcase>
@@ -159,37 +159,37 @@
     </testcase>
     <testcase classname="DataLoader-mongo Find Library" name="DataLoader-mongo Find Library" time="0.002">
     </testcase>
-    <testcase classname="DataLoader-mongo Count (find) Person" name="DataLoader-mongo Count (find) Person" time="0.005">
+    <testcase classname="DataLoader-mongo Count (find) Person" name="DataLoader-mongo Count (find) Person" time="0.006">
     </testcase>
-    <testcase classname="DataLoader-mongo Count (find) Book" name="DataLoader-mongo Count (find) Book" time="0.009">
+    <testcase classname="DataLoader-mongo Count (find) Book" name="DataLoader-mongo Count (find) Book" time="0.01">
     </testcase>
-    <testcase classname="DataLoader-mongo Count (find) Chapter" name="DataLoader-mongo Count (find) Chapter" time="0.009">
+    <testcase classname="DataLoader-mongo Count (find) Chapter" name="DataLoader-mongo Count (find) Chapter" time="0.01">
     </testcase>
-    <testcase classname="DataLoader-mongo Count (find) Page" name="DataLoader-mongo Count (find) Page" time="0.007">
+    <testcase classname="DataLoader-mongo Count (find) Page" name="DataLoader-mongo Count (find) Page" time="0.008">
     </testcase>
-    <testcase classname="DataLoader-mongo Count (find) Building" name="DataLoader-mongo Count (find) Building" time="0.009">
+    <testcase classname="DataLoader-mongo Count (find) Building" name="DataLoader-mongo Count (find) Building" time="0.011">
     </testcase>
-    <testcase classname="DataLoader-mongo Count (find) BookStore" name="DataLoader-mongo Count (find) BookStore" time="0.004">
+    <testcase classname="DataLoader-mongo Count (find) BookStore" name="DataLoader-mongo Count (find) BookStore" time="0.006">
     </testcase>
     <testcase classname="DataLoader-mongo Count (find) Library" name="DataLoader-mongo Count (find) Library" time="0.002">
     </testcase>
   </testsuite>
-  <testsuite name="StoreMongo-mongo" errors="0" failures="0" skipped="0" timestamp="2019-12-19T15:10:01" time="2.606" tests="28">
-    <testcase classname="StoreMongo-mongo Create Person" name="StoreMongo-mongo Create Person" time="0.008">
+  <testsuite name="StoreMongo-mongo" errors="0" failures="0" skipped="0" timestamp="2019-12-19T17:01:03" time="2.614" tests="28">
+    <testcase classname="StoreMongo-mongo Create Person" name="StoreMongo-mongo Create Person" time="0.01">
     </testcase>
-    <testcase classname="StoreMongo-mongo Create Book" name="StoreMongo-mongo Create Book" time="0.01">
+    <testcase classname="StoreMongo-mongo Create Book" name="StoreMongo-mongo Create Book" time="0.011">
     </testcase>
-    <testcase classname="StoreMongo-mongo Create Chapter" name="StoreMongo-mongo Create Chapter" time="0.007">
+    <testcase classname="StoreMongo-mongo Create Chapter" name="StoreMongo-mongo Create Chapter" time="0.008">
     </testcase>
-    <testcase classname="StoreMongo-mongo Create Page" name="StoreMongo-mongo Create Page" time="0.016">
+    <testcase classname="StoreMongo-mongo Create Page" name="StoreMongo-mongo Create Page" time="0.014">
     </testcase>
-    <testcase classname="StoreMongo-mongo Create Building" name="StoreMongo-mongo Create Building" time="0.009">
+    <testcase classname="StoreMongo-mongo Create Building" name="StoreMongo-mongo Create Building" time="0.01">
     </testcase>
     <testcase classname="StoreMongo-mongo Create BookStore" name="StoreMongo-mongo Create BookStore" time="0.01">
     </testcase>
-    <testcase classname="StoreMongo-mongo Create Library" name="StoreMongo-mongo Create Library" time="0.005">
+    <testcase classname="StoreMongo-mongo Create Library" name="StoreMongo-mongo Create Library" time="0.007">
     </testcase>
-    <testcase classname="StoreMongo-mongo Get Person" name="StoreMongo-mongo Get Person" time="0.004">
+    <testcase classname="StoreMongo-mongo Get Person" name="StoreMongo-mongo Get Person" time="0.003">
     </testcase>
     <testcase classname="StoreMongo-mongo Get Book" name="StoreMongo-mongo Get Book" time="0.003">
     </testcase>
@@ -197,21 +197,21 @@
     </testcase>
     <testcase classname="StoreMongo-mongo Get Page" name="StoreMongo-mongo Get Page" time="0.007">
     </testcase>
-    <testcase classname="StoreMongo-mongo Get Building" name="StoreMongo-mongo Get Building" time="0.005">
+    <testcase classname="StoreMongo-mongo Get Building" name="StoreMongo-mongo Get Building" time="0.004">
     </testcase>
-    <testcase classname="StoreMongo-mongo Get BookStore" name="StoreMongo-mongo Get BookStore" time="0.004">
+    <testcase classname="StoreMongo-mongo Get BookStore" name="StoreMongo-mongo Get BookStore" time="0.003">
     </testcase>
     <testcase classname="StoreMongo-mongo Get Library" name="StoreMongo-mongo Get Library" time="0.002">
     </testcase>
     <testcase classname="StoreMongo-mongo Find Person" name="StoreMongo-mongo Find Person" time="0.006">
     </testcase>
-    <testcase classname="StoreMongo-mongo Find Book" name="StoreMongo-mongo Find Book" time="0.007">
+    <testcase classname="StoreMongo-mongo Find Book" name="StoreMongo-mongo Find Book" time="0.008">
     </testcase>
-    <testcase classname="StoreMongo-mongo Find Chapter" name="StoreMongo-mongo Find Chapter" time="0.008">
+    <testcase classname="StoreMongo-mongo Find Chapter" name="StoreMongo-mongo Find Chapter" time="0.01">
     </testcase>
-    <testcase classname="StoreMongo-mongo Find Page" name="StoreMongo-mongo Find Page" time="0.009">
+    <testcase classname="StoreMongo-mongo Find Page" name="StoreMongo-mongo Find Page" time="0.008">
     </testcase>
-    <testcase classname="StoreMongo-mongo Find Building" name="StoreMongo-mongo Find Building" time="0.008">
+    <testcase classname="StoreMongo-mongo Find Building" name="StoreMongo-mongo Find Building" time="0.01">
     </testcase>
     <testcase classname="StoreMongo-mongo Find BookStore" name="StoreMongo-mongo Find BookStore" time="0.005">
     </testcase>
@@ -219,31 +219,31 @@
     </testcase>
     <testcase classname="StoreMongo-mongo Count (find) Person" name="StoreMongo-mongo Count (find) Person" time="0.005">
     </testcase>
-    <testcase classname="StoreMongo-mongo Count (find) Book" name="StoreMongo-mongo Count (find) Book" time="0.006">
+    <testcase classname="StoreMongo-mongo Count (find) Book" name="StoreMongo-mongo Count (find) Book" time="0.007">
     </testcase>
     <testcase classname="StoreMongo-mongo Count (find) Chapter" name="StoreMongo-mongo Count (find) Chapter" time="0.008">
     </testcase>
     <testcase classname="StoreMongo-mongo Count (find) Page" name="StoreMongo-mongo Count (find) Page" time="0.006">
     </testcase>
-    <testcase classname="StoreMongo-mongo Count (find) Building" name="StoreMongo-mongo Count (find) Building" time="0.009">
+    <testcase classname="StoreMongo-mongo Count (find) Building" name="StoreMongo-mongo Count (find) Building" time="0.008">
     </testcase>
-    <testcase classname="StoreMongo-mongo Count (find) BookStore" name="StoreMongo-mongo Count (find) BookStore" time="0.004">
+    <testcase classname="StoreMongo-mongo Count (find) BookStore" name="StoreMongo-mongo Count (find) BookStore" time="0.006">
     </testcase>
-    <testcase classname="StoreMongo-mongo Count (find) Library" name="StoreMongo-mongo Count (find) Library" time="0.002">
-    </testcase>
-  </testsuite>
-  <testsuite name="EventService" errors="0" failures="0" skipped="0" timestamp="2019-12-19T15:10:04" time="1.078" tests="1">
-    <testcase classname="EventService createSystemEvent" name="EventService createSystemEvent" time="1.009">
+    <testcase classname="StoreMongo-mongo Count (find) Library" name="StoreMongo-mongo Count (find) Library" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="EventEmitter" errors="0" failures="0" skipped="0" timestamp="2019-12-19T15:10:05" time="1.084" tests="1">
-    <testcase classname="EventEmitter Sequential Order" name="EventEmitter Sequential Order" time="1.011">
+  <testsuite name="EventService" errors="0" failures="0" skipped="0" timestamp="2019-12-19T17:01:06" time="1.079" tests="1">
+    <testcase classname="EventService createSystemEvent" name="EventService createSystemEvent" time="1.012">
     </testcase>
   </testsuite>
-  <testsuite name="AppService" errors="0" failures="0" skipped="0" timestamp="2019-12-19T15:10:06" time="0.095" tests="6">
-    <testcase classname="AppService MicroMatch" name="AppService MicroMatch" time="0.001">
+  <testsuite name="EventEmitter" errors="0" failures="0" skipped="0" timestamp="2019-12-19T17:01:07" time="1.104" tests="1">
+    <testcase classname="EventEmitter Sequential Order" name="EventEmitter Sequential Order" time="1.013">
     </testcase>
-    <testcase classname="AppService isPlainObject" name="AppService isPlainObject" time="0">
+  </testsuite>
+  <testsuite name="AppService" errors="0" failures="0" skipped="0" timestamp="2019-12-19T17:01:08" time="0.111" tests="6">
+    <testcase classname="AppService MicroMatch" name="AppService MicroMatch" time="0.002">
+    </testcase>
+    <testcase classname="AppService isPlainObject" name="AppService isPlainObject" time="0.001">
     </testcase>
     <testcase classname="AppService mergeDeep" name="AppService mergeDeep" time="0.002">
     </testcase>
