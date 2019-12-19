@@ -12,7 +12,6 @@ module.exports = class Resolver {
     };
 
     this.find = ({ store }, model, where = {}) => store.find(model, where);
-    this.search = ({ store }, model, where = {}) => store.search(model, where);
     this.count = ({ store }, model, where = {}) => store.count(model, where);
     this.create = ({ store }, model, data) => store.create(model, data);
     this.update = ({ store }, model, id, data) => store.update(model, id, data);

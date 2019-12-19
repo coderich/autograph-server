@@ -117,7 +117,7 @@ exports.createGraphSchema = (parser, resolver) => {
       System: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
-          [`find${model}`]: (root, args, context) => resolver.search(context, model, args.where),
+          [`find${model}`]: (root, args, context) => resolver.find(context, model, args.where),
           [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
         });
       }, {}),

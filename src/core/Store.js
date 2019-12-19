@@ -48,14 +48,15 @@ module.exports = class Store {
     });
   }
 
-  find(model, where = {}) {
+  async find(model, where = {}) {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     normalizeModelData(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'find', model, store: this, parser, where }, async () => {
-      return store.dao.find(modelAlias, where);
+      const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
+      return store.dao.find(modelAlias, resolvedWhere);
     });
   }
 
@@ -66,20 +67,8 @@ module.exports = class Store {
     normalizeModelData(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'count', model, store: this, parser, where }, async () => {
-      // const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
-      return store.dao.count(modelAlias, where);
-    });
-  }
-
-  async search(model, where = {}) {
-    const { parser } = this;
-    const store = this.storeMap[model];
-    const modelAlias = parser.getModelAlias(model);
-    normalizeModelData(parser, this, model, where);
-
-    return createSystemEvent('Query', { method: 'search', model, store: this, parser, where }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
-      return store.dao.find(modelAlias, resolvedWhere);
+      return store.dao.count(modelAlias, resolvedWhere);
     });
   }
 

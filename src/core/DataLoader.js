@@ -20,10 +20,6 @@ module.exports = class {
     return this.loader.load({ op: 'find', model, data: where });
   }
 
-  search(model, where = {}) {
-    return this.loader.load({ op: 'search', model, data: where });
-  }
-
   count(model, where = {}) {
     return this.loader.load({ op: 'count', model, data: where });
   }

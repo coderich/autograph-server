@@ -64,7 +64,7 @@ exports.normalizeModelData = (parser, store, model, data) => {
   const fields = parser.getModelFields(model);
 
   return Object.entries(data).reduce((prev, [key, value]) => {
-    const field = fields[key];
+    const field = fields[key] = {};
     const ref = Parser.getFieldDataRef(field);
 
     if (isPlainObject(value) && ref) {
@@ -93,7 +93,7 @@ exports.normalizeModelData = (parser, store, model, data) => {
         }
         switch (field.case) {
           case 'lower': value = value.toLowerCase(); break;
-          case 'title': value = Case.capitalCase(value.toLowerCase()); break;
+          case 'title': value = Case.capitalCase(value.toLowerCase(), { stripRegexp: null }); break;
           default: break;
         }
       }
@@ -123,7 +123,7 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
       const field = fields[key];
       const ref = Parser.getFieldDataRef(field);
 
-      if (ref) {
+      if (ref && isPlainObject(value)) {
         exports.resolveModelWhereClause(parser, store, ref, value, field.alias || key, lookups2D, index + 1);
         return prev;
       }
