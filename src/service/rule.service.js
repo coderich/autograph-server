@@ -4,6 +4,7 @@ const {
   AllowRuleError,
   ImmutableRuleError,
   RangeRuleError,
+  RejectRuleError,
   RequireRuleError,
 } = require('./error.service');
 
@@ -16,7 +17,6 @@ exports.immutable = () => (val, op, path) => {
   if (op === 'update' && val !== undefined) throw new ImmutableRuleError(`${path} is immutable; cannot be changed once set`);
 };
 
-
 exports.range = (min, max) => {
   if (min == null) min = undefined;
   if (max == null) max = undefined;
@@ -28,6 +28,11 @@ exports.range = (min, max) => {
     if (num < min) throw new RangeRuleError(`${val} cannot be less than ${min}`);
     if (num > max) throw new RangeRuleError(`${val} cannot be greater than ${max}`);
   };
+};
+
+exports.reject = (...args) => (val, op, path) => {
+  if (val == null) return;
+  if (args.indexOf(val) > -1) throw new RejectRuleError(`${path} must not contain: { ${args.join(' ')} }, found '${val}'`);
 };
 
 exports.required = () => (val, op, path) => {
