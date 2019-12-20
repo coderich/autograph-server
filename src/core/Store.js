@@ -93,7 +93,7 @@ module.exports = class Store {
     normalizeModelData(parser, this, model, data);
 
     return createSystemEvent('Mutation', { method: 'update', model, store: this, parser, id, data }, async () => {
-      const merged = normalizeModelData(parser, this, model, mergeDeep(doc, data), 'create');
+      const merged = normalizeModelData(parser, this, model, mergeDeep(doc, data), 'create'); // I think "create" is correct here?
       return store.dao.replace(modelAlias, store.idValue(id), data, merged);
     });
   }

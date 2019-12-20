@@ -15,7 +15,7 @@ exports.schema = {
     fields: {
       name: { type: String, case: 'title', required: true, rules: [required()] },
       price: { type: Number, required: true, rules: [range(0, 100), required()] },
-      author: { type: 'Person', onDelete: 'cascade', required: true, immutable: true, rules: [required(), immutable()] },
+      author: { type: 'Person', onDelete: 'cascade', required: true, rules: [required(), immutable()] },
       chapters: { type: ['Chapter'], by: 'book' },
     },
     indexes: [

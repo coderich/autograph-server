@@ -3,6 +3,7 @@ const { range } = require('../../src/service/rule.service');
 describe('RuleService', () => {
   test('range', async () => {
     const isMatch = range(0, 100);
+    expect(() => isMatch(null)).not.toThrow();
     expect(() => isMatch('0')).not.toThrow();
     expect(() => isMatch('9')).not.toThrow();
     expect(() => isMatch('98')).not.toThrow();

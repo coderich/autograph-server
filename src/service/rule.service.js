@@ -8,6 +8,7 @@ const {
 } = require('./error.service');
 
 exports.allow = (...args) => (val, op, path) => {
+  if (val == null) return;
   if (args.indexOf(val) === -1) throw new AllowRuleError(`${path} must contain: { ${args.join(' ')} }, found '${val}'`);
 };
 
@@ -21,6 +22,7 @@ exports.range = (min, max) => {
   if (max == null) max = undefined;
 
   return (val) => {
+    if (val == null) return;
     const num = Number(val);
     if (Number.isNaN(num)) throw new RangeRuleError(`${val} is not a valid number`);
     if (num < min) throw new RangeRuleError(`${val} cannot be less than ${min}`);
