@@ -1,5 +1,3 @@
-// const PicoMatch = require('picomatch');
-// const ToRegexRange = require('to-regex-range');
 const {
   AllowRuleError,
   ImmutableRuleError,
@@ -8,13 +6,15 @@ const {
   RequireRuleError,
 } = require('./error.service');
 
-exports.allow = (...args) => (val, op, path) => {
+const { hashObject } = require('./app.service');
+
+exports.allow = (...args) => (val, oldVal, op, path) => {
   if (val == null) return;
   if (args.indexOf(val) === -1) throw new AllowRuleError(`${path} must contain: { ${args.join(' ')} }, found '${val}'`);
 };
 
-exports.immutable = () => (val, op, path) => {
-  if (op === 'update' && val !== undefined) throw new ImmutableRuleError(`${path} is immutable; cannot be changed once set`);
+exports.immutable = () => (val, oldVal, op, path) => {
+  if (op === 'update' && `${hashObject(val)}` !== `${hashObject(oldVal)}` && val !== undefined) throw new ImmutableRuleError(`${path} is immutable; cannot be changed once set`);
 };
 
 exports.range = (min, max) => {
@@ -30,12 +30,12 @@ exports.range = (min, max) => {
   };
 };
 
-exports.reject = (...args) => (val, op, path) => {
+exports.reject = (...args) => (val, oldVal, op, path) => {
   if (val == null) return;
   if (args.indexOf(val) > -1) throw new RejectRuleError(`${path} must not contain: { ${args.join(' ')} }, found '${val}'`);
 };
 
-exports.required = () => (val, op, path) => {
+exports.required = () => (val, oldVal, op, path) => {
   if (op === 'create' && val == null) throw new RequireRuleError(`${path} is a required field`);
   if (op === 'update' && val === null) throw new RequireRuleError(`${path} cannot be set to null`);
 };

@@ -16,6 +16,7 @@
     "change-case": "^4.1.0",
     "dataloader": "^2.0.0",
     "deepmerge": "^4.2.2",
+    "lodash": "^4.17.15",
     "mongodb": "^3.3.5",
     "neo4j-driver": "^4.0.0",
     "object-hash": "^2.0.1",

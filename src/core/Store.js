@@ -76,8 +76,8 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    await validateModelData(parser, this, model, data, 'create');
     normalizeModelData(parser, this, model, data);
+    await validateModelData(parser, this, model, data, {}, 'create');
 
     return createSystemEvent('Mutation', { method: 'create', model, store: this, parser, data }, () => {
       return store.dao.create(modelAlias, data);
@@ -88,9 +88,9 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    await validateModelData(parser, this, model, data, 'update');
     const doc = await ensureModel(this, model, id);
     normalizeModelData(parser, this, model, data);
+    await validateModelData(parser, this, model, data, doc, 'update');
 
     return createSystemEvent('Mutation', { method: 'update', model, store: this, parser, id, data }, async () => {
       const merged = normalizeModelData(parser, this, model, mergeDeep(doc, data), 'create'); // I think "create" is correct here...
