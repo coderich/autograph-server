@@ -57,54 +57,6 @@ exports.validateModelData = (parser, store, model, data, op) => {
   return Promise.all(promises);
 };
 
-// exports.validateModelData = (parser, store, model, data, op, path = '') => {
-//   const promises = [];
-//   const fields = parser.getModelFields(model);
-
-//   Object.entries(fields).forEach(([key, field]) => {
-//     const value = data[key];
-//     const ref = Parser.getFieldDataRef(field);
-//     const fullPath = `${model}.${key}`;
-//     const isValueArray = Array.isArray(value);
-//     const isTypeArray = Boolean(Parser.getFieldArrayType(field));
-
-//     // Required
-//     if (field.required && op === 'create' && value == null) throw Boom.badRequest(`${fullPath} is a required field`);
-//     if (field.required && op === 'update' && value === null) throw Boom.badRequest(`${fullPath} cannot be set to null`);
-
-//     // The data may not be defined for this key
-//     if (!Object.prototype.hasOwnProperty.call(data, key)) return;
-
-//     // Data type check
-//     if (isValueArray !== isTypeArray) throw Boom.badRequest(`${fullPath} invalid array`);
-
-//     // Immutable
-//     if (field.immutable && op === 'update' && value !== undefined) throw Boom.badRequest(`${fullPath} is immutable; cannot be changed once set`);
-
-//     if (isValueArray) {
-//       if (ref) {
-//         if (field.embedded) {
-//           promises.push(...value.map(v => exports.validateModelData(parser, store, ref, v, op)));
-//         } else {
-//           promises.push(...value.map(v => exports.ensureModel(store, ref, v)));
-//         }
-//       } else {
-//         value.forEach(v => exports.validateModelData(parser, store, key, v, op));
-//       }
-//     } else if (ref) {
-//       if (field.embedded) {
-//         promises.push(exports.validateModelData(parser, store, ref, value, op));
-//       } else {
-//         promises.push(exports.ensureModel(store, ref, value));
-//       }
-//     } else if (field.rules) {
-//       field.rules.forEach(rule => rule(value, op, path));
-//     }
-//   });
-
-//   return Promise.all(promises);
-// };
-
 exports.normalizeModelData = (parser, store, model, data) => {
   const fields = parser.getModelFields(model);
 
