@@ -1,7 +1,7 @@
 const Hapi = require('@hapi/hapi');
 const { ApolloServer, makeExecutableSchema } = require('apollo-server-hapi');
 // const Neo4j = require('neodb');
-const Redis = require('redis-mock');
+// const Redis = require('redis-mock');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const { createGraphSchema } = require('../src/service/schema.service');
 const { timeout } = require('../src/service/app.service');
@@ -344,6 +344,78 @@ module.exports = (name, db = 'mongo') => {
     });
 
 
+    describe('Data Validations', () => {
+      test('Person', async () => {
+        await expect(dao.create('Person')).rejects.toThrow();
+        await expect(dao.create('Person', { name: 'Richard' })).rejects.toThrow();
+        await expect(dao.create('Person', { name: 'NewGuy', friends: ['nobody'] })).rejects.toThrow();
+        await expect(dao.create('Person', { name: 'NewGuy', friends: [richard.id, 'nobody'] })).rejects.toThrow();
+        await expect(dao.update('Person', richard.id, { name: 'Christie' })).rejects.toThrow();
+        await expect(dao.update('Person', richard.id, { name: 'christie' })).rejects.toThrow();
+        await expect(dao.update('Person', richard.id, { name: null })).rejects.toThrow();
+        await expect(dao.update('Person', 'nobody', { name: 'NewGuy' })).rejects.toThrow();
+      });
+
+      test('Book', async () => {
+        await expect(dao.create('Book')).rejects.toThrow();
+        await expect(dao.create('Book', { name: 'The Bible' })).rejects.toThrow();
+        await expect(dao.create('Book', { name: 'The Bible', author: 'Moses' })).rejects.toThrow();
+        await expect(dao.create('Book', { name: 'The Bible', author: richard.id })).rejects.toThrow();
+        await expect(dao.create('Book', { name: 'The Bible', price: 1.99 })).rejects.toThrow();
+        // await expect(dao.create('Book', { name: 'MoBY DiCK', price: 1.99, author: richard.id })).rejects.toThrow();
+        await expect(dao.create('Book', { name: 'The Bible', price: 1.99, author: mobyDick.id })).rejects.toThrow();
+        await expect(dao.create('Book', { name: 'The Bible', price: 1.99, author: [christie.id] })).rejects.toThrow();
+        await expect(dao.create('Book', { name: 'Great Book', price: -1, author: christie.id })).rejects.toThrow();
+        await expect(dao.create('Book', { name: 'Best Book', price: 101, author: christie.id })).rejects.toThrow();
+        await expect(dao.update('Book', mobyDick.id, { author: christie.id })).rejects.toThrow();
+        // await expect(dao.update('Book', mobyDick.id, { author: richard.id })).resolves!!!;
+      });
+
+      test('Chapter', async () => {
+        await expect(dao.create('Chapter')).rejects.toThrow();
+        await expect(dao.create('Chapter', { name: 'chapter1' })).rejects.toThrow();
+        await expect(dao.create('Chapter', { name: 'chapter2' })).rejects.toThrow();
+        await expect(dao.create('Chapter', { name: 'chapter3' })).rejects.toThrow();
+        // await expect(dao.create('Chapter', { name: 'chapter1', book: healthBook.id })).rejects.toThrow();
+        // await expect(dao.create('Chapter', { name: 'chapter3', book: christie.id })).rejects.toThrow();
+      });
+
+      test('Page', async () => {
+        await expect(dao.create('Page')).rejects.toThrow();
+        await expect(dao.create('Page', { number: 3 })).rejects.toThrow();
+        // await expect(dao.create('Page', { number: 1, chapter: chapter1 })).rejects.toThrow();
+        // await expect(dao.create('Page', { number: 1, chapter: chapter1.id })).rejects.toThrow();
+        // await expect(dao.create('Page', { number: 1, chapter: page4.id })).rejects.toThrow();
+        // await expect(dao.update('Page', page1.id, { number: 2 })).rejects.toThrow();
+      });
+
+      test('Building', async () => {
+        await expect(dao.create('Building')).rejects.toThrow();
+        await expect(dao.create('Building', { type: 'bad-type' })).rejects.toThrow();
+        await expect(dao.create('Building', { type: 'business', landlord: bookstore1.id })).rejects.toThrow();
+        await expect(dao.create('Building', { type: 'business', tenants: richard.id })).rejects.toThrow();
+        await expect(dao.create('Building', { type: 'business', tenants: [richard.id, bookstore1.id] })).rejects.toThrow();
+      });
+
+      // test('BookStore', async () => {
+      //   await expect(dao.create('BookStore')).rejects.toThrow();
+      //   await expect(dao.create('BookStore', { name: 'New Books' })).rejects.toThrow();
+      //   await expect(dao.create('BookStore', { name: 'New Books', building: 'bad-building' })).rejects.toThrow();
+      //   await expect(dao.create('BookStore', { name: 'besT bookS eveR', building })).rejects.toThrow();
+      //   await expect(dao.create('BookStore', { name: 'Best Books Ever', building: library })).rejects.toThrow();
+      //   await expect(dao.create('BookStore', { name: 'More More Books', building, books: building.id })).rejects.toThrow();
+      //   await expect(dao.create('BookStore', { name: 'More More Books', building, books: [building.id] })).rejects.toThrow();
+      //   await expect(dao.create('BookStore', { name: 'More More Books', building, books: [mobyDick.id, building] })).rejects.toThrow();
+      // });
+
+      test('Library', async () => {
+        await expect(dao.create('Library')).rejects.toThrow();
+        await expect(dao.create('Library', { name: 'New Library' })).rejects.toThrow();
+        await expect(dao.create('Library', { name: 'New Library', building: 'bad-building' })).rejects.toThrow();
+        await expect(dao.create('Library', { name: 'New Library', building: libraryBuilding })).rejects.toThrow();
+      });
+    });
+
     // describe('Search', () => {
     //   test('Person', async () => {
     //     expect((await dao.search('Person')).length).toBe(2);
@@ -410,85 +482,10 @@ module.exports = (name, db = 'mongo') => {
 
 
     // test('PersonSchema', async () => {
-    //   // Integrity Constriants
-    //   await expect(dao.create('Person')).rejects.toThrow();
-    //   await expect(dao.create('Person', { name: 'Richard' })).rejects.toThrow();
-    //   await expect(dao.create('Person', { name: 'NewGuy', friends: ['nobody'] })).rejects.toThrow();
-    //   await expect(dao.create('Person', { name: 'NewGuy', friends: [richard.id, 'nobody'] })).rejects.toThrow();
-    //   await expect(dao.update('Person', richard.id, { name: 'Christie' })).rejects.toThrow();
-    //   await expect(dao.update('Person', richard.id, { name: 'christie' })).rejects.toThrow();
-    //   await expect(dao.update('Person', richard.id, { name: null })).rejects.toThrow();
-    //   await expect(dao.update('Person', 'nobody', { name: 'NewGuy' })).rejects.toThrow();
-
     //   // Data Normalization
     //   richard = await dao.update('Person', richard.id, { name: 'rich', friends: [christie.id, christie.id, christie.id] });
     //   expect(richard.name).toEqual('Rich');
     //   expect(richard.friends).toEqual([christie.id]);
-    // });
-
-    // test('BookSchema', async () => {
-    //   // Integrity Constriants
-    //   await expect(dao.create('Book')).rejects.toThrow();
-    //   await expect(dao.create('Book', { name: 'The Bible' })).rejects.toThrow();
-    //   await expect(dao.create('Book', { name: 'The Bible', author: 'Moses' })).rejects.toThrow();
-    //   await expect(dao.create('Book', { name: 'The Bible', author: richard.id })).rejects.toThrow();
-    //   await expect(dao.create('Book', { name: 'The Bible', price: 1.99 })).rejects.toThrow();
-    //   await expect(dao.create('Book', { name: 'MoBY DiCK', price: 1.99, author: richard.id })).rejects.toThrow();
-    //   await expect(dao.create('Book', { name: 'The Bible', price: 1.99, author: mobyDick.id })).rejects.toThrow();
-    //   await expect(dao.create('Book', { name: 'The Bible', price: 1.99, author: [christie.id] })).rejects.toThrow();
-    //   await expect(dao.update('Book', mobyDick.id, { author: christie.id })).rejects.toThrow();
-    //   // await expect(dao.update('Book', mobyDick.id, { author: richard.id })).resolves!!!;
-    //   // await expect(dao.create('Book', { name: 'Great Book', price: -1, author: christie.id })).rejects.toThrow();
-    //   // await expect(dao.create('Book', { name: 'Best Book', price: 101, author: christie.id })).rejects.toThrow();
-    // });
-
-    // test('ChapterSchema', async () => {
-    //   // Integrity Constriants
-    //   await expect(dao.create('Chapter')).rejects.toThrow();
-    //   await expect(dao.create('Chapter', { name: 'chapter1' })).rejects.toThrow();
-    //   await expect(dao.create('Chapter', { name: 'chapter2' })).rejects.toThrow();
-    //   await expect(dao.create('Chapter', { name: 'chapter3' })).rejects.toThrow();
-    //   await expect(dao.create('Chapter', { name: 'chapter1', book: healthBook.id })).rejects.toThrow();
-    //   await expect(dao.create('Chapter', { name: 'chapter3', book: christie.id })).rejects.toThrow();
-    // });
-
-    // test('PageSchema', async () => {
-    //   // Integrity Constriants
-    //   await expect(dao.create('Page')).rejects.toThrow();
-    //   await expect(dao.create('Page', { number: 3 })).rejects.toThrow();
-    //   await expect(dao.create('Page', { number: 1, chapter: chapter1 })).rejects.toThrow();
-    //   await expect(dao.create('Page', { number: 1, chapter: chapter1.id })).rejects.toThrow();
-    //   await expect(dao.create('Page', { number: 1, chapter: page4.id })).rejects.toThrow();
-    //   await expect(dao.update('Page', page1.id, { number: 2 })).rejects.toThrow();
-    // });
-
-    // test('BuildingSchema', async () => {
-    //   // Integrity Constriants
-    //   await expect(dao.create('Building')).rejects.toThrow();
-    //   await expect(dao.create('Building', { type: 'bad-type' })).rejects.toThrow();
-    //   await expect(dao.create('Building', { type: 'business', landlord: bookstore.id })).rejects.toThrow();
-    //   await expect(dao.create('Building', { type: 'business', tenants: richard.id })).rejects.toThrow();
-    //   await expect(dao.create('Building', { type: 'business', tenants: [richard.id, bookstore.id] })).rejects.toThrow();
-    // });
-
-    // test('BookStoreSchema', async () => {
-    //   // Integrity Constriants
-    //   await expect(dao.create('BookStore')).rejects.toThrow();
-    //   await expect(dao.create('BookStore', { name: 'New Books' })).rejects.toThrow();
-    //   await expect(dao.create('BookStore', { name: 'New Books', building: 'bad-building' })).rejects.toThrow();
-    //   await expect(dao.create('BookStore', { name: 'besT bookS eveR', building })).rejects.toThrow();
-    //   await expect(dao.create('BookStore', { name: 'Best Books Ever', building: library })).rejects.toThrow();
-    //   await expect(dao.create('BookStore', { name: 'More More Books', building, books: building.id })).rejects.toThrow();
-    //   await expect(dao.create('BookStore', { name: 'More More Books', building, books: [building.id] })).rejects.toThrow();
-    //   await expect(dao.create('BookStore', { name: 'More More Books', building, books: [mobyDick.id, building] })).rejects.toThrow();
-    // });
-
-    // test('LibrarySchema', async () => {
-    //   // Integrity Constriants
-    //   await expect(dao.create('Library')).rejects.toThrow();
-    //   await expect(dao.create('Library', { name: 'New Library' })).rejects.toThrow();
-    //   await expect(dao.create('Library', { name: 'New Library', building: 'bad-building' })).rejects.toThrow();
-    //   await expect(dao.create('Library', { name: 'New Library', building: lib })).rejects.toThrow();
     // });
   });
 };

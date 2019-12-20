@@ -1,4 +1,5 @@
 const Boom = require('@hapi/boom');
+const Match = require('picomatch');
 const Case = require('change-case');
 const Parser = require('../core/Parser');
 const { uniq, isPlainObject, promiseChain } = require('../service/app.service');
@@ -50,10 +51,8 @@ exports.validateModelData = (parser, store, model, data, op, path = '') => {
       } else {
         promises.push(exports.ensureModel(store, ref, value));
       }
-    } else {
-      // Scalar value validation
-      if (field.enum && field.enum.indexOf(value) === -1) throw Boom.badRequest(`${fullPath} must be enum: { ${field.enum.join(' ')} }, found '${value}'`);
-      if (false) throw Boom.badRequest();
+    } else if (field.rules) {
+      field.rules.forEach(rule => rule(value, op, path));
     }
   });
 
