@@ -20,7 +20,7 @@ module.exports = class Store {
     const storesInstances = Object.entries(stores).reduce((prev, [key, { type, uri, options }]) => {
       return Object.assign(prev, {
         [key]: {
-          dao: new availableStores[type](uri, options, storeArgs[type]),
+          dao: new availableStores[type](uri, this.parser, options, storeArgs[type]),
           idValue: availableStores[type].idValue,
           idField: type === 'mongo' ? '_id' : 'id',
         },
@@ -52,7 +52,7 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    normalizeModelData(parser, this, model, where);
+    normalizeModelData(parser, this, model, where, 'find');
 
     return createSystemEvent('Query', { method: 'find', model, store: this, parser, where }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
@@ -64,7 +64,7 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    normalizeModelData(parser, this, model, where);
+    normalizeModelData(parser, this, model, where, 'count');
 
     return createSystemEvent('Query', { method: 'count', model, store: this, parser, where }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
@@ -76,7 +76,7 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    normalizeModelData(parser, this, model, data);
+    normalizeModelData(parser, this, model, data, 'create');
     await validateModelData(parser, this, model, data, {}, 'create');
 
     return createSystemEvent('Mutation', { method: 'create', model, store: this, parser, data }, () => {
@@ -89,7 +89,7 @@ module.exports = class Store {
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     const doc = await ensureModel(this, model, id);
-    normalizeModelData(parser, this, model, data);
+    normalizeModelData(parser, this, model, data, 'update');
     await validateModelData(parser, this, model, data, doc, 'update');
 
     return createSystemEvent('Mutation', { method: 'update', model, store: this, parser, id, data }, async () => {

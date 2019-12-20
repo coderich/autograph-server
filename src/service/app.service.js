@@ -13,6 +13,7 @@ exports.mergeDeep = (...args) => DeepMerge.all(args, { isMergeableObject: obj =>
 exports.uniq = arr => [...new Set(arr.map(a => `${a}`))];
 exports.timeout = ms => new Promise(res => setTimeout(res, ms));
 exports.hashObject = obj => ObjectHash(obj, { respectType: false, respectFunctionNames: false, respectFunctionProperties: false, unorderedArrays: true });
+// exports.cmpTypes = (type1, type2) =>
 
 exports.promiseChain = (promises) => {
   return promises.reduce((chain, promise) => {

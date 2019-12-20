@@ -1,9 +1,10 @@
-const { required, immutable, range, allow, reject } = require('./src/service/rule.service');
+const { required, immutable, range, allow, reject, email } = require('./src/service/rule.service');
 
 exports.schema = {
   Person: {
     fields: {
       name: { type: String, case: 'title', rules: [required()] },
+      emailAddress: { type: String, rules: [required(), email()] },
       authored: { type: ['Book'], by: 'author' },
       friends: { type: ['Person'], unique: true, onDelete: 'cascade' },
     },
@@ -16,6 +17,7 @@ exports.schema = {
       name: { type: String, case: 'title', rules: [required(), reject('The Bible')] },
       price: { type: Number, rules: [range(0, 100), required()] },
       author: { type: 'Person', onDelete: 'cascade', rules: [required(), immutable()] },
+      bestSeller: Boolean,
       chapters: { type: ['Chapter'], by: 'book' },
     },
     indexes: [

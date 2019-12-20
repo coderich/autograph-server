@@ -1,6 +1,7 @@
-const MicroMatch = require('picomatch');
+const PicoMatch = require('picomatch');
 const { MongoClient, ObjectID } = require('mongodb');
-const { proxyDeep } = require('../service/app.service');
+const Parser = require('../core/Parser');
+const { proxyDeep, isScalarValue } = require('../service/app.service');
 
 const toObject = (doc) => {
   if (!doc) return undefined;
@@ -11,7 +12,8 @@ const toObject = (doc) => {
 };
 
 module.exports = class MongoStore {
-  constructor(uri) {
+  constructor(uri, parser) {
+    this.parser = parser;
     this.connection = MongoClient.connect(uri, { useUnifiedTopology: true });
   }
 
@@ -24,13 +26,13 @@ module.exports = class MongoStore {
   }
 
   find(model, where = {}) {
-    const $where = MongoStore.normalizeWhereClause(where);
-    return this.query(model, 'find', $where).then(results => results.map(toObject).toArray());
+    const $where = MongoStore.normalizeWhereClause(model, this.parser, where);
+    return this.query(model, 'aggregate', $where).then(results => results.map(toObject).toArray());
   }
 
   count(model, where = {}) {
-    const $where = MongoStore.normalizeWhereClause(where);
-    return this.query(model, 'countDocuments', $where);
+    const $where = MongoStore.normalizeWhereClause(model, this.parser, where, true);
+    return this.query(model, 'aggregate', $where).then(cursor => cursor.next().then(data => (data ? data.count : 0)));
   }
 
   create(model, data) {
@@ -65,15 +67,32 @@ module.exports = class MongoStore {
     return ObjectID(value);
   }
 
-  static normalizeWhereClause(where) {
-    return proxyDeep(where, {
+  static normalizeWhereClause(model, parser, where, count = false) {
+    const $match = proxyDeep(where, {
       get(target, prop, rec) {
         const value = Reflect.get(target, prop, rec);
         if (Array.isArray(value)) return { $in: value };
         if (typeof value === 'function') return value.bind(target);
-        if (typeof value === 'string') return MicroMatch.makeRe(value, { nocase: true, regex: true, unescape: true, maxLength: 100 });
+        if (typeof value === 'string') return PicoMatch.makeRe(value, { nocase: true, regex: true, unescape: true, maxLength: 100 });
         return value;
       },
-    });
+    }).toObject();
+
+    const $agg = [];
+
+    const fields = Object.entries(parser.getModelFields(model)).filter(([name, def]) => {
+      const val = where[name];
+      const type = Parser.getFieldDataType(def);
+      if (!Parser.isScalarValue(type)) return false;
+      const stype = String((type === 'Float' ? 'Number' : type)).toLowerCase();
+      if (String(typeof val) === `${stype}`) return false;
+      return true;
+    }).map(([name]) => name);
+
+    const $addFields = fields.reduce((prev, key) => Object.assign(prev, { [key]: { $toString: `$${key}` } }), {});
+    if (Object.keys($addFields).length) $agg.push({ $addFields });
+    $agg.push({ $match });
+    if (count) $agg.push({ $count: 'count' });
+    return $agg;
   }
 };

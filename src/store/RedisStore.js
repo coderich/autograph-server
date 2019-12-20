@@ -18,7 +18,8 @@ const toPromise = (caller, fn, ...args) => {
 };
 
 module.exports = class {
-  constructor(uri, options, mockClient) {
+  constructor(uri, parser, options, mockClient) {
+    this.parser = parser;
     this.client = mockClient || Redis.createClient();
     this.indexes = {};
   }

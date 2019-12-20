@@ -35,37 +35,9 @@ const doc2 = {
 };
 
 describe('AppService', () => {
-  test('isMatch', () => {
-    const isMatch = PicoMatch('{@([0-9])?([0-9])?(.[0-9][0-9]),100}');
-    expect(isMatch('0')).toBe(true);
-    expect(isMatch('0.00')).toBe(true);
-    expect(isMatch('9')).toBe(true);
-    expect(isMatch('9.56')).toBe(true);
-    expect(isMatch('13.45')).toBe(true);
-    expect(isMatch('98')).toBe(true);
-    expect(isMatch('100')).toBe(true);
-
-    expect(isMatch('-1')).toBe(false);
-    expect(isMatch('13.459')).toBe(false);
-    expect(isMatch('13.45.90')).toBe(false);
-    expect(isMatch('101')).toBe(false);
-  });
-
-  test('isRegex', () => {
-    const exp = '^[0-9]{1,2}(\\.[0-9]{1,2})?$|^100$';
-    const re = new RegExp(exp);
-    expect(PicoMatch.test('0', re).isMatch).toBe(true);
-    expect(PicoMatch.test('0.00', re).isMatch).toBe(true);
-    expect(PicoMatch.test('9', re).isMatch).toBe(true);
-    expect(PicoMatch.test('9.56', re).isMatch).toBe(true);
-    expect(PicoMatch.test('13.45', re).isMatch).toBe(true);
-    expect(PicoMatch.test('98', re).isMatch).toBe(true);
-    expect(PicoMatch.test('100', re).isMatch).toBe(true);
-
-    expect(PicoMatch.test('-1', re).isMatch).toBe(false);
-    expect(PicoMatch.test('13.459', re).isMatch).toBe(false);
-    expect(PicoMatch.test('13.45.90', re).isMatch).toBe(false);
-    expect(PicoMatch.test('101', re).isMatch).toBe(false);
+  test('picomatch', () => {
+    const re = PicoMatch.makeRe('?.??', { nocase: true, regex: true, unescape: true, maxLength: 100 });
+    expect(re).toBeDefined();
   });
 
   test('isPlainObject', () => {

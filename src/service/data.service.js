@@ -59,7 +59,7 @@ exports.validateModelData = (parser, store, model, data, oldData, op) => {
   return Promise.all(promises);
 };
 
-exports.normalizeModelData = (parser, store, model, data) => {
+exports.normalizeModelData = (parser, store, model, data, op) => {
   const fields = parser.getModelFields(model);
 
   return Object.entries(data).reduce((prev, [key, value]) => {
@@ -69,11 +69,11 @@ exports.normalizeModelData = (parser, store, model, data) => {
     if (value == null) return prev;
 
     if (isPlainObject(value) && ref) {
-      prev[key] = exports.normalizeModelData(parser, store, ref, value);
+      prev[key] = exports.normalizeModelData(parser, store, ref, value, op);
     } else if (Array.isArray(value)) {
       if (ref) {
         if (field.embedded) {
-          prev[key] = value.map(v => exports.normalizeModelData(parser, store, ref, v));
+          prev[key] = value.map(v => exports.normalizeModelData(parser, store, ref, v, op));
         } else if (field.unique) {
           prev[key] = uniq(value).map(v => store.idValue(ref, v));
         } else {
@@ -86,15 +86,33 @@ exports.normalizeModelData = (parser, store, model, data) => {
       prev[key] = store.idValue(ref, value);
     } else {
       switch (Parser.getFieldSimpleType(field)) {
-        case 'String': value = `${value}`; break;
-        case 'Number': case 'Float': value = Number(value); break;
-        case 'Boolean': value = Boolean(value); break;
+        case 'String': {
+          value = `${value}`;
+          break;
+        }
+        case 'Number': case 'Float': {
+          const num = Number(value);
+          value = Number.isNaN(num) ? value : num;
+          break;
+        }
+        case 'Boolean': {
+          value = Boolean(value);
+          break;
+        }
         default: break;
       }
 
       switch (field.case) {
-        case 'lower': value = value.toLowerCase(); break;
-        case 'title': value = Case.capitalCase(value.toLowerCase(), { stripRegexp: new RegExp('[^A-Z0-9\\[\\]?*{}.!]', 'gi') }); break;
+        case 'lower': {
+          value = value.toLowerCase();
+          break;
+        }
+        case 'title': {
+          if (op === 'find' || op === 'create' || op === 'update') {
+            value = Case.capitalCase(value.toLowerCase(), { stripRegexp: new RegExp('[^A-Z0-9\\[\\]?*{}.!]', 'gi') });
+          }
+          break;
+        }
         default: break;
       }
 

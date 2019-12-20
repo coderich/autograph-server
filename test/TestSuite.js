@@ -110,11 +110,11 @@ module.exports = (name, db = 'mongo') => {
 
     describe('Create', () => {
       test('Person', async () => {
-        richard = await dao.create('Person', { name: 'Richard' });
+        richard = await dao.create('Person', { name: 'Richard', emailAddress: 'rich@coderich.com' });
         expect(richard.id).toBeDefined();
         expect(richard.name).toBe('Richard');
 
-        christie = await dao.create('Person', { name: 'Christie', friends: [richard.id] });
+        christie = await dao.create('Person', { name: 'Christie', emailAddress: 'christie@gmail.com', friends: [richard.id] });
         expect(christie.id).toBeDefined();
         expect(christie.friends).toEqual([richard.id]);
       });
@@ -230,6 +230,11 @@ module.exports = (name, db = 'mongo') => {
         expect((await dao.find('Person')).length).toBe(2);
         expect(await dao.find('Person', { name: 'richard' })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
         expect(await dao.find('Person', { name: 'Christie' })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.find('Person', { emailAddress: 'rich@coderich.com' })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect((await dao.find('Person', { name: '*' })).sort(sorter)).toMatchObject([
+          { id: christie.id, name: 'Christie' },
+          { id: richard.id, name: 'Richard' },
+        ].sort(sorter));
       });
 
       test('Book', async () => {
@@ -238,6 +243,8 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.find('Book', { price: 9.99 })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
         expect(await dao.find('Book', { price: '9.99' })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
         expect(await dao.find('Book', { author: christie.id })).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
+        expect(await dao.find('Book', { price: '?.??' })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dao.find('Book', { price: '??.*' })).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
       });
 
       test('Chapter', async () => {
@@ -348,8 +355,9 @@ module.exports = (name, db = 'mongo') => {
       test('Person', async () => {
         await expect(dao.create('Person')).rejects.toThrow();
         await expect(dao.create('Person', { name: 'Richard' })).rejects.toThrow();
-        await expect(dao.create('Person', { name: 'NewGuy', friends: ['nobody'] })).rejects.toThrow();
-        await expect(dao.create('Person', { name: 'NewGuy', friends: [richard.id, 'nobody'] })).rejects.toThrow();
+        await expect(dao.create('Person', { name: 'NewGuy', emailAddress: 'newguy@gmail.com', friends: ['nobody'] })).rejects.toThrow();
+        await expect(dao.create('Person', { name: 'NewGuy', emailAddress: 'newguy@gmail.com', friends: [richard.id, 'nobody'] })).rejects.toThrow();
+        await expect(dao.create('Person', { name: 'NewGuy', emailAddress: 'newguygmail.com' })).rejects.toThrow();
         await expect(dao.update('Person', richard.id, { name: 'Christie' })).rejects.toThrow();
         await expect(dao.update('Person', richard.id, { name: 'christie' })).rejects.toThrow();
         await expect(dao.update('Person', richard.id, { name: null })).rejects.toThrow();

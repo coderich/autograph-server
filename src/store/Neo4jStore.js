@@ -1,11 +1,12 @@
 const Axios = require('axios');
 const Neo4j = require('neo4j-driver');
-const MicroMatch = require('picomatch');
+const PicoMatch = require('picomatch');
 const { proxyDeep, isScalarValue } = require('../service/app.service');
 
 class Cypher {
-  constructor(uri, options = {}) {
+  constructor(uri, parser, options = {}) {
     this.uri = uri;
+    this.parser = parser;
     this.options = options;
   }
 
@@ -62,7 +63,7 @@ class Cypher {
         const value = Reflect.get(target, prop, rec);
         if (typeof value === 'function') return value.bind(target);
         if (Array.isArray(value)) return `any (x IN n.${prop} WHERE x IN [${value.join(',')}])`;
-        if (typeof value === 'string') return `n.${prop} =~ '(?i)${MicroMatch.makeRe(value, { unescape: true, regex: true, maxLength: 100 }).toString().slice(1, -1).replace(/\\/g, '\\\\')}'`;
+        if (typeof value === 'string') return `toString(n.${prop}) =~ '(?i)${PicoMatch.makeRe(value, { unescape: true, regex: true, maxLength: 100 }).toString().slice(1, -1).replace(/\\/g, '\\\\')}'`;
         return `n.${prop} = ${value}`;
       },
     }).toObject();
