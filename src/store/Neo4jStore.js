@@ -64,11 +64,17 @@ class Cypher {
       get(target, prop, rec) {
         const value = Reflect.get(target, prop, rec);
         if (typeof value === 'function') return value.bind(target);
-        if (Array.isArray(value)) return `any (x IN n.${prop} WHERE x IN [${value.join(',')}])`;
+
+        if (Array.isArray(value)) {
+          $params[prop] = value;
+          return `any (x IN n.${prop} WHERE x IN $${prop})`;
+        }
+
         if (typeof value === 'string') {
           $params[prop] = `(?i)${PicoMatch.makeRe(value, { unescape: true, regex: true, maxLength: 100 }).toString().slice(1, -1)}`;
           return `toString(n.${prop}) =~ $${prop}`;
         }
+
         $params[prop] = value;
         return `n.${prop} = $${prop}`;
       },

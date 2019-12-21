@@ -30,7 +30,13 @@ let bookstore1;
 let bookstore2;
 let library;
 
-const sorter = (a, b) => `${a.id}` - `${b.id}`;
+const sorter = (a, b) => {
+  const idA = `${a.id}`;
+  const idB = `${b.id}`;
+  if (idA < idB) return -1;
+  if (idA > idB) return 1;
+  return 0;
+};
 
 const makeApolloServer = (executableSchema, store, useDataLoader = false) => {
   return new ApolloServer({
@@ -232,6 +238,10 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.find('Person', { name: 'richard' })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
         expect(await dao.find('Person', { name: 'Christie' })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
         expect(await dao.find('Person', { emailAddress: 'rich@coderich.com' })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect((await dao.find('Person', { name: ['Richard', 'Christie'] })).sort(sorter)).toMatchObject([
+          { id: christie.id, name: 'Christie' },
+          { id: richard.id, name: 'Richard' },
+        ].sort(sorter));
         expect((await dao.find('Person', { name: '*' })).sort(sorter)).toMatchObject([
           { id: christie.id, name: 'Christie' },
           { id: richard.id, name: 'Richard' },

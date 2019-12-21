@@ -11,3 +11,6 @@ exports.toCase = (type) => {
     default: return val => val;
   }
 };
+
+exports.uniq = () => arr => arr;
+// exports.uniq = () => arr => [...new Set(arr.map(a => `${a}`))];

@@ -1,5 +1,5 @@
 const { required, immutable, range, allow, reject, email } = require('./src/service/rule.service');
-const { toCase } = require('./src/service/transform.service');
+const { toCase, uniq } = require('./src/service/transform.service');
 
 exports.schema = {
   Person: {
@@ -7,7 +7,7 @@ exports.schema = {
       name: { type: String, transforms: [toCase('title')], rules: [required()] },
       emailAddress: { type: String, rules: [required(), email()] },
       authored: { type: ['Book'], by: 'author' },
-      friends: { type: ['Person'], unique: true, onDelete: 'cascade' },
+      friends: { type: ['Person'], unique: true, onDelete: 'cascade', transforms: [uniq()] },
     },
     indexes: [
       { name: 'uix_person_name', type: 'unique', fields: ['name'] },
@@ -74,7 +74,7 @@ exports.schema = {
     fields: {
       year: Number,
       type: { type: String, rules: [required(), allow('home', 'office', 'business')] },
-      tenants: { type: ['Person'], unique: true, onDelete: 'cascade' },
+      tenants: { type: ['Person'], unique: true, onDelete: 'cascade', transforms: [uniq()] },
       landlord: 'Person',
     },
   },

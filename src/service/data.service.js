@@ -1,7 +1,6 @@
 const Boom = require('@hapi/boom');
 const { get } = require('lodash');
 const { ObjectID } = require('mongodb');
-const Case = require('change-case');
 const Parser = require('../core/Parser');
 const { uniq, isScalarValue, isPlainObject, promiseChain } = require('../service/app.service');
 
@@ -74,13 +73,41 @@ exports.ensureModelArrayTypes = (parser, store, model, data) => {
   }, data);
 };
 
+exports.transformFieldValue = (field, value) => {
+  const transforms = field.transforms || [];
+
+  switch (Parser.getFieldSimpleType(field)) {
+    case 'String': {
+      value = `${value}`;
+      break;
+    }
+    case 'Number': case 'Float': {
+      const num = Number(value);
+      if (!Number.isNaN(num)) value = num;
+      break;
+    }
+    case 'Boolean': {
+      if (value === 'true') value = true;
+      if (value === 'false') value = false;
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+
+  // Transforming
+  transforms.forEach(t => (value = t(value)));
+
+  return value;
+};
+
 exports.normalizeModelData = (parser, store, model, data, op) => {
   return Object.entries(data).reduce((prev, [key, value]) => {
     const field = parser.getModelFieldDef(model, key);
     if (value == null || field == null) return prev;
 
     const ref = Parser.getFieldDataRef(field);
-    const transforms = field.transforms || [];
 
     if (isPlainObject(value) && ref) {
       prev[key] = exports.normalizeModelData(parser, store, ref, value, op);
@@ -93,35 +120,14 @@ exports.normalizeModelData = (parser, store, model, data, op) => {
         } else {
           prev[key] = value.map(v => store.idValue(ref, v));
         }
-      } else if (field.unique) {
-        prev[key] = uniq(value);
+      } else {
+        prev[key] = value.map(v => exports.transformFieldValue(field, v));
+        if (field.unique) prev[key] = uniq(prev[key]);
       }
     } else if (ref) {
       prev[key] = store.idValue(ref, value);
     } else {
-      // Casting
-      switch (Parser.getFieldSimpleType(field)) {
-        case 'String': {
-          value = `${value}`;
-          break;
-        }
-        case 'Number': case 'Float': {
-          const num = Number(value);
-          if (!Number.isNaN(num)) value = num;
-          break;
-        }
-        case 'Boolean': {
-          if (value === 'true') value = true;
-          if (value === 'false') value = false;
-          break;
-        }
-        default: break;
-      }
-
-      // Transforming
-      transforms.forEach(t => (value = t(value)));
-
-      prev[key] = value;
+      prev[key] = exports.transformFieldValue(field, value);
     }
 
     return prev;
