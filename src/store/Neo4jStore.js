@@ -15,15 +15,15 @@ class Cypher {
   }
 
   find(model, where = {}) {
-    const $where = Cypher.normalizeWhereClause(where);
+    const { $where, $params } = Cypher.normalizeWhereClause(where);
     const $wherePart = $where ? `WHERE ${$where}` : '';
-    return this.query(`MATCH (n:${model}) ${$wherePart} RETURN n`);
+    return this.query(`MATCH (n:${model}) ${$wherePart} RETURN n`, $params);
   }
 
   count(model, where = {}) {
-    const $where = Cypher.normalizeWhereClause(where);
+    const { $where, $params } = Cypher.normalizeWhereClause(where);
     const $wherePart = $where ? `WHERE ${$where}` : '';
-    return this.query(`MATCH (n:${model}) ${$wherePart} RETURN count(n) AS n`).then(counts => counts[0]);
+    return this.query(`MATCH (n:${model}) ${$wherePart} RETURN count(n) AS n`, $params).then(counts => counts[0]);
   }
 
   create(model, data) {
@@ -58,17 +58,26 @@ class Cypher {
   }
 
   static normalizeWhereClause(where) {
+    const $params = {};
+
     const obj = proxyDeep(where, {
       get(target, prop, rec) {
         const value = Reflect.get(target, prop, rec);
         if (typeof value === 'function') return value.bind(target);
         if (Array.isArray(value)) return `any (x IN n.${prop} WHERE x IN [${value.join(',')}])`;
-        if (typeof value === 'string') return `toString(n.${prop}) =~ '(?i)${PicoMatch.makeRe(value, { unescape: true, regex: true, maxLength: 100 }).toString().slice(1, -1).replace(/\\/g, '\\\\')}'`;
-        return `n.${prop} = ${value}`;
+        if (typeof value === 'string') {
+          $params[prop] = `(?i)${PicoMatch.makeRe(value, { unescape: true, regex: true, maxLength: 100 }).toString().slice(1, -1)}`;
+          return `toString(n.${prop}) =~ $${prop}`;
+        }
+        $params[prop] = value;
+        return `n.${prop} = $${prop}`;
       },
     }).toObject();
 
-    return Object.values(obj).join(' AND ');
+    return {
+      $where: Object.values(obj).join(' AND '),
+      $params,
+    };
   }
 
   static serialize(data) {

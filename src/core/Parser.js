@@ -32,6 +32,10 @@ module.exports = class Parser {
     return this.getModel(model).fields[field].alias || field;
   }
 
+  getModelFieldDef(model, field) {
+    return this.getModel(model).fields[field];
+  }
+
   getModelNames(getAll = true) {
     return Object.entries(this.schema).filter(([, modelDef]) => getAll || !modelDef.hideFromApi).map(([model]) => model);
   }

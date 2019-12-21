@@ -3,7 +3,7 @@ const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
 const { mergeDeep } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
-const { ensureModel, validateModelData, normalizeModelData, resolveModelWhereClause, resolveReferentialIntegrity } = require('../service/data.service');
+const { ensureModel, ensureModelArrayTypes, validateModelData, normalizeModelData, resolveModelWhereClause, resolveReferentialIntegrity } = require('../service/data.service');
 
 module.exports = class Store {
   constructor(parser, stores, storeArgs = {}) {
@@ -52,6 +52,7 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
+    ensureModelArrayTypes(parser, this, model, where);
     normalizeModelData(parser, this, model, where, 'find');
 
     return createSystemEvent('Query', { method: 'find', model, store: this, parser, where }, async () => {
@@ -64,7 +65,8 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    normalizeModelData(parser, this, model, where, 'count');
+    ensureModelArrayTypes(parser, this, model, where);
+    normalizeModelData(parser, this, model, where, 'find');
 
     return createSystemEvent('Query', { method: 'count', model, store: this, parser, where }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
@@ -76,6 +78,7 @@ module.exports = class Store {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
+    ensureModelArrayTypes(parser, this, model, data);
     normalizeModelData(parser, this, model, data, 'create');
     await validateModelData(parser, this, model, data, {}, 'create');
 
@@ -89,6 +92,7 @@ module.exports = class Store {
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     const doc = await ensureModel(this, model, id);
+    ensureModelArrayTypes(parser, this, model, data);
     normalizeModelData(parser, this, model, data, 'update');
     await validateModelData(parser, this, model, data, doc, 'update');
 

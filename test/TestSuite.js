@@ -120,13 +120,13 @@ module.exports = (name, db = 'mongo') => {
       });
 
       test('Book', async () => {
-        mobyDick = await dao.create('Book', { name: 'moby dick', price: 9.99, author: richard.id });
+        mobyDick = await dao.create('Book', { name: 'moby dick', price: 9.99, bids: [1.99, 1.20, 5.00], bestSeller: true, author: richard.id });
         expect(mobyDick.id).toBeDefined();
         expect(mobyDick.name).toBe('Moby Dick');
         expect(mobyDick.price).toBe(9.99);
         expect(mobyDick.author).toBe(richard.id);
 
-        healthBook = await dao.create('Book', { name: 'Health and Wellness', price: '29.99', author: christie.id });
+        healthBook = await dao.create('Book', { name: 'Health and Wellness', bids: [5.00, 9.00, 12.50], price: '29.99', author: christie.id });
         expect(healthBook.id).toBeDefined();
         expect(healthBook.name).toEqual('Health And Wellness');
         expect(healthBook.price).toEqual(29.99);
@@ -154,12 +154,13 @@ module.exports = (name, db = 'mongo') => {
       });
 
       test('Building', async () => {
-        bookBuilding = await dao.create('Building', { year: 1990, type: 'business' });
-        libraryBuilding = await dao.create('Building', { type: 'business' });
+        bookBuilding = await dao.create('Building', { year: 1990, type: 'business', tenants: christie.id });
+        libraryBuilding = await dao.create('Building', { type: 'business', tenants: christie.id });
         apartmentBuilding = await dao.create('Building', { type: 'home', tenants: [richard.id, christie.id], landlord: richard.id });
         expect(bookBuilding.id).toBeDefined();
         expect(bookBuilding.year).toEqual(1990);
         expect(libraryBuilding.id).toBeDefined();
+        expect(libraryBuilding.tenants).toEqual([christie.id]);
         expect(apartmentBuilding.id).toBeDefined();
         expect(apartmentBuilding.landlord).toEqual(richard.id);
         expect(apartmentBuilding.tenants).toEqual([richard.id, christie.id]);
@@ -243,8 +244,15 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.find('Book', { price: 9.99 })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
         expect(await dao.find('Book', { price: '9.99' })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
         expect(await dao.find('Book', { author: christie.id })).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
+        expect(await dao.find('Book', { bestSeller: true })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dao.find('Book', { bestSeller: 'TRu?' })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dao.find('Book', { bestSeller: 'tru' })).toMatchObject([]);
         expect(await dao.find('Book', { price: '?.??' })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
         expect(await dao.find('Book', { price: '??.*' })).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
+        expect(await dao.find('Book', { bids: [1.99] })).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dao.find('Book', { bids: 1.99 })).toMatchObject([{ id: mobyDick.id }]);
+        expect((await dao.find('Book', { bids: 5.00 })).sort(sorter)).toMatchObject([{ id: mobyDick.id }, { id: healthBook.id }].sort(sorter));
+        expect(await dao.find('Book', { bids: [19.99, '1.99'] })).toMatchObject([{ id: mobyDick.id }]);
       });
 
       test('Chapter', async () => {
@@ -277,8 +285,8 @@ module.exports = (name, db = 'mongo') => {
       test('Building', async () => {
         expect((await dao.find('Building')).length).toBe(3);
         expect((await dao.find('Building', { tenants: [richard.id] })).length).toBe(1);
-        expect((await dao.find('Building', { tenants: [christie.id] })).length).toBe(1);
-        expect((await dao.find('Building', { tenants: [richard.id, christie.id] })).length).toBe(1);
+        expect((await dao.find('Building', { tenants: [christie.id] })).length).toBe(3);
+        expect((await dao.find('Building', { tenants: [richard.id, christie.id] })).length).toBe(3);
         expect((await dao.find('Building', { tenants: [richard.id, christie.id], landlord: richard.id })).length).toBe(1);
         expect((await dao.find('Building', { tenants: [richard.id, christie.id], landlord: christie.id })).length).toBe(0);
       });
@@ -333,8 +341,8 @@ module.exports = (name, db = 'mongo') => {
       test('Building', async () => {
         expect(await dao.count('Building')).toBe(3);
         expect(await dao.count('Building', { tenants: [richard.id] })).toBe(1);
-        expect(await dao.count('Building', { tenants: [christie.id] })).toBe(1);
-        expect(await dao.count('Building', { tenants: [richard.id, christie.id] })).toBe(1);
+        expect(await dao.count('Building', { tenants: [christie.id] })).toBe(3);
+        expect(await dao.count('Building', { tenants: [richard.id, christie.id] })).toBe(3);
         expect(await dao.count('Building', { tenants: [richard.id, christie.id], landlord: richard.id })).toBe(1);
         expect(await dao.count('Building', { tenants: [richard.id, christie.id], landlord: christie.id })).toBe(0);
       });
@@ -423,7 +431,6 @@ module.exports = (name, db = 'mongo') => {
         await expect(dao.create('Building')).rejects.toThrow();
         await expect(dao.create('Building', { type: 'bad-type' })).rejects.toThrow();
         await expect(dao.create('Building', { type: 'business', landlord: bookstore1.id })).rejects.toThrow();
-        await expect(dao.create('Building', { type: 'business', tenants: richard.id })).rejects.toThrow();
         await expect(dao.create('Building', { type: 'business', tenants: [richard.id, bookstore1.id] })).rejects.toThrow();
       });
 

@@ -1,9 +1,10 @@
 const { required, immutable, range, allow, reject, email } = require('./src/service/rule.service');
+const { toCase } = require('./src/service/transform.service');
 
 exports.schema = {
   Person: {
     fields: {
-      name: { type: String, case: 'title', rules: [required()] },
+      name: { type: String, transforms: [toCase('title')], rules: [required()] },
       emailAddress: { type: String, rules: [required(), email()] },
       authored: { type: ['Book'], by: 'author' },
       friends: { type: ['Person'], unique: true, onDelete: 'cascade' },
@@ -14,10 +15,11 @@ exports.schema = {
   },
   Book: {
     fields: {
-      name: { type: String, case: 'title', rules: [required(), reject('The Bible')] },
+      name: { type: String, transforms: [toCase('title')], rules: [required(), reject('The Bible')] },
       price: { type: Number, rules: [range(0, 100), required()] },
       author: { type: 'Person', onDelete: 'cascade', rules: [required(), immutable()] },
       bestSeller: Boolean,
+      bids: { type: [Number] },
       chapters: { type: ['Chapter'], by: 'book' },
     },
     indexes: [
@@ -26,7 +28,7 @@ exports.schema = {
   },
   Chapter: {
     fields: {
-      name: { type: String, case: 'title', rules: [required()] },
+      name: { type: String, transforms: [toCase('title')], rules: [required()] },
       book: { type: 'Book', rules: [required()] },
       pages: { type: ['Page'], by: 'chapter' },
     },
@@ -36,7 +38,7 @@ exports.schema = {
   },
   Page: {
     fields: {
-      number: { type: Number, min: 1, rules: [required(), range(1)] },
+      number: { type: Number, rules: [required(), range(1)] },
       verbage: String,
       chapter: { type: 'Chapter', rules: [required()] },
     },
@@ -46,7 +48,7 @@ exports.schema = {
   },
   BookStore: {
     fields: {
-      name: { type: String, case: 'title', rules: [required()] },
+      name: { type: String, transforms: [toCase('title')], rules: [required()] },
       location: String,
       books: { type: ['Book'], onDelete: 'cascade' },
       building: { type: 'Building', embedded: true, onDelete: 'cascade', rules: [required()] },
@@ -57,7 +59,7 @@ exports.schema = {
   },
   Library: {
     fields: {
-      name: { type: String, case: 'title', rules: [required()] },
+      name: { type: String, transforms: [toCase('title')], rules: [required()] },
       location: String,
       books: { type: ['Book'], onDelete: 'cascade' },
       building: { type: 'Building', embedded: true, onDelete: 'cascade', rules: [required()] },

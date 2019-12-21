@@ -44,9 +44,11 @@ exports.validateModelData = (parser, store, model, data, oldData, op) => {
         } else {
           promises.push(...value.map((v, i) => exports.ensureModel(store, ref, v)));
         }
-      } else {
-        value.forEach((v, i) => exports.validateModelData(parser, store, key, v, get(oldValue, i), op));
       }
+      // TODO: Is this needed?
+      // else {
+      //   value.forEach((v, i) => exports.validateModelData(parser, store, key, v, get(oldValue, i), op));
+      // }
     } else if (ref) {
       if (field.embedded) {
         promises.push(exports.validateModelData(parser, store, ref, value, oldValue, op));
@@ -59,14 +61,26 @@ exports.validateModelData = (parser, store, model, data, oldData, op) => {
   return Promise.all(promises);
 };
 
-exports.normalizeModelData = (parser, store, model, data, op) => {
-  const fields = parser.getModelFields(model);
-
+exports.ensureModelArrayTypes = (parser, store, model, data) => {
   return Object.entries(data).reduce((prev, [key, value]) => {
-    const field = fields[key] || {};
-    const ref = Parser.getFieldDataRef(field);
+    const field = parser.getModelFieldDef(model, key);
+    if (value == null || field == null) return prev;
 
-    if (value == null) return prev;
+    // Ensure array if type array
+    const isArrayType = Boolean(Parser.getFieldArrayType(field));
+    if (isArrayType && !Array.isArray(value)) prev[key] = [value];
+
+    return prev;
+  }, data);
+};
+
+exports.normalizeModelData = (parser, store, model, data, op) => {
+  return Object.entries(data).reduce((prev, [key, value]) => {
+    const field = parser.getModelFieldDef(model, key);
+    if (value == null || field == null) return prev;
+
+    const ref = Parser.getFieldDataRef(field);
+    const transforms = field.transforms || [];
 
     if (isPlainObject(value) && ref) {
       prev[key] = exports.normalizeModelData(parser, store, ref, value, op);
@@ -85,6 +99,7 @@ exports.normalizeModelData = (parser, store, model, data, op) => {
     } else if (ref) {
       prev[key] = store.idValue(ref, value);
     } else {
+      // Casting
       switch (Parser.getFieldSimpleType(field)) {
         case 'String': {
           value = `${value}`;
@@ -92,29 +107,19 @@ exports.normalizeModelData = (parser, store, model, data, op) => {
         }
         case 'Number': case 'Float': {
           const num = Number(value);
-          value = Number.isNaN(num) ? value : num;
+          if (!Number.isNaN(num)) value = num;
           break;
         }
         case 'Boolean': {
-          value = Boolean(value);
+          if (value === 'true') value = true;
+          if (value === 'false') value = false;
           break;
         }
         default: break;
       }
 
-      switch (field.case) {
-        case 'lower': {
-          value = value.toLowerCase();
-          break;
-        }
-        case 'title': {
-          if (op === 'find' || op === 'create' || op === 'update') {
-            value = Case.capitalCase(value.toLowerCase(), { stripRegexp: new RegExp('[^A-Z0-9\\[\\]?*{}.!]', 'gi') });
-          }
-          break;
-        }
-        default: break;
-      }
+      // Transforming
+      transforms.forEach(t => (value = t(value)));
 
       prev[key] = value;
     }
