@@ -1,5 +1,4 @@
 const Boom = require('@hapi/boom');
-const { get } = require('lodash');
 const { ObjectID } = require('mongodb');
 const Parser = require('../core/Parser');
 const { uniq, isScalarValue, isPlainObject, promiseChain } = require('../service/app.service');
@@ -17,7 +16,6 @@ exports.validateModelData = (parser, store, model, data, oldData, op) => {
 
   Object.entries(fields).forEach(([key, field]) => {
     const value = data[key];
-    const oldValue = get(oldData, key);
     const rules = field.rules || [];
     const ref = Parser.getFieldDataRef(field);
     const path = `${model}.${key}`;
@@ -26,7 +24,7 @@ exports.validateModelData = (parser, store, model, data, oldData, op) => {
 
     // User-Defined Validation Rules
     if (value == null || isScalarValue(value) || value instanceof ObjectID) {
-      rules.forEach(rule => rule(value, oldValue, op, path));
+      rules.forEach(rule => rule(value, oldData, op, path));
     }
 
     // The data may not be defined for this key
@@ -39,18 +37,17 @@ exports.validateModelData = (parser, store, model, data, oldData, op) => {
     if (isValueArray) {
       if (ref) {
         if (field.embedded) {
-          promises.push(...value.map((v, i) => exports.validateModelData(parser, store, ref, v, get(oldValue, i), op)));
+          promises.push(...value.map(v => exports.validateModelData(parser, store, ref, v, oldData, op)));
         } else {
-          promises.push(...value.map((v, i) => exports.ensureModel(store, ref, v)));
+          promises.push(...value.map(v => exports.ensureModel(store, ref, v)));
+          value.forEach(v => rules.forEach(rule => rule(v, oldData, op, path)));
         }
+      } else {
+        value.forEach(v => rules.forEach(rule => rule(v, oldData, op, path)));
       }
-      // TODO: Is this needed?
-      // else {
-      //   value.forEach((v, i) => exports.validateModelData(parser, store, key, v, get(oldValue, i), op));
-      // }
     } else if (ref) {
       if (field.embedded) {
-        promises.push(exports.validateModelData(parser, store, ref, value, oldValue, op));
+        promises.push(exports.validateModelData(parser, store, ref, value, oldData, op));
       } else {
         promises.push(exports.ensureModel(store, ref, value));
       }
@@ -108,6 +105,7 @@ exports.normalizeModelData = (parser, store, model, data, op) => {
     if (value == null || field == null) return prev;
 
     const ref = Parser.getFieldDataRef(field);
+    const type = Parser.getFieldDataType(field);
 
     if (isPlainObject(value) && ref) {
       prev[key] = exports.normalizeModelData(parser, store, ref, value, op);
@@ -115,14 +113,14 @@ exports.normalizeModelData = (parser, store, model, data, op) => {
       if (ref) {
         if (field.embedded) {
           prev[key] = value.map(v => exports.normalizeModelData(parser, store, ref, v, op));
-        } else if (field.unique) {
+        } else if (type.isSet) {
           prev[key] = uniq(value).map(v => store.idValue(ref, v));
         } else {
           prev[key] = value.map(v => store.idValue(ref, v));
         }
       } else {
         prev[key] = value.map(v => exports.transformFieldValue(field, v));
-        if (field.unique) prev[key] = uniq(prev[key]);
+        if (type.isSet) prev[key] = uniq(prev[key]);
       }
     } else if (ref) {
       prev[key] = store.idValue(ref, value);

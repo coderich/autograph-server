@@ -297,6 +297,7 @@ module.exports = (name, db = 'mongo') => {
         expect((await dao.find('Building', { tenants: [richard.id] })).length).toBe(1);
         expect((await dao.find('Building', { tenants: [christie.id] })).length).toBe(3);
         expect((await dao.find('Building', { tenants: [richard.id, christie.id] })).length).toBe(3);
+        // expect((await dao.find('Building', { tenants: `@(@(${richard.id})@(${christie.id}))` })).length).toBe(1);
         expect((await dao.find('Building', { tenants: [richard.id, christie.id], landlord: richard.id })).length).toBe(1);
         expect((await dao.find('Building', { tenants: [richard.id, christie.id], landlord: christie.id })).length).toBe(0);
       });
@@ -380,6 +381,7 @@ module.exports = (name, db = 'mongo') => {
         await expect(dao.update('Person', richard.id, { name: 'christie' })).rejects.toThrow();
         await expect(dao.update('Person', richard.id, { name: null })).rejects.toThrow();
         await expect(dao.update('Person', 'nobody', { name: 'NewGuy' })).rejects.toThrow();
+        await expect(dao.update('Person', richard.id, { friends: [richard.id] })).rejects.toThrow();
       });
 
       test('Book', async () => {

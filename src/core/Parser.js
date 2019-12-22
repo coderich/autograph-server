@@ -92,7 +92,7 @@ module.exports = class Parser {
       case Number: return 'Float';
       case Boolean: return 'Boolean';
       default: {
-        if (Array.isArray(field)) return [Parser.getFieldDataType(field[0])];
+        if (Array.isArray(field)) { field[0] = Parser.getFieldDataType(field[0]); return field; }
         if (field instanceof Object) return Parser.getFieldDataType(field.type);
         return field;
       }

@@ -1,7 +1,7 @@
 const PicoMatch = require('picomatch');
 const { MongoClient, ObjectID } = require('mongodb');
 const Parser = require('../core/Parser');
-const { proxyDeep, isScalarValue } = require('../service/app.service');
+const { proxyDeep } = require('../service/app.service');
 
 const toObject = (doc) => {
   if (!doc) return undefined;

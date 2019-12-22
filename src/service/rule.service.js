@@ -1,18 +1,21 @@
+const { get } = require('lodash');
 const { isEmail } = require('validator');
 const Errors = require('./error.service');
 const { hashObject } = require('./app.service');
 
-exports.allow = (...args) => (val, oldVal, op, path) => {
+exports.allow = (...args) => (val, oldData, op, path) => {
   if (val == null) return;
   if (args.indexOf(val) === -1) throw new Errors.AllowRuleError(`${path} must contain: { ${args.join(' ')} }, found '${val}'`);
 };
 
-exports.email = () => (val, oldVal, op, path) => {
+exports.email = () => (val, oldData, op, path) => {
   if (val == null) return;
   if (!isEmail(val)) throw new Errors.EmailRuleError(`${path} is not a valid email`);
 };
 
-exports.immutable = () => (val, oldVal, op, path) => {
+exports.immutable = () => (val, oldData, op, path) => {
+  const p = path.substr(path.indexOf('.') + 1);
+  const oldVal = get(oldData, p);
   if (op === 'update' && `${hashObject(val)}` !== `${hashObject(oldVal)}` && val !== undefined) throw new Errors.ImmutableRuleError(`${path} is immutable; cannot be changed once set`);
 };
 
@@ -29,12 +32,17 @@ exports.range = (min, max) => {
   };
 };
 
-exports.reject = (...args) => (val, oldVal, op, path) => {
+exports.reject = (...args) => (val, oldData, op, path) => {
   if (val == null) return;
   if (args.indexOf(val) > -1) throw new Errors.RejectRuleError(`${path} must not contain: { ${args.join(' ')} }, found '${val}'`);
 };
 
-exports.required = () => (val, oldVal, op, path) => {
+exports.required = () => (val, oldData, op, path) => {
   if (op === 'create' && val == null) throw new Errors.RequireRuleError(`${path} is a required field`);
   if (op === 'update' && val === null) throw new Errors.RequireRuleError(`${path} cannot be set to null`);
+};
+
+exports.selfless = () => (val, oldData, op, path) => {
+  if (val == null) return;
+  if (`${val}` === `${get(oldData, 'id')}`) throw new Errors.SelflessRuleError(`${path} cannot hold a reference to itself`);
 };

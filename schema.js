@@ -1,13 +1,14 @@
-const { required, immutable, range, allow, reject, email } = require('./src/service/rule.service');
-const { toCase, uniq } = require('./src/service/transform.service');
+const { required, immutable, range, allow, reject, email, selfless } = require('./src/service/rule.service');
+const { titleCase } = require('./src/service/transform.service');
+const { Array, Set } = require('./src/service/type.service');
 
 exports.schema = {
   Person: {
     fields: {
-      name: { type: String, transforms: [toCase('title')], rules: [required()] },
+      name: { type: String, transforms: [titleCase()], rules: [required()] },
       emailAddress: { type: String, rules: [required(), email()] },
-      authored: { type: ['Book'], by: 'author' },
-      friends: { type: ['Person'], unique: true, onDelete: 'cascade', transforms: [uniq()] },
+      authored: { type: Array('Book'), by: 'author' },
+      friends: { type: Set('Person'), rules: [selfless()], onDelete: 'cascade' },
     },
     indexes: [
       { name: 'uix_person_name', type: 'unique', fields: ['name'] },
@@ -15,12 +16,12 @@ exports.schema = {
   },
   Book: {
     fields: {
-      name: { type: String, transforms: [toCase('title')], rules: [required(), reject('The Bible')] },
+      name: { type: String, transforms: [titleCase()], rules: [required(), reject('The Bible')] },
       price: { type: Number, rules: [range(0, 100), required()] },
       author: { type: 'Person', onDelete: 'cascade', rules: [required(), immutable()] },
       bestSeller: Boolean,
-      bids: { type: [Number] },
-      chapters: { type: ['Chapter'], by: 'book' },
+      bids: { type: Array(Number) },
+      chapters: { type: Array('Chapter'), by: 'book' },
     },
     indexes: [
       { name: 'uix_book', type: 'unique', fields: ['name', 'author'] },
@@ -28,9 +29,9 @@ exports.schema = {
   },
   Chapter: {
     fields: {
-      name: { type: String, transforms: [toCase('title')], rules: [required()] },
+      name: { type: String, transforms: [titleCase()], rules: [required()] },
       book: { type: 'Book', rules: [required()] },
-      pages: { type: ['Page'], by: 'chapter' },
+      pages: { type: Array('Page'), by: 'chapter' },
     },
     indexes: [
       { name: 'uix_chapter', type: 'unique', fields: ['name', 'book'] },
@@ -48,9 +49,9 @@ exports.schema = {
   },
   BookStore: {
     fields: {
-      name: { type: String, transforms: [toCase('title')], rules: [required()] },
+      name: { type: String, transforms: [titleCase()], rules: [required()] },
       location: String,
-      books: { type: ['Book'], onDelete: 'cascade' },
+      books: { type: Array('Book'), onDelete: 'cascade' },
       building: { type: 'Building', embedded: true, onDelete: 'cascade', rules: [required()] },
     },
     indexes: [
@@ -59,9 +60,9 @@ exports.schema = {
   },
   Library: {
     fields: {
-      name: { type: String, transforms: [toCase('title')], rules: [required()] },
+      name: { type: String, transforms: [titleCase()], rules: [required()] },
       location: String,
-      books: { type: ['Book'], onDelete: 'cascade' },
+      books: { type: Array('Book'), onDelete: 'cascade' },
       building: { type: 'Building', embedded: true, onDelete: 'cascade', rules: [required()] },
     },
     indexes: [
@@ -74,7 +75,7 @@ exports.schema = {
     fields: {
       year: Number,
       type: { type: String, rules: [required(), allow('home', 'office', 'business')] },
-      tenants: { type: ['Person'], unique: true, onDelete: 'cascade', transforms: [uniq()] },
+      tenants: { type: Set('Person'), onDelete: 'cascade' },
       landlord: 'Person',
     },
   },
