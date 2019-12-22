@@ -370,6 +370,13 @@ module.exports = (name, db = 'mongo') => {
     });
 
 
+    describe('Search', () => {
+      test('Person', async () => {
+        expect(await dao.find('Person', { authored: { name: 'Moby Dick' } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+      });
+    });
+
+
     describe('Data Validation', () => {
       test('Person', async () => {
         await expect(dao.create('Person')).rejects.toThrow();

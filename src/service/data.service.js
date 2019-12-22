@@ -111,7 +111,7 @@ exports.normalizeModelData = (parser, store, model, data, op) => {
       prev[key] = exports.normalizeModelData(parser, store, ref, value, op);
     } else if (Array.isArray(value)) {
       if (ref) {
-        if (field.embedded) {
+        if (field.embedded || field.by) {
           prev[key] = value.map(v => exports.normalizeModelData(parser, store, ref, v, op));
         } else if (type.isSet) {
           prev[key] = uniq(value).map(v => store.idValue(ref, v));
@@ -151,9 +151,20 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
       const field = fields[key];
       const ref = Parser.getFieldDataRef(field);
 
-      if (ref && isPlainObject(value)) {
-        exports.resolveModelWhereClause(parser, store, ref, value, field.alias || key, lookups2D, index + 1);
-        return prev;
+      if (ref) {
+        if (isPlainObject(value)) {
+          exports.resolveModelWhereClause(parser, store, ref, value, field.alias || key, lookups2D, index + 1);
+          return prev;
+        }
+
+        if (Array.isArray(value)) {
+          if (isPlainObject(value[0])) {
+            value.forEach((val) => {
+              exports.resolveModelWhereClause(parser, store, ref, val, field.alias || key, lookups2D, index + 1);
+            });
+            return prev;
+          }
+        }
       }
 
       return Object.assign(prev, { [key]: value });

@@ -11,7 +11,7 @@ class Cypher {
   }
 
   get(model, id) {
-    return this.query(`MATCH (n:${model}) WHERE id(n) = { id } RETURN n`, { id }).then(docs => docs[0]);
+    return this.query(`MATCH (n:${model}) WHERE n.id = { id } RETURN n`, { id }).then(docs => docs[0]);
   }
 
   find(model, where = {}) {
@@ -27,15 +27,15 @@ class Cypher {
   }
 
   create(model, data) {
-    return this.query(`CREATE (n:${model} { ${Object.keys(data).map(k => `${k}:{${k}}`)} }) RETURN n`, data).then(docs => docs[0]);
+    return this.query(`CREATE (n:${model} { ${Object.keys(data).map(k => `${k}:{${k}}`)} }) SET n.id = id(n) RETURN n`, data).then(docs => docs[0]);
   }
 
   replace(model, id, data, doc) {
-    return this.query(`MATCH (n:${model}) WHERE id(n) = { id } SET ${Object.keys(doc).map(k => `n.${k}={${k}}`)} RETURN n`, { id, ...doc }).then(docs => docs[0]);
+    return this.query(`MATCH (n:${model}) WHERE n.id = { id } SET ${Object.keys(doc).map(k => `n.${k}={${k}}`)} RETURN n`, { id, ...doc }).then(docs => docs[0]);
   }
 
   delete(model, id, doc) {
-    return this.query(`MATCH (n:${model}) WHERE id(n) = { id } DELETE n`, { id }).then(() => doc);
+    return this.query(`MATCH (n:${model}) WHERE n.id = { id } DELETE n`, { id }).then(() => doc);
   }
 
   dropModel(model) {
