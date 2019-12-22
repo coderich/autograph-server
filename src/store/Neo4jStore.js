@@ -114,7 +114,7 @@ class Cypher {
 
         return value;
       },
-    });
+    }).toObject();
   }
 }
 

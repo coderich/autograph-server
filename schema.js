@@ -82,6 +82,10 @@ exports.schema = {
 };
 
 exports.stores = {
+  neo4j: {
+    type: 'neo4j',
+    uri: 'bolt://localhost',
+  },
   default: {
     type: 'mongo',
     uri: 'mongodb://localhost:27017/autograph',

@@ -3,7 +3,15 @@ const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
 const { mergeDeep } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
-const { ensureModel, ensureModelArrayTypes, validateModelData, normalizeModelData, resolveModelWhereClause, resolveReferentialIntegrity } = require('../service/data.service');
+const {
+  ensureModel,
+  ensureModelArrayTypes,
+  validateModelData,
+  normalizeModelData,
+  normalizeModelWhere,
+  resolveModelWhereClause,
+  resolveReferentialIntegrity,
+} = require('../service/data.service');
 
 module.exports = class Store {
   constructor(parser, stores, storeArgs = {}) {
@@ -53,7 +61,7 @@ module.exports = class Store {
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, where);
-    normalizeModelData(parser, this, model, where, 'find');
+    normalizeModelWhere(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'find', model, store: this, parser, where }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
@@ -66,7 +74,7 @@ module.exports = class Store {
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, where);
-    normalizeModelData(parser, this, model, where, 'find');
+    normalizeModelWhere(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'count', model, store: this, parser, where }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
@@ -79,7 +87,7 @@ module.exports = class Store {
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, data);
-    normalizeModelData(parser, this, model, data, 'create');
+    normalizeModelData(parser, this, model, data);
     await validateModelData(parser, this, model, data, {}, 'create');
 
     return createSystemEvent('Mutation', { method: 'create', model, store: this, parser, data }, () => {
@@ -93,11 +101,11 @@ module.exports = class Store {
     const modelAlias = parser.getModelAlias(model);
     const doc = await ensureModel(this, model, id);
     ensureModelArrayTypes(parser, this, model, data);
-    normalizeModelData(parser, this, model, data, 'update');
+    normalizeModelData(parser, this, model, data);
     await validateModelData(parser, this, model, data, doc, 'update');
 
     return createSystemEvent('Mutation', { method: 'update', model, store: this, parser, id, data }, async () => {
-      const merged = normalizeModelData(parser, this, model, mergeDeep(doc, data), 'create'); // I think "create" is correct here...
+      const merged = normalizeModelData(parser, this, model, mergeDeep(doc, data));
       return store.dao.replace(modelAlias, store.idValue(id), data, merged);
     });
   }

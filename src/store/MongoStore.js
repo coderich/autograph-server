@@ -7,6 +7,7 @@ const toObject = (doc) => {
   if (!doc) return undefined;
 
   return Object.defineProperty(doc, 'id', {
+    // enumerable: true,
     get() { return this._id; }, // eslint-disable-line
   });
 };

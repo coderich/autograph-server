@@ -99,7 +99,53 @@ exports.transformFieldValue = (field, value) => {
   return value;
 };
 
-exports.normalizeModelData = (parser, store, model, data, op) => {
+
+exports.normalizeModelWhere = (parser, store, model, data) => {
+  return Object.entries(data).reduce((prev, [key, value]) => {
+    const field = parser.getModelFieldDef(model, key);
+    if (value == null || field == null) return prev;
+
+    const ref = Parser.getFieldDataRef(field);
+
+    if (ref) {
+      if (isPlainObject(value) && ref) {
+        prev[key] = exports.normalizeModelData(parser, store, ref, value);
+      } else if (Array.isArray(value)) {
+        if (isPlainObject(value[0])) {
+          prev[key] = value.map(val => exports.normalizeModelData(parser, store, ref, val));
+        } else {
+          prev[key] = value.map(v => store.idValue(ref, v));
+        }
+      }
+    } else if (Array.isArray(value)) {
+      prev[key] = value.map(val => exports.transformFieldValue(field, val));
+    } else {
+      prev[key] = exports.transformFieldValue(field, value);
+    }
+
+    // if (isPlainObject(value) && ref) {
+    //   prev[key] = exports.normalizeModelData(parser, store, ref, value);
+    // } else if (Array.isArray(value)) {
+    //   if (ref) {
+    //     if (field.embedded || field.by) {
+    //       prev[key] = value.map(v => exports.normalizeModelData(parser, store, ref, v));
+    //     } else {
+    //       prev[key] = value.map(v => store.idValue(ref, v));
+    //     }
+    //   } else {
+    //     prev[key] = value.map(v => exports.transformFieldValue(field, v));
+    //   }
+    // } else if (ref) {
+    //   prev[key] = store.idValue(ref, value);
+    // } else {
+    //   prev[key] = exports.transformFieldValue(field, value);
+    // }
+
+    return prev;
+  }, data);
+};
+
+exports.normalizeModelData = (parser, store, model, data) => {
   return Object.entries(data).reduce((prev, [key, value]) => {
     const field = parser.getModelFieldDef(model, key);
     if (value == null || field == null) return prev;
@@ -108,11 +154,11 @@ exports.normalizeModelData = (parser, store, model, data, op) => {
     const type = Parser.getFieldDataType(field);
 
     if (isPlainObject(value) && ref) {
-      prev[key] = exports.normalizeModelData(parser, store, ref, value, op);
+      prev[key] = exports.normalizeModelData(parser, store, ref, value);
     } else if (Array.isArray(value)) {
       if (ref) {
         if (field.embedded || field.by) {
-          prev[key] = value.map(v => exports.normalizeModelData(parser, store, ref, v, op));
+          prev[key] = value.map(v => exports.normalizeModelData(parser, store, ref, v));
         } else if (type.isSet) {
           prev[key] = uniq(value).map(v => store.idValue(ref, v));
         } else {
@@ -172,7 +218,10 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
   });
 
   if (index === 0) {
-    if (lookups2D.length === 1) return lookups2D[0].lookups[0].query; // Nothing nested to traverse!
+    if (lookups2D.length === 1) {
+      const [{ query }] = lookups2D[0].lookups;
+      return query;
+    }
 
     return promiseChain(lookups2D.reverse().map(({ lookups }, index2D) => {
       return () => Promise.all(lookups.map(async ({ modelName, query }) => {
@@ -206,7 +255,8 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
         });
       }));
     })).then(() => {
-      return lookups2D[lookups2D.length - 1].lookups[0].query;
+      const [{ query }] = lookups2D[lookups2D.length - 1].lookups;
+      return query;
     });
   }
 

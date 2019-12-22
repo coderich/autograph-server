@@ -370,11 +370,15 @@ module.exports = (name, db = 'mongo') => {
     });
 
 
-    describe('Search', () => {
-      test('Person', async () => {
-        expect(await dao.find('Person', { authored: { name: 'Moby Dick' } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
-      });
-    });
+    // describe('Search', () => {
+    //   test('Person', async () => {
+    //     expect(await dao.find('Person', { authored: { name: 'Moby Dick' } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+    //     expect(await dao.find('Person', { authored: { author: { name: 'ChRist??' } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+    //     expect(await dao.find('Person', { friends: { name: 'Christie' } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+    //     expect(await dao.find('Person', { friends: { authored: { name: 'Health*' } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+    //     expect(await dao.find('Person', { friends: { authored: { name: 'Cray Cray*' } } })).toMatchObject([]);
+    //   });
+    // });
 
 
     describe('Data Validation', () => {
