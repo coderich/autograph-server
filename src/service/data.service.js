@@ -189,11 +189,14 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
 
         if (Array.isArray(value)) {
           if (isPlainObject(value[0])) {
-            value.forEach((val) => {
-              exports.resolveModelWhereClause(parser, store, ref, val, field.alias || key, lookups2D, index + 1);
-            });
+            value.forEach(val => exports.resolveModelWhereClause(parser, store, ref, val, field.alias || key, lookups2D, index + 1));
             return prev;
           }
+        }
+
+        if (field.by) {
+          exports.resolveModelWhereClause(parser, store, ref, { [store.idField(ref)]: value }, field.alias || key, lookups2D, index + 1);
+          return prev;
         }
       }
 

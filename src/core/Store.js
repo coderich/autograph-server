@@ -56,7 +56,7 @@ module.exports = class Store {
     });
   }
 
-  async find(model, where = {}, options) {
+  async find(model, where = {}) {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
@@ -65,7 +65,7 @@ module.exports = class Store {
 
     return createSystemEvent('Query', { method: 'find', model, store: this, parser, where }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
-      return store.dao.find(modelAlias, resolvedWhere, options);
+      return store.dao.find(modelAlias, resolvedWhere);
     });
   }
 
