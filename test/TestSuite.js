@@ -493,7 +493,7 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.find('Book', { chapters: { name: ['chapter1', 'no-chapter'] } })).toMatchObject([{ id: healthBook.id }]);
         expect(await dao.find('Book', { chapters: { name: '*' } })).toMatchObject([{ id: healthBook.id }]);
         expect(await dao.find('Book', { chapters: { pages: { number: 1 } } })).toMatchObject([{ id: healthBook.id }]);
-        // expect(await dao.find('Book', { chapters: [{ name: 'HongKong' }, chapter1.id] })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dao.find('Book', { chapters: [{ name: 'HongKong' }, chapter1.id] })).toMatchObject([{ id: healthBook.id }]);
       });
     });
   });
