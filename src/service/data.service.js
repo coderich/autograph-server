@@ -108,7 +108,7 @@ exports.normalizeModelWhere = (parser, store, model, data) => {
     const ref = Parser.getFieldDataRef(field);
 
     if (ref) {
-      if (isPlainObject(value) && ref) {
+      if (isPlainObject(value)) {
         prev[key] = exports.normalizeModelData(parser, store, ref, value);
       } else if (Array.isArray(value)) {
         if (isPlainObject(value[0])) {
@@ -116,30 +116,14 @@ exports.normalizeModelWhere = (parser, store, model, data) => {
         } else {
           prev[key] = value.map(v => store.idValue(ref, v));
         }
+      } else {
+        prev[key] = store.idValue(ref, value);
       }
     } else if (Array.isArray(value)) {
       prev[key] = value.map(val => exports.transformFieldValue(field, val));
     } else {
       prev[key] = exports.transformFieldValue(field, value);
     }
-
-    // if (isPlainObject(value) && ref) {
-    //   prev[key] = exports.normalizeModelData(parser, store, ref, value);
-    // } else if (Array.isArray(value)) {
-    //   if (ref) {
-    //     if (field.embedded || field.by) {
-    //       prev[key] = value.map(v => exports.normalizeModelData(parser, store, ref, v));
-    //     } else {
-    //       prev[key] = value.map(v => store.idValue(ref, v));
-    //     }
-    //   } else {
-    //     prev[key] = value.map(v => exports.transformFieldValue(field, v));
-    //   }
-    // } else if (ref) {
-    //   prev[key] = store.idValue(ref, value);
-    // } else {
-    //   prev[key] = exports.transformFieldValue(field, value);
-    // }
 
     return prev;
   }, data);

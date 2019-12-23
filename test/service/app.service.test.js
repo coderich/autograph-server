@@ -40,6 +40,15 @@ describe('AppService', () => {
     expect(re).toBeDefined();
   });
 
+  test('object.reduce', () => {
+    const data = { id: 1, name: 'rich' };
+    const newData = Object.entries(data).reduce((prev, [key, value]) => {
+      return prev;
+    }, data);
+    expect(newData.id).toBe(1);
+    expect(newData.name).toBe('rich');
+  });
+
   test('isPlainObject', () => {
     expect(isPlainObject(ObjectID('abclghalnohe'))).toBe(false);
     expect(isPlainObject([])).toBe(false);

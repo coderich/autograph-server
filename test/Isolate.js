@@ -116,7 +116,7 @@ module.exports = (name, db = 'mongo') => {
 
     describe('IsolateSearch', () => {
       test('Person', async () => {
-        expect(await dao.find('Person', { friends: { name: 'Christie' } })).toMatchObject([{ id: '5dffd6a505206e633cde8156', name: 'Rich' }]);
+        expect(await dao.find('Person', { friends: { name: 'Christie' } })).toMatchObject([{ name: 'Rich' }]);
       });
     });
   });
