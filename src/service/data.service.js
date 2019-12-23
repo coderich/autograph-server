@@ -111,11 +111,11 @@ exports.normalizeModelWhere = (parser, store, model, data) => {
       if (isPlainObject(value)) {
         prev[key] = exports.normalizeModelData(parser, store, ref, value);
       } else if (Array.isArray(value)) {
-        if (isPlainObject(value[0])) {
-          prev[key] = value.map(val => exports.normalizeModelData(parser, store, ref, val));
-        } else {
-          prev[key] = value.map(v => store.idValue(ref, v));
-        }
+        prev[key] = value.map((val) => {
+          if (isPlainObject(val)) return exports.normalizeModelData(parser, store, ref, val);
+          if (isIdValue(val)) return store.idValue(ref, val);
+          return val;
+        });
       } else {
         prev[key] = store.idValue(ref, value);
       }
