@@ -1,7 +1,7 @@
 const Boom = require('@hapi/boom');
 const { ObjectID } = require('mongodb');
 const Parser = require('../core/Parser');
-const { uniq, isScalarValue, isPlainObject, promiseChain } = require('../service/app.service');
+const { uniq, isScalarValue, isPlainObject, promiseChain, isIdValue } = require('../service/app.service');
 
 exports.ensureModel = (store, model, id) => {
   return store.get(model, id).then((doc) => {
@@ -186,12 +186,17 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
           exports.resolveModelWhereClause(parser, store, ref, value, field.alias || key, lookups2D, index + 1);
           return prev;
         }
-
         if (Array.isArray(value)) {
-          if (isPlainObject(value[0])) {
-            value.forEach(val => exports.resolveModelWhereClause(parser, store, ref, val, field.alias || key, lookups2D, index + 1));
-            return prev;
-          }
+          const scalars = [];
+          const norm = value.map((v) => {
+            if (isPlainObject(v)) return v;
+            if (field.by && isIdValue(v)) return { [store.idField(ref)]: v };
+            scalars.push(v);
+            return null;
+          }).filter(v => v);
+          norm.forEach(val => exports.resolveModelWhereClause(parser, store, ref, val, field.alias || key, lookups2D, index + 1));
+          if (scalars.length) prev[key] = scalars;
+          return prev;
         }
 
         if (field.by) {

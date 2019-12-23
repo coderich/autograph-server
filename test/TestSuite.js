@@ -262,6 +262,7 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.find('Book', { bids: 1.99 })).toMatchObject([{ id: mobyDick.id }]);
         expect((await dao.find('Book', { bids: 5.00 })).sort(sorter)).toMatchObject([{ id: mobyDick.id }, { id: healthBook.id }].sort(sorter));
         expect(await dao.find('Book', { bids: [19.99, '1.99'] })).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dao.find('Book', { chapters: chapter1.id })).toMatchObject([{ id: healthBook.id }]);
       });
 
       test('Chapter', async () => {
@@ -492,6 +493,7 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.find('Book', { chapters: { name: ['chapter1', 'no-chapter'] } })).toMatchObject([{ id: healthBook.id }]);
         expect(await dao.find('Book', { chapters: { name: '*' } })).toMatchObject([{ id: healthBook.id }]);
         expect(await dao.find('Book', { chapters: { pages: { number: 1 } } })).toMatchObject([{ id: healthBook.id }]);
+        // expect(await dao.find('Book', { chapters: [{ name: 'HongKong' }, chapter1.id] })).toMatchObject([{ id: healthBook.id }]);
       });
     });
   });
