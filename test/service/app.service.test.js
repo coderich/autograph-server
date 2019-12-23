@@ -35,10 +35,11 @@ const doc2 = {
 };
 
 describe('AppService', () => {
-  test('picomatch', () => {
-    const re = PicoMatch.makeRe('?.??', { nocase: true, regex: true, unescape: true, maxLength: 100 });
-    expect(re).toBeDefined();
-  });
+  // test('picomatch', () => {
+  //   const re = `(?i)${PicoMatch.makeRe('{citizen,chap*}', { unescape: true, regex: false, maxLength: 100 }).toString().slice(1, -1)}`;
+  //   console.log('wtf man', re.toString());
+  //   expect(re).not.toBeDefined();
+  // });
 
   test('object.reduce', () => {
     const data = { id: 1, name: 'rich' };

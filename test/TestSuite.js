@@ -144,10 +144,10 @@ module.exports = (name, db = 'mongo') => {
       });
 
       test('Page', async () => {
-        page1 = await dao.create('Page', { number: 1, chapter: chapter1.id });
-        page2 = await dao.create('Page', { number: 2, chapter: chapter1.id });
-        page3 = await dao.create('Page', { number: 1, chapter: chapter2.id });
-        page4 = await dao.create('Page', { number: 2, chapter: chapter2.id });
+        page1 = await dao.create('Page', { number: 1, chapter: chapter1.id, verbage: 'This is the introduction, of sorts.' });
+        page2 = await dao.create('Page', { number: 2, chapter: chapter1.id, verbage: 'Now you know.' });
+        page3 = await dao.create('Page', { number: 1, chapter: chapter2.id, verbage: 'Ready for more?' });
+        page4 = await dao.create('Page', { number: 2, chapter: chapter2.id, verbage: 'The end.' });
         expect(page1.id).toBeDefined();
         expect(page2.id).toBeDefined();
         expect(page3.id).toBeDefined();
@@ -235,7 +235,7 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.find('Person', { emailAddress: 'rich@coderich.com' })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
         expect((await dao.find('Person', { name: ['Richard', 'Christie'] })).sort(sorter)).toMatchObject([{ id: christie.id, name: 'Christie' }, { id: richard.id, name: 'Richard' }].sort(sorter));
         expect((await dao.find('Person', { name: '*' })).sort(sorter)).toMatchObject([{ id: christie.id, name: 'Christie' }, { id: richard.id, name: 'Richard' }].sort(sorter));
-        expect(await dao.find('Person', { authored: mobyDick.id }, true)).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dao.find('Person', { authored: mobyDick.id })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
         // expect((await dao.find('Person', { authored: { id: mobyDick.id } })).sort(sorter)).toMatchObject([
         //   { id: christie.id, name: 'Christie' },
         //   { id: richard.id, name: 'Richard' },
@@ -476,6 +476,12 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.find('Person', { friends: { name: 'Christie' } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
         expect(await dao.find('Person', { friends: { authored: { name: 'Health*' } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
         expect(await dao.find('Person', { friends: { authored: { name: 'Cray Cray*' } } })).toMatchObject([]);
+        expect(await dao.find('Person', { authored: { chapters: { pages: { verbage: 'city lust' } } } })).toMatchObject([]);
+        expect(await dao.find('Person', { authored: { chapters: { pages: { verbage: 'the end.' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.find('Person', { authored: { chapters: { pages: { verbage: '*intro*' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.find('Person', { authored: { chapters: { name: 'citizen', pages: { verbage: '*intro*' } } } })).toMatchObject([]);
+        expect(await dao.find('Person', { authored: { chapters: { name: 'chapter*', pages: { verbage: '*intro*' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.find('Person', { authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } }, true)).toMatchObject([{ id: christie.id, name: 'Christie' }]);
       });
 
       test('Book', async () => {

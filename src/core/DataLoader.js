@@ -6,7 +6,7 @@ module.exports = class {
     this.store = store;
 
     this.loader = new DataLoader((keys) => {
-      return Promise.all(keys.map(({ op, model, data }) => this.store[op](model, data)));
+      return Promise.all(keys.map(({ op, model, data, debug }) => this.store[op](model, data, debug)));
     }, {
       cacheKeyFn: key => hashObject(key),
     });
@@ -16,8 +16,8 @@ module.exports = class {
     return this.loader.load({ op: 'get', model, data: id });
   }
 
-  find(model, where = {}) {
-    return this.loader.load({ op: 'find', model, data: where });
+  find(model, where = {}, debug) {
+    return this.loader.load({ op: 'find', model, data: where, debug });
   }
 
   count(model, where = {}) {

@@ -14,7 +14,7 @@ class Cypher {
     return this.query(`MATCH (n:${model}) WHERE n.id = { id } RETURN n`, { id }).then(docs => docs[0]);
   }
 
-  find(model, where = {}) {
+  find(model, where = {}, debug) {
     const { $where, $params } = Cypher.normalizeWhereClause(where);
     const $wherePart = $where ? `WHERE ${$where}` : '';
     return this.query(`MATCH (n:${model}) ${$wherePart} RETURN n`, $params);
@@ -71,7 +71,7 @@ class Cypher {
         }
 
         if (typeof value === 'string') {
-          $params[prop] = `(?i)${PicoMatch.makeRe(value, { unescape: true, regex: true, maxLength: 100 }).toString().slice(1, -1)}`;
+          $params[prop] = `(?i)${PicoMatch.makeRe(value.toLowerCase(), { unescape: true, regex: false, maxLength: 100 }).toString().slice(1, -1)}`;
           return `toString(n.${prop}) =~ $${prop}`;
         }
 
