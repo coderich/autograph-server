@@ -67,7 +67,7 @@ class Cypher {
 
         if (Array.isArray(value)) {
           $params[prop] = value;
-          return `any (x IN n.${prop} WHERE x IN $${prop})`;
+          return `any (x IN $${prop} WHERE x IN n.${prop})`;
         }
 
         if (typeof value === 'string') {

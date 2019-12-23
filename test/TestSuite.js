@@ -236,10 +236,6 @@ module.exports = (name, db = 'mongo') => {
         expect((await dao.find('Person', { name: ['Richard', 'Christie'] })).sort(sorter)).toMatchObject([{ id: christie.id, name: 'Christie' }, { id: richard.id, name: 'Richard' }].sort(sorter));
         expect((await dao.find('Person', { name: '*' })).sort(sorter)).toMatchObject([{ id: christie.id, name: 'Christie' }, { id: richard.id, name: 'Richard' }].sort(sorter));
         expect(await dao.find('Person', { authored: mobyDick.id })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
-        // expect((await dao.find('Person', { authored: { id: mobyDick.id } })).sort(sorter)).toMatchObject([
-        //   { id: christie.id, name: 'Christie' },
-        //   { id: richard.id, name: 'Richard' },
-        // ].sort(sorter));
       });
 
       test('Book', async () => {
@@ -266,7 +262,7 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.find('Chapter', { name: 'cHAPteR2' })).toMatchObject([{ id: chapter2.id, name: 'Chapter2', book: healthBook.id }]);
         expect(await dao.find('Chapter', { name: 'cHAPteR3' })).toEqual([]);
         expect(await dao.find('Chapter', { book: mobyDick.id })).toEqual([]);
-        // expect(await dao.find('Chapter', { book: 'some-odd-id' })).toEqual([]);
+        expect(await dao.find('Chapter', { book: 'some-odd-id' })).toEqual([]);
         expect((await dao.find('Chapter', { book: healthBook.id })).sort(sorter)).toMatchObject([
           { id: chapter1.id, name: 'Chapter1', book: healthBook.id },
           { id: chapter2.id, name: 'Chapter2', book: healthBook.id },
@@ -332,7 +328,7 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.count('Chapter', { name: 'cHAPteR2' })).toBe(1);
         expect(await dao.count('Chapter', { name: 'cHAPteR3' })).toBe(0);
         expect(await dao.count('Chapter', { book: mobyDick.id })).toBe(0);
-        // expect(await dao.count('Chapter', { book: 'some-odd-id' })).toEqual([]);
+        expect(await dao.count('Chapter', { book: 'some-odd-id' })).toEqual(0);
         expect(await dao.count('Chapter', { book: healthBook.id })).toBe(2);
       });
 

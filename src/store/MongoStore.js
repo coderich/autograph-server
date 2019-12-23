@@ -65,7 +65,13 @@ module.exports = class MongoStore {
 
   static idValue(value) {
     if (value instanceof ObjectID) return value;
-    return ObjectID(value);
+
+    try {
+      const id = ObjectID(value);
+      return id;
+    } catch (e) {
+      return value;
+    }
   }
 
   static normalizeWhereClause(model, parser, where, count = false) {
