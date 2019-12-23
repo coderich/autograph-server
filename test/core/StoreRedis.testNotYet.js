@@ -1,3 +1,3 @@
 const TestSuite = require('../TestSuite');
 
-TestSuite('StoreRedis', 'redis');
+TestSuite('Store', 'redis');

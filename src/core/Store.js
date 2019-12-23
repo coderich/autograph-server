@@ -1,3 +1,4 @@
+const DataLoader = require('./DataLoader');
 const RedisStore = require('../store/RedisStore');
 const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
@@ -44,6 +45,9 @@ module.exports = class Store {
 
     // Create store indexes
     parser.getModelNamesAndIndexes().forEach(([model, indexes]) => this.storeMap[model].dao.createIndexes(this.parser.getModelAlias(model), indexes));
+
+    //
+    return new DataLoader(this);
   }
 
   get(model, id) {

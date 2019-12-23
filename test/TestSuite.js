@@ -5,7 +5,6 @@ const { ApolloServer, makeExecutableSchema } = require('apollo-server-hapi');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const { createGraphSchema } = require('../src/service/schema.service');
 const { timeout } = require('../src/service/app.service');
-const DataLoader = require('../src/core/DataLoader');
 const Parser = require('../src/core/Parser');
 const Store = require('../src/core/Store');
 const Resolver = require('../src/core/Resolver');
@@ -41,7 +40,7 @@ const sorter = (a, b) => {
 const makeApolloServer = (executableSchema, store, useDataLoader = false) => {
   return new ApolloServer({
     schema: executableSchema,
-    context: async ({ request, h }) => ({ store: useDataLoader ? new DataLoader(store) : store }),
+    context: async ({ request, h }) => ({ store }),
   });
 };
 
@@ -71,8 +70,8 @@ module.exports = (name, db = 'mongo') => {
           break;
         }
         default: {
-          // const mongoServer = new MongoMemoryServer();
-          // stores.default.uri = await mongoServer.getConnectionString();
+          const mongoServer = new MongoMemoryServer();
+          stores.default.uri = await mongoServer.getConnectionString();
           break;
         }
       }
@@ -89,10 +88,6 @@ module.exports = (name, db = 'mongo') => {
       switch (name) {
         case 'Store': {
           dao = store;
-          break;
-        }
-        case 'DataLoader': {
-          dao = new DataLoader(store);
           break;
         }
         case 'Resolver': {
