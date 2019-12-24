@@ -1,14 +1,14 @@
 {
   "name": "@coderich/autograph",
   "author": "Richard Livolsi (coderich)",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "",
   "main": "index.js",
   "license": "ISC",
   "scripts": {
     "start": "node ./src/server",
     "test": "jest test --passWithNoTests --detectOpenHandles --forceExit --runInBand",
-    "test-inspect": "node --inspect-brk --inspect ./node_modules/.bin/jest test --passWithNoTests --detectOpenHandles --forceExit",
+    "test-inspect": "node --inspect-brk --inspect ./node_modules/.bin/jest test --passWithNoTests --detectOpenHandles --forceExit --runInBand",
     "inspect": "node --expose-gc --inspect=9222 ./src/server",
     "uuid": "uuid"
   },
