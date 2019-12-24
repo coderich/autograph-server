@@ -1,4 +1,5 @@
 const Parser = require('../core/Parser');
+const Resolver = require('../core/Resolver');
 const { ucFirst } = require('./app.service');
 
 const getFieldType = (model, field, fieldDef, suffix) => {
@@ -10,7 +11,9 @@ const getFieldType = (model, field, fieldDef, suffix) => {
 };
 
 /* eslint-disable indent, no-underscore-dangle */
-exports.createGraphSchema = (parser, resolver) => {
+exports.createGraphSchema = (parser) => {
+  const resolver = new Resolver(parser);
+
   return {
     typeDefs: parser.getModelNamesAndFields().map(([model, fields]) => `
       type ${model} {
