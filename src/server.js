@@ -17,7 +17,7 @@ const apolloServer = new ApolloServer({
     const { payload: { operationName } } = request;
 
     if (operationName !== 'IntrospectionQuery') {
-      return { store };
+      return { store: store.dataLoader() };
     }
 
     return {};

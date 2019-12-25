@@ -16,7 +16,7 @@ exports.email = () => (val, oldData, op, path) => {
 exports.immutable = () => (val, oldData, op, path) => {
   const p = path.substr(path.indexOf('.') + 1);
   const oldVal = get(oldData, p);
-  if (op === 'update' && `${hashObject(val)}` !== `${hashObject(oldVal)}` && val !== undefined) throw new Errors.ImmutableRuleError(`${path} is immutable; cannot be changed once set`);
+  if (op === 'update' && val !== undefined && `${hashObject(val)}` !== `${hashObject(oldVal)}`) throw new Errors.ImmutableRuleError(`${path} is immutable; cannot be changed once set`);
 };
 
 exports.range = (min, max) => {

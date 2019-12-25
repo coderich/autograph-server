@@ -40,7 +40,7 @@ const sorter = (a, b) => {
 const makeApolloServer = (executableSchema, store, useDataLoader = false) => {
   return new ApolloServer({
     schema: executableSchema,
-    context: async ({ request, h }) => ({ store }),
+    context: async ({ request, h }) => ({ store: useDataLoader ? store.dataLoader() : store }),
   });
 };
 
@@ -88,6 +88,10 @@ module.exports = (name, db = 'mongo') => {
       switch (name) {
         case 'Store': {
           dao = store;
+          break;
+        }
+        case 'DataLoader': {
+          dao = store.dataLoader();
           break;
         }
         case 'Resolver': {
@@ -465,6 +469,7 @@ module.exports = (name, db = 'mongo') => {
       });
     });
 
+
     describe('Search', () => {
       test('Person', async () => {
         expect(await dao.find('Person', { authored: { name: 'Moby Dick' } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
@@ -491,6 +496,17 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.find('Book', { chapters: { name: '*' } })).toMatchObject([{ id: healthBook.id }]);
         expect(await dao.find('Book', { chapters: { pages: { number: 1 } } })).toMatchObject([{ id: healthBook.id }]);
         expect(await dao.find('Book', { chapters: [{ name: 'HongKong' }, chapter1.id] })).toMatchObject([{ id: healthBook.id }]);
+      });
+    });
+
+
+    describe('Update', () => {
+      test('Person', async () => {
+        expect(await dao.update('Person', richard.id, { name: 'Rich' })).toMatchObject({ id: richard.id, name: 'Rich' });
+      });
+
+      test('Book', async () => {
+        expect(await dao.update('Book', mobyDick.id, { name: 'mopey dick' })).toMatchObject({ id: mobyDick.id, name: 'Mopey Dick' });
       });
     });
   });

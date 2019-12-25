@@ -45,9 +45,6 @@ module.exports = class Store {
 
     // Create store indexes
     parser.getModelNamesAndIndexes().forEach(([model, indexes]) => this.storeMap[model].dao.createIndexes(this.parser.getModelAlias(model), indexes));
-
-    //
-    return new DataLoader(this);
   }
 
   get(model, id) {
@@ -139,5 +136,9 @@ module.exports = class Store {
 
   idField(model) {
     return this.storeMap[model].idField;
+  }
+
+  dataLoader() {
+    return new DataLoader(this);
   }
 };
