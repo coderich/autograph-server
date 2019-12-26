@@ -1,6 +1,10 @@
+const { PubSub } = require('graphql-subscriptions');
 const Parser = require('../core/Parser');
 const Resolver = require('../core/Resolver');
+const { eventEmitter: Emitter } = require('./event.service');
 const { ucFirst } = require('./app.service');
+
+const pubsub = new PubSub();
 
 const getFieldType = (model, field, fieldDef, suffix) => {
   const dataType = Parser.getFieldDataType(fieldDef);
@@ -9,6 +13,26 @@ const getFieldType = (model, field, fieldDef, suffix) => {
   if (fieldDef.enum) type = `${model}${ucFirst(field)}Enum`;
   return Array.isArray(dataType) ? `[${type}]` : type;
 };
+
+Emitter.on('postMutation', (event) => {
+  const { model, method, result } = event;
+
+  switch (method) {
+    case 'create': case 'update': case 'delete': {
+      const action = `${model}${ucFirst(method)}d`;
+      pubsub.publish(action, { [action]: result });
+      break;
+    }
+    default: break;
+  }
+  switch (model.toLowerCase()) {
+    case 'person':
+      pubsub.publish('person_added', { personAdded: result });
+      break;
+    default:
+      break;
+  }
+});
 
 /* eslint-disable indent, no-underscore-dangle */
 exports.createGraphSchema = (parser) => {
@@ -59,14 +83,20 @@ exports.createGraphSchema = (parser) => {
     `).concat([
       'scalar Mixed',
 
+      `type Query {
+        System: System!
+      }`,
+
       `type System {
         ${parser.getModelNames(false).map(model => `get${model}(id: ID!): ${model}`)}
         ${parser.getModelNames(false).map(model => `find${model}(where: ${ucFirst(model)}InputQuery): [${model}]!`)}
         ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputQuery): Int!`)}
       }`,
 
-      `type Query {
-        System: System!
+      `type Subscription {
+        ${parser.getModelNames(false).map(model => `${model}Created: ${model}!`)}
+        ${parser.getModelNames(false).map(model => `${model}Updated: ${model}!`)}
+        ${parser.getModelNames(false).map(model => `${model}Deleted: ${model}!`)}
       }`,
 
       `type Mutation {
@@ -117,6 +147,10 @@ exports.createGraphSchema = (parser) => {
         }),
       });
     }, {
+      Query: {
+        System: (root, args) => ({}),
+      },
+
       System: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
@@ -125,9 +159,13 @@ exports.createGraphSchema = (parser) => {
         });
       }, {}),
 
-      Query: {
-        System: (root, args) => ({}),
-      },
+      Subscription: parser.getModelNames(false).reduce((prev, model) => {
+        return Object.assign(prev, {
+          [`${model}Created`]: { subscribe: () => pubsub.asyncIterator(`${model}Created`) },
+          [`${model}Updated`]: { subscribe: () => pubsub.asyncIterator(`${model}Updated`) },
+          [`${model}Deleted`]: { subscribe: () => pubsub.asyncIterator(`${model}Deleted`) },
+        });
+      }, {}),
 
       Mutation: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {

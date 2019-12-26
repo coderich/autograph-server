@@ -15,7 +15,8 @@ exports.createSystemEvent = (name, event = {}, thunk = () => {}) => {
   const type = ucFirst(name);
 
   return systemEvent.emit('system', { type: `pre${type}`, data: event }).then(() => thunk()).then((result) => {
-    systemEvent.emit('system', { type: `post${type}`, data: event, result });
+    event.result = result;
+    systemEvent.emit('system', { type: `post${type}`, data: event });
     return result;
   });
 };
