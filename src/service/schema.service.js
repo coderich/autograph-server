@@ -20,7 +20,9 @@ Emitter.on('postMutation', (event) => {
   switch (method) {
     case 'create': case 'update': case 'delete': {
       const action = `${model}${ucFirst(method)}d`;
+      const action2 = `${model}Changed`;
       pubsub.publish(action, { [action]: result });
+      pubsub.publish(action2, { [action2]: { op: method, model: result } });
       break;
     }
     default: break;
@@ -46,6 +48,11 @@ exports.createGraphSchema = (parser) => {
           Object.entries(fields)
           .map(([field, fieldDef]) => `${field}: ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`)
         }
+      }
+
+      type ${model}Subscription {
+        op: String!
+        model: ${model}!
       }
 
       input ${model}InputCreate {
@@ -94,6 +101,7 @@ exports.createGraphSchema = (parser) => {
       }`,
 
       `type Subscription {
+        ${parser.getModelNames(false).map(model => `${model}Changed(where: ${ucFirst(model)}InputQuery): ${model}Subscription!`)}
         ${parser.getModelNames(false).map(model => `${model}Created(where: ${ucFirst(model)}InputQuery): ${model}!`)}
         ${parser.getModelNames(false).map(model => `${model}Updated(where: ${ucFirst(model)}InputQuery): ${model}!`)}
         ${parser.getModelNames(false).map(model => `${model}Deleted(where: ${ucFirst(model)}InputQuery): ${model}!`)}
@@ -161,6 +169,16 @@ exports.createGraphSchema = (parser) => {
 
       Subscription: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
+          [`${model}Changed`]: {
+            subscribe: withFilter(
+              () => pubsub.asyncIterator(`${model}Changed`),
+              (root, args, context) => {
+                return true;
+                // const where = Object.assign(root[`${model}Changed`], args.where);
+                // return resolver.find(context, model, where).then(([res]) => Boolean(res));
+              },
+            ),
+          },
           [`${model}Created`]: {
             subscribe: withFilter(
               () => pubsub.asyncIterator(`${model}Created`),

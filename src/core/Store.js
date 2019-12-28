@@ -17,6 +17,7 @@ const {
 module.exports = class Store {
   constructor(parser, stores, storeArgs = {}) {
     this.parser = parser;
+    this.subscriptions = [];
 
     const availableStores = {
       mongo: MongoStore,
@@ -140,5 +141,9 @@ module.exports = class Store {
 
   dataLoader() {
     return new DataLoader(this);
+  }
+
+  subscribe(model, where = {}) {
+
   }
 };
