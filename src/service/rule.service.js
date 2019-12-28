@@ -38,8 +38,8 @@ exports.reject = (...args) => (val, oldData, op, path) => {
 };
 
 exports.required = () => (val, oldData, op, path) => {
-  if (op === 'create' && val == null) throw new Errors.RequireRuleError(`${path} is a required field`);
-  if (op === 'update' && val === null) throw new Errors.RequireRuleError(`${path} cannot be set to null`);
+  if (op === 'create' && val == null) throw new Errors.RequiredRuleError(`${path} is a required field`);
+  if (op === 'update' && val === null) throw new Errors.RequiredRuleError(`${path} cannot be set to null`);
 };
 
 exports.selfless = () => (val, oldData, op, path) => {

@@ -1,4 +1,4 @@
-const { PubSub } = require('graphql-subscriptions');
+const { withFilter, PubSub } = require('graphql-subscriptions');
 const Parser = require('../core/Parser');
 const Resolver = require('../core/Resolver');
 const { eventEmitter: Emitter } = require('./event.service');
@@ -94,9 +94,9 @@ exports.createGraphSchema = (parser) => {
       }`,
 
       `type Subscription {
-        ${parser.getModelNames(false).map(model => `${model}Created: ${model}!`)}
-        ${parser.getModelNames(false).map(model => `${model}Updated: ${model}!`)}
-        ${parser.getModelNames(false).map(model => `${model}Deleted: ${model}!`)}
+        ${parser.getModelNames(false).map(model => `${model}Created(where: ${ucFirst(model)}InputQuery): ${model}!`)}
+        ${parser.getModelNames(false).map(model => `${model}Updated(where: ${ucFirst(model)}InputQuery): ${model}!`)}
+        ${parser.getModelNames(false).map(model => `${model}Deleted(where: ${ucFirst(model)}InputQuery): ${model}!`)}
       }`,
 
       `type Mutation {
@@ -161,9 +161,33 @@ exports.createGraphSchema = (parser) => {
 
       Subscription: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
-          [`${model}Created`]: { subscribe: () => pubsub.asyncIterator(`${model}Created`) },
-          [`${model}Updated`]: { subscribe: () => pubsub.asyncIterator(`${model}Updated`) },
-          [`${model}Deleted`]: { subscribe: () => pubsub.asyncIterator(`${model}Deleted`) },
+          [`${model}Created`]: {
+            subscribe: withFilter(
+              () => pubsub.asyncIterator(`${model}Created`),
+              (root, args, context) => {
+                const where = Object.assign(root[`${model}Created`], args.where);
+                return resolver.find(context, model, where).then(([res]) => Boolean(res));
+              },
+            ),
+          },
+          [`${model}Updated`]: {
+            subscribe: withFilter(
+              () => pubsub.asyncIterator(`${model}Updated`),
+              (root, args, context) => {
+                const where = Object.assign(root[`${model}Updated`], args.where);
+                return resolver.find(context, model, where).then(([res]) => Boolean(res));
+              },
+            ),
+          },
+          [`${model}Deleted`]: {
+            subscribe: withFilter(
+              () => pubsub.asyncIterator(`${model}Deleted`),
+              (root, args, context) => {
+                const where = Object.assign(root[`${model}Deleted`], args.where);
+                return resolver.find(context, model, where).then(([res]) => Boolean(res));
+              },
+            ),
+          },
         });
       }, {}),
 
