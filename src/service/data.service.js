@@ -162,7 +162,7 @@ exports.normalizeModelData = (parser, store, model, data) => {
   }, data);
 };
 
-exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias = '', lookups2D = [], index = 0, debug) => {
+exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias = '', lookups2D = [], index = 0) => {
   const fields = parser.getModelFields(model);
 
   //
@@ -221,7 +221,7 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
         const { parentModelName, parentFields, parentDataRefs } = parentLookup;
         const { parentModelName: currentModelName, parentFields: currentFields, parentFieldAlias: currentFieldAlias } = lookups2D[index2D];
 
-        return store.find(modelName, query, debug).then((results) => {
+        return store.find(modelName, query).then((results) => {
           if (parentDataRefs.has(modelName)) {
             parentLookup.lookups.forEach((lookup) => {
               // Anything with type `modelName` should be added to query

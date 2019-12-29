@@ -11,10 +11,11 @@ module.exports = class Resolver {
       });
     };
 
-    this.find = ({ store }, model, where = {}) => store.find(model, where);
+    this.find = ({ store }, model, where = {}, skipCache) => store.find(model, where, skipCache);
     this.count = ({ store }, model, where = {}) => store.count(model, where);
     this.create = ({ store }, model, data) => store.create(model, data);
     this.update = ({ store }, model, id, data) => store.update(model, id, data);
     this.delete = ({ store }, model, id) => store.delete(model, id);
+    this.clear = ({ store }, model, where) => store.clear(model, where);
   }
 };

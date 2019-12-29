@@ -26,7 +26,7 @@ module.exports = class MongoStore {
     return this.query(model, 'findOne', { _id: id }).then(toObject);
   }
 
-  find(model, where = {}, debug) {
+  find(model, where = {}) {
     const $where = MongoStore.normalizeWhereClause(model, this.parser, where);
     return this.query(model, 'aggregate', $where).then(results => results.map(toObject).toArray());
   }

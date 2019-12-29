@@ -185,9 +185,9 @@ exports.createGraphSchema = (parser) => {
                 root.next = new Promise(resolve => (nextPromise = resolve));
 
                 return new Promise((resolve, reject) => {
-                  resolver.find(context, model, args.where).then((before) => {
+                  resolver.find(context, model, args.where, true).then((before) => {
                     Emitter.once('postMutation', async (event) => {
-                      const after = await resolver.find(context, model, args.where);
+                      const after = await resolver.find(context, model, args.where, true);
                       const diff = _.xorWith(before, after, (a, b) => `${a.id}` === `${b.id}`);
                       const updated = _.intersectionWith(before, after, (a, b) => `${a.id}` === `${b.id}`).filter((el) => {
                         const a = before.find(e => `${e.id}` === `${el.id}`);

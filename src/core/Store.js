@@ -18,6 +18,7 @@ module.exports = class Store {
   constructor(parser, stores, storeArgs = {}) {
     this.parser = parser;
     this.subscriptions = [];
+    this.clear = () => {};
 
     const availableStores = {
       mongo: MongoStore,
@@ -58,7 +59,7 @@ module.exports = class Store {
     });
   }
 
-  async find(model, where = {}, debug) {
+  async find(model, where = {}) {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
@@ -66,8 +67,8 @@ module.exports = class Store {
     normalizeModelWhere(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'find', model, store: this, parser, where }, async () => {
-      const resolvedWhere = await resolveModelWhereClause(parser, this, model, where, undefined, undefined, undefined, debug);
-      return store.dao.find(modelAlias, resolvedWhere, debug);
+      const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
+      return store.dao.find(modelAlias, resolvedWhere);
     });
   }
 

@@ -482,7 +482,7 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.find('Person', { authored: { chapters: { pages: { verbage: '*intro*' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
         expect(await dao.find('Person', { authored: { chapters: { name: 'citizen', pages: { verbage: '*intro*' } } } })).toMatchObject([]);
         expect(await dao.find('Person', { authored: { chapters: { name: 'chapter*', pages: { verbage: '*intro*' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.find('Person', { authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } }, true)).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.find('Person', { authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
       });
 
       test('Book', async () => {

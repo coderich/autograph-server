@@ -14,7 +14,7 @@ class Cypher {
     return this.query(`MATCH (n:${model}) WHERE n.id = { id } RETURN n`, { id }).then(docs => docs[0]);
   }
 
-  find(model, where = {}, debug) {
+  find(model, where = {}) {
     const { $where, $params } = Cypher.normalizeWhereClause(where);
     const $wherePart = $where ? `WHERE ${$where}` : '';
     return this.query(`MATCH (n:${model}) ${$wherePart} RETURN n`, $params);
