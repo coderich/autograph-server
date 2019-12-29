@@ -2,7 +2,7 @@ const { withFilter, PubSub } = require('graphql-subscriptions');
 const Parser = require('../core/Parser');
 const Resolver = require('../core/Resolver');
 const { eventEmitter: Emitter } = require('./event.service');
-const { ucFirst } = require('./app.service');
+const { ucFirst, hashObject } = require('./app.service');
 
 const pubsub = new PubSub();
 
@@ -14,26 +14,10 @@ const getFieldType = (model, field, fieldDef, suffix) => {
   return Array.isArray(dataType) ? `[${type}]` : type;
 };
 
-Emitter.on('postMutation', (event) => {
-  const { model, method, result } = event;
-
-  switch (method) {
-    case 'create': case 'update': case 'delete': {
-      const action = `${model}${ucFirst(method)}d`;
-      const action2 = `${model}Changed`;
-      pubsub.publish(action, { [action]: result });
-      pubsub.publish(action2, { [action2]: { op: method, model: result } });
-      break;
-    }
-    default: break;
-  }
-  switch (model.toLowerCase()) {
-    case 'person':
-      pubsub.publish('person_added', { personAdded: result });
-      break;
-    default:
-      break;
-  }
+Emitter.on('preMutation', (event, next) => {
+  const { model, method } = event;
+  const action = `${model}Changed`;
+  pubsub.publish(action, { [action]: { method, next } });
 });
 
 /* eslint-disable indent, no-underscore-dangle */
@@ -92,6 +76,9 @@ exports.createGraphSchema = (parser) => {
 
       `type Query {
         System: System!
+        ${parser.getModelNames(false).map(model => `get${model}(id: ID!): ${model}`)}
+        ${parser.getModelNames(false).map(model => `find${model}(where: ${ucFirst(model)}InputQuery): [${model}]!`)}
+        ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputQuery): Int!`)}
       }`,
 
       `type System {
@@ -155,9 +142,15 @@ exports.createGraphSchema = (parser) => {
         }),
       });
     }, {
-      Query: {
+      Query: parser.getModelNames(false).reduce((prev, model) => {
+        return Object.assign(prev, {
+          [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
+          [`find${model}`]: (root, args, context) => resolver.find(context, model, args.where),
+          [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
+        });
+      }, {
         System: (root, args) => ({}),
-      },
+      }),
 
       System: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
@@ -173,11 +166,36 @@ exports.createGraphSchema = (parser) => {
             subscribe: withFilter(
               () => pubsub.asyncIterator(`${model}Changed`),
               (root, args, context) => {
-                return true;
-                // const where = Object.assign(root[`${model}Changed`], args.where);
-                // return resolver.find(context, model, where).then(([res]) => Boolean(res));
+                return new Promise((resolve, reject) => {
+                  // Do lookups to get data before mutation
+                  const { method, next } = root[`${model}Changed`];
+                  // const { store } = context;
+                  const sid = hashObject({ model, args });
+                  context.subscriptions = context.subscriptions || {};
+
+                  // Register for the post
+                  Emitter.once('postMutation', (event) => {
+                    const { model: modelName, method: methodName, result } = event;
+
+                    if (model === modelName && method === methodName) {
+                      const action = `${model}Changed`;
+                      context.subscriptions[sid] = { [action]: { op: method, model: result } };
+                      resolve(true);
+                    } else {
+                      resolve(false);
+                    }
+                  });
+
+                  //
+                  next();
+                });
               },
             ),
+            resolve: (root, args, context) => {
+              const sid = hashObject({ model, args });
+              const [data] = Object.values(context.subscriptions[sid]);
+              return data;
+            },
           },
           [`${model}Created`]: {
             subscribe: withFilter(

@@ -142,8 +142,4 @@ module.exports = class Store {
   dataLoader() {
     return new DataLoader(this);
   }
-
-  subscribe(model, where = {}) {
-
-  }
 };
