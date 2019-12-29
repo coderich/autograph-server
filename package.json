@@ -13,7 +13,9 @@
     "uuid": "uuid"
   },
   "dependencies": {
+    "@apollo/client": "^3.0.0-beta.16",
     "@hapi/boom": "^8.0.1",
+    "apollo-link-ws": "^1.0.19",
     "axios": "^0.19.0",
     "change-case": "^4.1.0",
     "dataloader": "^2.0.0",
