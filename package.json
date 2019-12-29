@@ -6,10 +6,10 @@
   "main": "index.js",
   "license": "ISC",
   "scripts": {
-    "start": "node -r esm ./src/server",
-    "test": "node -r esm ./node_modules/.bin/jest test --passWithNoTests --detectOpenHandles --forceExit --runInBand",
-    "test-inspect": "node -r esm --inspect-brk --inspect ./node_modules/.bin/jest test --passWithNoTests --detectOpenHandles --forceExit --runInBand",
-    "inspect": "node -r esm --expose-gc --inspect=9222 ./src/server",
+    "start": "node ./src/server",
+    "test": "node ./node_modules/.bin/jest test --passWithNoTests --detectOpenHandles --forceExit --runInBand",
+    "test-inspect": "node --inspect-brk --inspect ./node_modules/.bin/jest test --passWithNoTests --detectOpenHandles --forceExit --runInBand",
+    "inspect": "node --expose-gc --inspect=9222 ./src/server",
     "uuid": "uuid"
   },
   "dependencies": {

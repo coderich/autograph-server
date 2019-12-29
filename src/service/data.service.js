@@ -109,10 +109,10 @@ exports.normalizeModelWhere = (parser, store, model, data) => {
 
     if (ref) {
       if (isPlainObject(value)) {
-        prev[key] = exports.normalizeModelData(parser, store, ref, value);
+        prev[key] = exports.normalizeModelWhere(parser, store, ref, value);
       } else if (Array.isArray(value)) {
         prev[key] = value.map((val) => {
-          if (isPlainObject(val)) return exports.normalizeModelData(parser, store, ref, val);
+          if (isPlainObject(val)) return exports.normalizeModelWhere(parser, store, ref, val);
           if (isIdValue(val)) return store.idValue(ref, val);
           return val;
         });

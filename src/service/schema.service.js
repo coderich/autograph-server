@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const { withFilter, PubSub } = require('graphql-subscriptions');
 const Parser = require('../core/Parser');
 const Resolver = require('../core/Resolver');
@@ -14,15 +15,26 @@ const getFieldType = (model, field, fieldDef, suffix) => {
   return Array.isArray(dataType) ? `[${type}]` : type;
 };
 
-Emitter.on('preMutation', (event, next) => {
-  const { model, method } = event;
-  const action = `${model}Changed`;
-  pubsub.publish(action, { [action]: { method, next } });
-});
-
 /* eslint-disable indent, no-underscore-dangle */
 exports.createGraphSchema = (parser) => {
   const resolver = new Resolver(parser);
+
+  Emitter.on('preMutation', ({ method }, next) => {
+    Promise.all(parser.getModelNames(false).map((model) => {
+      const payload = { method, next: undefined };
+
+      return new Promise((resolve) => {
+        pubsub.publish(`${model}Changed`, payload);
+
+        setTimeout(() => {
+          if (!payload.next) return resolve();
+          return payload.next.then(() => resolve());
+        });
+      });
+    })).then(() => {
+      next();
+    });
+  });
 
   return {
     typeDefs: parser.getModelNamesAndFields().map(([model, fields]) => `
@@ -88,10 +100,7 @@ exports.createGraphSchema = (parser) => {
       }`,
 
       `type Subscription {
-        ${parser.getModelNames(false).map(model => `${model}Changed(where: ${ucFirst(model)}InputQuery): ${model}Subscription!`)}
-        ${parser.getModelNames(false).map(model => `${model}Created(where: ${ucFirst(model)}InputQuery): ${model}!`)}
-        ${parser.getModelNames(false).map(model => `${model}Updated(where: ${ucFirst(model)}InputQuery): ${model}!`)}
-        ${parser.getModelNames(false).map(model => `${model}Deleted(where: ${ucFirst(model)}InputQuery): ${model}!`)}
+        ${parser.getModelNames(false).map(model => `${model}Changed(where: ${ucFirst(model)}InputQuery): [${model}Subscription]!`)}
       }`,
 
       `type Mutation {
@@ -165,64 +174,64 @@ exports.createGraphSchema = (parser) => {
           [`${model}Changed`]: {
             subscribe: withFilter(
               () => pubsub.asyncIterator(`${model}Changed`),
-              (root, args, context) => {
+              (root, args1, context) => {
+                let nextPromise;
+                const args = _.cloneDeep(args1);
+                const sid = hashObject({ model, args });
+                context.subscriptions = context.subscriptions || {};
+                context.subscriptions[sid] = [];
+
+                // Let them know we're listening and to wait for us...
+                root.next = new Promise(resolve => (nextPromise = resolve));
+
                 return new Promise((resolve, reject) => {
-                  // Do lookups to get data before mutation
-                  const { method, next } = root[`${model}Changed`];
-                  // const { store } = context;
-                  const sid = hashObject({ model, args });
-                  context.subscriptions = context.subscriptions || {};
+                  resolver.find(context, model, args.where).then((before) => {
+                    Emitter.once('postMutation', async (event) => {
+                      const after = await resolver.find(context, model, args.where);
+                      const diff = _.xorWith(before, after, (a, b) => `${a.id}` === `${b.id}`);
+                      const updated = _.intersectionWith(before, after, (a, b) => `${a.id}` === `${b.id}`).filter((el) => {
+                        const a = before.find(e => `${e.id}` === `${el.id}`);
+                        const b = after.find(e => `${e.id}` === `${el.id}`);
+                        return hashObject(a) !== hashObject(b);
+                      }).map((el) => {
+                        return after.find(e => `${e.id}` === `${el.id}`);
+                      });
 
-                  // Register for the post
-                  Emitter.once('postMutation', (event) => {
-                    const { model: modelName, method: methodName, result } = event;
+                      const added = diff.filter((el) => {
+                        const a = before.find(e => `${e.id}` === `${el.id}`);
+                        const b = after.find(e => `${e.id}` === `${el.id}`);
+                        return Boolean(!a && b);
+                      });
 
-                    if (model === modelName && method === methodName) {
+                      const deleted = diff.filter((el) => {
+                        const a = before.find(e => `${e.id}` === `${el.id}`);
+                        const b = after.find(e => `${e.id}` === `${el.id}`);
+                        return Boolean(a && !b);
+                      });
+
+                      if (!updated.length && !added.length && !deleted.length) return resolve(false);
+
                       const action = `${model}Changed`;
-                      context.subscriptions[sid] = { [action]: { op: method, model: result } };
-                      resolve(true);
-                    } else {
-                      resolve(false);
-                    }
-                  });
+                      updated.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'update', model: result } }));
+                      added.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'create', model: result } }));
+                      deleted.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'delete', model: result } }));
+                      return resolve(true);
+                    });
 
-                  //
-                  next();
+                    nextPromise();
+                  });
                 });
               },
             ),
             resolve: (root, args, context) => {
               const sid = hashObject({ model, args });
-              const [data] = Object.values(context.subscriptions[sid]);
-              return data;
+              const results = context.subscriptions[sid];
+
+              return results.map((result) => {
+                const [data] = Object.values(result);
+                return data;
+              });
             },
-          },
-          [`${model}Created`]: {
-            subscribe: withFilter(
-              () => pubsub.asyncIterator(`${model}Created`),
-              (root, args, context) => {
-                const where = Object.assign(root[`${model}Created`], args.where);
-                return resolver.find(context, model, where).then(([res]) => Boolean(res));
-              },
-            ),
-          },
-          [`${model}Updated`]: {
-            subscribe: withFilter(
-              () => pubsub.asyncIterator(`${model}Updated`),
-              (root, args, context) => {
-                const where = Object.assign(root[`${model}Updated`], args.where);
-                return resolver.find(context, model, where).then(([res]) => Boolean(res));
-              },
-            ),
-          },
-          [`${model}Deleted`]: {
-            subscribe: withFilter(
-              () => pubsub.asyncIterator(`${model}Deleted`),
-              (root, args, context) => {
-                const where = Object.assign(root[`${model}Deleted`], args.where);
-                return resolver.find(context, model, where).then(([res]) => Boolean(res));
-              },
-            ),
           },
         });
       }, {}),
