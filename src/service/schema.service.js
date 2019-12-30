@@ -49,8 +49,8 @@ exports.createGraphSchema = (parser) => {
       type ${model} {
         ${parser.getModel(model).hideFromApi ? '' : 'id: ID!'}
         ${Object.entries(fields).map(([field, fieldDef]) => `${field}: ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`)}
-        countSelf(where: ${model}InputQuery): Int!
-        ${parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).map(([field, ref]) => `count${ucFirst(field)}(where: ${ref}InputQuery): Int!`)}
+        countSelf(where: ${model}InputWhere): Int!
+        ${parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).map(([field, ref]) => `count${ucFirst(field)}(where: ${ref}InputWhere): Int!`)}
       }
 
       type ${model}Subscription {
@@ -74,11 +74,11 @@ exports.createGraphSchema = (parser) => {
         }
       }
 
-      input ${model}InputQuery {
+      input ${model}InputWhere {
         ${
           Object.entries(fields).map(([field, fieldDef]) => {
             const ref = Parser.getFieldDataRef(fieldDef);
-            return `${field}: ${ref ? `${ucFirst(ref)}InputQuery` : 'String'}`;
+            return `${field}: ${ref ? `${ucFirst(ref)}InputWhere` : 'String'}`;
           })
         }
       }
@@ -93,6 +93,12 @@ exports.createGraphSchema = (parser) => {
             parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).map(([field, ref]) => `count${ucFirst(field)}: SortOrderEnum`),
           )
         }
+      }
+
+      input ${model}InputQuery {
+        where: ${model}InputWhere
+        sortBy: ${model}InputSort
+        limit: Int
       }
 
       ${
@@ -110,19 +116,19 @@ exports.createGraphSchema = (parser) => {
       `type Query {
         System: System!
         ${parser.getModelNames(false).map(model => `get${model}(id: ID!): ${model}`)}
-        ${parser.getModelNames(false).map(model => `find${model}(where: ${ucFirst(model)}InputQuery sortBy: ${ucFirst(model)}InputSort): [${model}]!`)}
-        ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputQuery sortBy: ${ucFirst(model)}InputSort): Int!`)}
+        ${parser.getModelNames(false).map(model => `find${model}(query: ${ucFirst(model)}InputQuery): [${model}]!`)}
+        ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputWhere): Int!`)}
       }`,
 
       `type System {
         ${parser.getModelNames(false).map(model => `get${model}(id: ID!): ${model}`)}
-        ${parser.getModelNames(false).map(model => `find${model}(where: ${ucFirst(model)}InputQuery sortBy: ${ucFirst(model)}InputSort): [${model}]!`)}
-        ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputQuery sortBy: ${ucFirst(model)}InputSort): Int!`)}
+        ${parser.getModelNames(false).map(model => `find${model}(query: ${ucFirst(model)}InputQuery): [${model}]!`)}
+        ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputWhere): Int!`)}
       }`,
 
       `type Subscription {
-        ${parser.getModelNames(false).map(model => `${model}Trigger(where: ${ucFirst(model)}InputQuery sortBy: ${ucFirst(model)}InputSort): [${model}]!`)}
-        ${parser.getModelNames(false).map(model => `${model}Changed(where: ${ucFirst(model)}InputQuery sortBy: ${ucFirst(model)}InputSort): [${model}Subscription]!`)}
+        ${parser.getModelNames(false).map(model => `${model}Trigger(query: ${ucFirst(model)}InputQuery): [${model}]!`)}
+        ${parser.getModelNames(false).map(model => `${model}Changed(query: ${ucFirst(model)}InputQuery): [${model}Subscription]!`)}
       }`,
 
       `type Mutation {
@@ -173,7 +179,7 @@ exports.createGraphSchema = (parser) => {
               if (by) {
                 args.where = args.where || {};
                 args.where[by] = root.id;
-                return resolver.count(context, ref, args.where);
+                return resolver.count(context, ref, args);
               }
 
               if (!args.where) {
@@ -183,19 +189,19 @@ exports.createGraphSchema = (parser) => {
               const ids = (root[field] || []);
               args.where = args.where || {};
               args.where[context.store.idField(ref)] = ids;
-              return resolver.count(context, ref, args.where);
+              return resolver.count(context, ref, args);
             },
           });
         }, {
-          countSelf: (root, args, context) => resolver.count(context, model, args.where),
+          countSelf: (root, args, context) => resolver.count(context, model, args),
         })),
       });
     }, {
       Query: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
-          [`find${model}`]: (root, args, context) => resolver.find(context, model, args.where),
-          [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
+          [`find${model}`]: (root, args, context) => resolver.find(context, model, args.query),
+          [`count${model}`]: (root, args, context) => resolver.count(context, model, args),
         });
       }, {
         System: (root, args) => ({}),
@@ -204,8 +210,8 @@ exports.createGraphSchema = (parser) => {
       System: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
-          [`find${model}`]: (root, args, context) => resolver.find(context, model, args.where),
-          [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
+          [`find${model}`]: (root, args, context) => resolver.find(context, model, args.query),
+          [`count${model}`]: (root, args, context) => resolver.count(context, model, args),
         });
       }, {}),
 
@@ -216,7 +222,7 @@ exports.createGraphSchema = (parser) => {
             resolve: (root, args, context) => {
               const { store } = root;
               context.store = store;
-              return store.find(model, args.where);
+              return store.find(model, args.query);
             },
           },
           [`${model}Changed`]: {
@@ -235,11 +241,11 @@ exports.createGraphSchema = (parser) => {
                 root.next = new Promise(resolve => (nextPromise = resolve));
 
                 return new Promise((resolve, reject) => {
-                  beforeStore.find(model, args.where).then((before) => {
+                  beforeStore.find(model, args.query).then((before) => {
                     context.store = afterStore;
 
                     Emitter.once('postMutation', async (event) => {
-                      const after = await afterStore.find(model, args.where);
+                      const after = await afterStore.find(model, args.query);
                       const diff = _.xorWith(before, after, (a, b) => `${a.id}` === `${b.id}`);
                       const updated = _.intersectionWith(before, after, (a, b) => `${a.id}` === `${b.id}`).filter((el) => {
                         const a = before.find(e => `${e.id}` === `${el.id}`);

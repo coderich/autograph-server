@@ -16,37 +16,24 @@ module.exports = class {
     return this.loader.load({ op: 'get', model, data: id });
   }
 
-  find(model, where = {}, skipCache) {
-    if (skipCache) return this.store.find(model, where);
-    return this.loader.load({ op: 'find', model, data: where });
+  find(model, args = {}) {
+    return this.loader.load({ op: 'find', model, data: args });
   }
 
-  count(model, where = {}) {
-    return this.loader.load({ op: 'count', model, data: where });
+  count(model, args = {}) {
+    return this.loader.load({ op: 'count', model, data: args });
   }
 
   create(model, data) {
     return this.store.create(model, data);
   }
 
-  async update(model, id, data) {
-    const value = await this.store.update(model, id, data);
-    const key = hashObject({ op: 'get', model, data: id });
-    this.loader.clear(key).prime(key, value);
-    return value;
+  update(model, id, data) {
+    return this.store.update(model, id, data);
   }
 
-  async delete(model, id) {
-    const value = await this.store.delete(model, id);
-    const key1 = hashObject({ op: 'get', model, data: id });
-    const key2 = hashObject({ op: 'find', model, data: {} });
-    this.loader.clear(key1).clear(key2);
-    return value;
-  }
-
-  clear(model, where = {}) {
-    const key = hashObject({ op: 'find', model, data: where });
-    this.loader.clear(key);
+  delete(model, id) {
+    return this.store.delete(model, id);
   }
 
   dropModel(model) {

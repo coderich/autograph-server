@@ -221,7 +221,7 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
         const { parentModelName, parentFields, parentDataRefs } = parentLookup;
         const { parentModelName: currentModelName, parentFields: currentFields, parentFieldAlias: currentFieldAlias } = lookups2D[index2D];
 
-        return store.find(modelName, query).then((results) => {
+        return store.find(modelName, { where: query }).then((results) => {
           if (parentDataRefs.has(modelName)) {
             parentLookup.lookups.forEach((lookup) => {
               // Anything with type `modelName` should be added to query

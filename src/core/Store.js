@@ -18,7 +18,6 @@ module.exports = class Store {
   constructor(parser, stores, storeArgs = {}) {
     this.parser = parser;
     this.subscriptions = [];
-    this.clear = () => {};
 
     const availableStores = {
       mongo: MongoStore,
@@ -59,8 +58,9 @@ module.exports = class Store {
     });
   }
 
-  async find(model, where = {}) {
+  async find(model, args = {}) {
     const { parser } = this;
+    const { where = {} } = args;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, where);
@@ -72,8 +72,9 @@ module.exports = class Store {
     });
   }
 
-  async count(model, where = {}) {
+  async count(model, args = {}) {
     const { parser } = this;
+    const { where = {} } = args;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, where);

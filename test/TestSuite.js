@@ -110,6 +110,7 @@ module.exports = (name, db = 'mongo') => {
       //
       await timeout(2000);
       await Promise.all(parser.getModelNames().map(model => store.dropModel(model)));
+      await timeout(500);
     });
 
 
@@ -234,40 +235,40 @@ module.exports = (name, db = 'mongo') => {
     describe('Find', () => {
       test('Person', async () => {
         expect((await dao.find('Person')).length).toBe(2);
-        expect(await dao.find('Person', { name: 'richard' })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
-        expect(await dao.find('Person', { name: 'Christie' })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.find('Person', { emailAddress: 'rich@coderich.com' })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
-        expect((await dao.find('Person', { name: ['Richard', 'Christie'] })).sort(sorter)).toMatchObject([{ id: christie.id, name: 'Christie' }, { id: richard.id, name: 'Richard' }].sort(sorter));
-        expect((await dao.find('Person', { name: '*' })).sort(sorter)).toMatchObject([{ id: christie.id, name: 'Christie' }, { id: richard.id, name: 'Richard' }].sort(sorter));
-        expect(await dao.find('Person', { authored: mobyDick.id })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dao.find('Person', { where: { name: 'richard' } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dao.find('Person', { where: { name: 'Christie' } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.find('Person', { where: { emailAddress: 'rich@coderich.com' } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect((await dao.find('Person', { where: { name: ['Richard', 'Christie'] } })).sort(sorter)).toMatchObject([{ id: christie.id, name: 'Christie' }, { id: richard.id, name: 'Richard' }].sort(sorter));
+        expect((await dao.find('Person', { where: { name: '*' } })).sort(sorter)).toMatchObject([{ id: christie.id, name: 'Christie' }, { id: richard.id, name: 'Richard' }].sort(sorter));
+        expect(await dao.find('Person', { where: { authored: mobyDick.id } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
       });
 
       test('Book', async () => {
         expect((await dao.find('Book')).length).toBe(2);
-        expect(await dao.find('Book', { author: richard.id })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
-        expect(await dao.find('Book', { price: 9.99 })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
-        expect(await dao.find('Book', { price: '9.99' })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
-        expect(await dao.find('Book', { author: christie.id })).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
-        expect(await dao.find('Book', { bestSeller: true })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
-        expect(await dao.find('Book', { bestSeller: 'TRu?' })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
-        expect(await dao.find('Book', { bestSeller: 'tru' })).toMatchObject([]);
-        expect(await dao.find('Book', { price: '?.??' })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
-        expect(await dao.find('Book', { price: '??.*' })).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
-        expect(await dao.find('Book', { bids: [1.99] })).toMatchObject([{ id: mobyDick.id }]);
-        expect(await dao.find('Book', { bids: 1.99 })).toMatchObject([{ id: mobyDick.id }]);
-        expect((await dao.find('Book', { bids: 5.00 })).sort(sorter)).toMatchObject([{ id: mobyDick.id }, { id: healthBook.id }].sort(sorter));
-        expect(await dao.find('Book', { bids: [19.99, '1.99'] })).toMatchObject([{ id: mobyDick.id }]);
-        expect(await dao.find('Book', { chapters: chapter1.id })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dao.find('Book', { where: { author: richard.id } })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dao.find('Book', { where: { price: 9.99 } })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dao.find('Book', { where: { price: '9.99' } })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dao.find('Book', { where: { author: christie.id } })).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
+        expect(await dao.find('Book', { where: { bestSeller: true } })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dao.find('Book', { where: { bestSeller: 'TRu?' } })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dao.find('Book', { where: { bestSeller: 'tru' } })).toMatchObject([]);
+        expect(await dao.find('Book', { where: { price: '?.??' } })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dao.find('Book', { where: { price: '??.*' } })).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
+        expect(await dao.find('Book', { where: { bids: [1.99] } })).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dao.find('Book', { where: { bids: 1.99 } })).toMatchObject([{ id: mobyDick.id }]);
+        expect((await dao.find('Book', { where: { bids: 5.00 } })).sort(sorter)).toMatchObject([{ id: mobyDick.id }, { id: healthBook.id }].sort(sorter));
+        expect(await dao.find('Book', { where: { bids: [19.99, '1.99'] } })).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dao.find('Book', { where: { chapters: chapter1.id } })).toMatchObject([{ id: healthBook.id }]);
       });
 
       test('Chapter', async () => {
         expect((await dao.find('Chapter')).length).toBe(2);
-        expect(await dao.find('Chapter', { name: 'cHAPter1' })).toMatchObject([{ id: chapter1.id, name: 'Chapter1', book: healthBook.id }]);
-        expect(await dao.find('Chapter', { name: 'cHAPteR2' })).toMatchObject([{ id: chapter2.id, name: 'Chapter2', book: healthBook.id }]);
-        expect(await dao.find('Chapter', { name: 'cHAPteR3' })).toEqual([]);
-        expect(await dao.find('Chapter', { book: mobyDick.id })).toEqual([]);
-        expect(await dao.find('Chapter', { book: 'some-odd-id' })).toEqual([]);
-        expect((await dao.find('Chapter', { book: healthBook.id })).sort(sorter)).toMatchObject([
+        expect(await dao.find('Chapter', { where: { name: 'cHAPter1' } })).toMatchObject([{ id: chapter1.id, name: 'Chapter1', book: healthBook.id }]);
+        expect(await dao.find('Chapter', { where: { name: 'cHAPteR2' } })).toMatchObject([{ id: chapter2.id, name: 'Chapter2', book: healthBook.id }]);
+        expect(await dao.find('Chapter', { where: { name: 'cHAPteR3' } })).toEqual([]);
+        expect(await dao.find('Chapter', { where: { book: mobyDick.id } })).toEqual([]);
+        expect(await dao.find('Chapter', { where: { book: 'some-odd-id' } })).toEqual([]);
+        expect((await dao.find('Chapter', { where: { book: healthBook.id } })).sort(sorter)).toMatchObject([
           { id: chapter1.id, name: 'Chapter1', book: healthBook.id },
           { id: chapter2.id, name: 'Chapter2', book: healthBook.id },
         ].sort(sorter));
@@ -275,13 +276,13 @@ module.exports = (name, db = 'mongo') => {
 
       test('Page', async () => {
         expect((await dao.find('Page')).length).toBe(4);
-        expect((await dao.find('Page', { chapter: chapter1.id })).length).toBe(2);
-        expect((await dao.find('Page', { chapter: chapter2.id })).length).toBe(2);
-        expect((await dao.find('Page', { number: 1 })).sort(sorter)).toMatchObject([
+        expect((await dao.find('Page', { where: { chapter: chapter1.id } })).length).toBe(2);
+        expect((await dao.find('Page', { where: { chapter: chapter2.id } })).length).toBe(2);
+        expect((await dao.find('Page', { where: { number: 1 } })).sort(sorter)).toMatchObject([
           { id: page1.id, chapter: chapter1.id },
           { id: page3.id, chapter: chapter2.id },
         ].sort(sorter));
-        expect((await dao.find('Page', { number: '2' })).sort(sorter)).toMatchObject([
+        expect((await dao.find('Page', { where: { number: '2' } })).sort(sorter)).toMatchObject([
           { id: page2.id, chapter: chapter1.id },
           { id: page4.id, chapter: chapter2.id },
         ].sort(sorter));
@@ -289,18 +290,18 @@ module.exports = (name, db = 'mongo') => {
 
       test('Building', async () => {
         expect((await dao.find('Building')).length).toBe(3);
-        expect((await dao.find('Building', { tenants: [richard.id] })).length).toBe(1);
-        expect((await dao.find('Building', { tenants: [christie.id] })).length).toBe(3);
-        expect((await dao.find('Building', { tenants: [richard.id, christie.id] })).length).toBe(3);
+        expect((await dao.find('Building', { where: { tenants: [richard.id] } })).length).toBe(1);
+        expect((await dao.find('Building', { where: { tenants: [christie.id] } })).length).toBe(3);
+        expect((await dao.find('Building', { where: { tenants: [richard.id, christie.id] } })).length).toBe(3);
         // expect((await dao.find('Building', { tenants: `@(@(${richard.id})@(${christie.id}))` })).length).toBe(1);
-        expect((await dao.find('Building', { tenants: [richard.id, christie.id], landlord: richard.id })).length).toBe(1);
-        expect((await dao.find('Building', { tenants: [richard.id, christie.id], landlord: christie.id })).length).toBe(0);
+        expect((await dao.find('Building', { where: { tenants: [richard.id, christie.id], landlord: richard.id } })).length).toBe(1);
+        expect((await dao.find('Building', { where: { tenants: [richard.id, christie.id], landlord: christie.id } })).length).toBe(0);
       });
 
       test('BookStore', async () => {
         expect((await dao.find('BookStore')).length).toBe(2);
-        expect((await dao.find('BookStore', { books: [mobyDick.id] })).length).toBe(2);
-        expect((await dao.find('BookStore', { name: 'new books' })).sort(sorter)).toMatchObject([
+        expect((await dao.find('BookStore', { where: { books: [mobyDick.id] } })).length).toBe(2);
+        expect((await dao.find('BookStore', { where: { name: 'new books' } })).sort(sorter)).toMatchObject([
           { id: bookstore2.id, name: 'New Books', building: expect.objectContaining(bookBuilding) },
         ].sort(sorter));
       });
@@ -314,49 +315,49 @@ module.exports = (name, db = 'mongo') => {
     describe('Count (find)', () => {
       test('Person', async () => {
         expect(await dao.count('Person')).toBe(2);
-        expect(await dao.count('Person', { name: 'richard' })).toBe(1);
-        expect(await dao.count('Person', { name: 'Christie' })).toBe(1);
+        expect(await dao.count('Person', { where: { name: 'richard' } })).toBe(1);
+        expect(await dao.count('Person', { where: { name: 'Christie' } })).toBe(1);
       });
 
       test('Book', async () => {
         expect(await dao.count('Book')).toBe(2);
-        expect(await dao.count('Book', { author: richard.id })).toBe(1);
-        expect(await dao.count('Book', { price: 9.99 })).toBe(1);
-        expect(await dao.count('Book', { price: '9.99' })).toBe(1);
-        expect(await dao.count('Book', { author: christie.id })).toBe(1);
+        expect(await dao.count('Book', { where: { author: richard.id } })).toBe(1);
+        expect(await dao.count('Book', { where: { price: 9.99 } })).toBe(1);
+        expect(await dao.count('Book', { where: { price: '9.99' } })).toBe(1);
+        expect(await dao.count('Book', { where: { author: christie.id } })).toBe(1);
       });
 
       test('Chapter', async () => {
         expect(await dao.count('Chapter')).toBe(2);
-        expect(await dao.count('Chapter', { name: 'cHAPter1' })).toBe(1);
-        expect(await dao.count('Chapter', { name: 'cHAPteR2' })).toBe(1);
-        expect(await dao.count('Chapter', { name: 'cHAPteR3' })).toBe(0);
-        expect(await dao.count('Chapter', { book: mobyDick.id })).toBe(0);
-        expect(await dao.count('Chapter', { book: 'some-odd-id' })).toEqual(0);
-        expect(await dao.count('Chapter', { book: healthBook.id })).toBe(2);
+        expect(await dao.count('Chapter', { where: { name: 'cHAPter1' } })).toBe(1);
+        expect(await dao.count('Chapter', { where: { name: 'cHAPteR2' } })).toBe(1);
+        expect(await dao.count('Chapter', { where: { name: 'cHAPteR3' } })).toBe(0);
+        expect(await dao.count('Chapter', { where: { book: mobyDick.id } })).toBe(0);
+        expect(await dao.count('Chapter', { where: { book: 'some-odd-id' } })).toEqual(0);
+        expect(await dao.count('Chapter', { where: { book: healthBook.id } })).toBe(2);
       });
 
       test('Page', async () => {
         expect(await dao.count('Page')).toBe(4);
-        expect(await dao.count('Page', { chapter: chapter1.id })).toBe(2);
-        expect(await dao.count('Page', { chapter: chapter2.id })).toBe(2);
-        expect(await dao.count('Page', { number: 1 })).toBe(2);
-        expect(await dao.count('Page', { number: '2' })).toBe(2);
+        expect(await dao.count('Page', { where: { chapter: chapter1.id } })).toBe(2);
+        expect(await dao.count('Page', { where: { chapter: chapter2.id } })).toBe(2);
+        expect(await dao.count('Page', { where: { number: 1 } })).toBe(2);
+        expect(await dao.count('Page', { where: { number: '2' } })).toBe(2);
       });
 
       test('Building', async () => {
         expect(await dao.count('Building')).toBe(3);
-        expect(await dao.count('Building', { tenants: [richard.id] })).toBe(1);
-        expect(await dao.count('Building', { tenants: [christie.id] })).toBe(3);
-        expect(await dao.count('Building', { tenants: [richard.id, christie.id] })).toBe(3);
-        expect(await dao.count('Building', { tenants: [richard.id, christie.id], landlord: richard.id })).toBe(1);
-        expect(await dao.count('Building', { tenants: [richard.id, christie.id], landlord: christie.id })).toBe(0);
+        expect(await dao.count('Building', { where: { tenants: [richard.id] } })).toBe(1);
+        expect(await dao.count('Building', { where: { tenants: [christie.id] } })).toBe(3);
+        expect(await dao.count('Building', { where: { tenants: [richard.id, christie.id] } })).toBe(3);
+        expect(await dao.count('Building', { where: { tenants: [richard.id, christie.id], landlord: richard.id } })).toBe(1);
+        expect(await dao.count('Building', { where: { tenants: [richard.id, christie.id], landlord: christie.id } })).toBe(0);
       });
 
       test('BookStore', async () => {
         expect(await dao.count('BookStore')).toBe(2);
-        expect(await dao.count('BookStore', { books: [mobyDick.id] })).toBe(2);
-        expect(await dao.count('BookStore', { name: 'new books' })).toBe(1);
+        expect(await dao.count('BookStore', { where: { books: [mobyDick.id] } })).toBe(2);
+        expect(await dao.count('BookStore', { where: { name: 'new books' } })).toBe(1);
       });
 
       test('Library', async () => {
@@ -472,30 +473,30 @@ module.exports = (name, db = 'mongo') => {
 
     describe('Search', () => {
       test('Person', async () => {
-        expect(await dao.find('Person', { authored: { name: 'Moby Dick' } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
-        expect(await dao.find('Person', { authored: { author: { name: 'ChRist??' } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.find('Person', { friends: { name: 'Christie' } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
-        expect(await dao.find('Person', { friends: { authored: { name: 'Health*' } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
-        expect(await dao.find('Person', { friends: { authored: { name: 'Cray Cray*' } } })).toMatchObject([]);
-        expect(await dao.find('Person', { authored: { chapters: { pages: { verbage: 'city lust' } } } })).toMatchObject([]);
-        expect(await dao.find('Person', { authored: { chapters: { pages: { verbage: 'the end.' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.find('Person', { authored: { chapters: { pages: { verbage: '*intro*' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.find('Person', { authored: { chapters: { name: 'citizen', pages: { verbage: '*intro*' } } } })).toMatchObject([]);
-        expect(await dao.find('Person', { authored: { chapters: { name: 'chapter*', pages: { verbage: '*intro*' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.find('Person', { authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.find('Person', { where: { authored: { name: 'Moby Dick' } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dao.find('Person', { where: { authored: { author: { name: 'ChRist??' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.find('Person', { where: { friends: { name: 'Christie' } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dao.find('Person', { where: { friends: { authored: { name: 'Health*' } } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dao.find('Person', { where: { friends: { authored: { name: 'Cray Cray*' } } } })).toMatchObject([]);
+        expect(await dao.find('Person', { where: { authored: { chapters: { pages: { verbage: 'city lust' } } } } })).toMatchObject([]);
+        expect(await dao.find('Person', { where: { authored: { chapters: { pages: { verbage: 'the end.' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.find('Person', { where: { authored: { chapters: { pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.find('Person', { where: { authored: { chapters: { name: 'citizen', pages: { verbage: '*intro*' } } } } })).toMatchObject([]);
+        expect(await dao.find('Person', { where: { authored: { chapters: { name: 'chapter*', pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.find('Person', { where: { authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
       });
 
       test('Book', async () => {
-        expect(await dao.find('Book', { author: { name: 'Richard' } })).toMatchObject([{ id: mobyDick.id }]);
-        expect(await dao.find('Book', { author: { authored: { name: 'Moby*' } } })).toMatchObject([{ id: mobyDick.id }]);
-        expect(await dao.find('Book', { author: { authored: { name: 'Health*' } } })).toMatchObject([{ id: healthBook.id }]);
-        expect((await dao.find('Book', { author: { authored: { name: '*' } } })).sort(sorter)).toMatchObject([{ id: healthBook.id }, { id: mobyDick.id }].sort(sorter));
-        expect(await dao.find('Book', { chapters: { name: 'Chapter1' } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.find('Book', { chapters: { name: ['chapter1', 'chapter2'] } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.find('Book', { chapters: { name: ['chapter1', 'no-chapter'] } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.find('Book', { chapters: { name: '*' } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.find('Book', { chapters: { pages: { number: 1 } } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.find('Book', { chapters: [{ name: 'HongKong' }, chapter1.id] })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dao.find('Book', { where: { author: { name: 'Richard' } } })).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dao.find('Book', { where: { author: { authored: { name: 'Moby*' } } } })).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dao.find('Book', { where: { author: { authored: { name: 'Health*' } } } })).toMatchObject([{ id: healthBook.id }]);
+        expect((await dao.find('Book', { where: { author: { authored: { name: '*' } } } })).sort(sorter)).toMatchObject([{ id: healthBook.id }, { id: mobyDick.id }].sort(sorter));
+        expect(await dao.find('Book', { where: { chapters: { name: 'Chapter1' } } })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dao.find('Book', { where: { chapters: { name: ['chapter1', 'chapter2'] } } })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dao.find('Book', { where: { chapters: { name: ['chapter1', 'no-chapter'] } } })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dao.find('Book', { where: { chapters: { name: '*' } } })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dao.find('Book', { where: { chapters: { pages: { number: 1 } } } })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dao.find('Book', { where: { chapters: [{ name: 'HongKong' }, chapter1.id] } })).toMatchObject([{ id: healthBook.id }]);
       });
     });
 
