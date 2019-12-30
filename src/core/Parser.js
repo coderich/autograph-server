@@ -57,6 +57,11 @@ module.exports = class Parser {
     return Object.values(fields).map(field => Parser.getFieldDataRef(field)).filter(ref => ref);
   }
 
+  getModelFieldsAndDataRefs(model) {
+    const fields = this.getModelFields(model);
+    return Object.entries(fields).map(([field, fieldDef]) => [field, Parser.getFieldDataRef(fieldDef), fieldDef.by, Parser.isArrayField(fieldDef)]).filter(([field, ref]) => ref);
+  }
+
   getModelOnDeletes(model) {
     return Parser.identifyOnDeletes(this.schema)[model];
   }
@@ -68,6 +73,10 @@ module.exports = class Parser {
   static isScalarField(field) {
     const type = Parser.getFieldDataType(field);
     return Array.isArray(type) ? Parser.isScalarValue(type[0]) : Parser.isScalarValue(type);
+  }
+
+  static isArrayField(field) {
+    return Boolean(Parser.getFieldArrayType(field));
   }
 
   static getFieldDataRef(field) {

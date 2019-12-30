@@ -48,10 +48,9 @@ exports.createGraphSchema = (parser) => {
     typeDefs: parser.getModelNamesAndFields().map(([model, fields]) => `
       type ${model} {
         ${parser.getModel(model).hideFromApi ? '' : 'id: ID!'}
-        ${
-          Object.entries(fields)
-          .map(([field, fieldDef]) => `${field}: ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`)
-        }
+        ${Object.entries(fields).map(([field, fieldDef]) => `${field}: ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`)}
+        countSelf(where: ${model}InputQuery): Int!
+        ${parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).map(([field, ref]) => `count${ucFirst(field)}(where: ${ref}InputQuery): Int!`)}
       }
 
       type ${model}Subscription {
@@ -154,10 +153,28 @@ exports.createGraphSchema = (parser) => {
               return resolver.get(context, dataType, value, fieldDef.required);
             },
           });
+        }, parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).reduce((counters, [field, ref, by]) => {
+          return Object.assign(counters, {
+            [`count${ucFirst(field)}`]: (root, args, context) => {
+              if (by) {
+                args.where = args.where || {};
+                args.where[by] = root.id;
+                return resolver.count(context, ref, args.where);
+              }
+
+              if (!args.where) {
+                return (root[field] || []).length; // Making big assumption that it's an array
+              }
+
+              const ids = (root[field] || []);
+              args.where = args.where || {};
+              args.where[context.store.idField(ref)] = ids;
+              return resolver.count(context, ref, args.where);
+            },
+          });
         }, {
-          // // ID Resolver
-          // id: (root, args) => root.id,
-        }),
+          countSelf: (root, args, context) => resolver.count(context, model, args.where),
+        })),
       });
     }, {
       Query: parser.getModelNames(false).reduce((prev, model) => {
