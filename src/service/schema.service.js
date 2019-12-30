@@ -19,6 +19,11 @@ const getFieldType = (model, field, fieldDef, suffix) => {
 exports.createGraphSchema = (parser) => {
   const resolver = new Resolver(parser);
 
+  Emitter.on('postMutation', ({ store }) => {
+    const loader = store.loader || store.dataLoader();
+    parser.getModelNames(false).forEach(model => pubsub.publish(`${model}Trigger`, { store: loader }));
+  });
+
   Emitter.on('preMutation', ({ method, store }, next) => {
     const beforeStore = store.loader || store.dataLoader();
     const afterStore = store.dataLoader();
@@ -103,6 +108,7 @@ exports.createGraphSchema = (parser) => {
       }`,
 
       `type Subscription {
+        ${parser.getModelNames(false).map(model => `${model}Trigger(where: ${ucFirst(model)}InputQuery): [${model}]!`)}
         ${parser.getModelNames(false).map(model => `${model}Changed(where: ${ucFirst(model)}InputQuery): [${model}Subscription]!`)}
       }`,
 
@@ -174,6 +180,14 @@ exports.createGraphSchema = (parser) => {
 
       Subscription: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
+          [`${model}Trigger`]: {
+            subscribe: () => pubsub.asyncIterator(`${model}Trigger`),
+            resolve: (root, args, context) => {
+              const { store } = root;
+              context.store = store;
+              return store.find(model, args.where);
+            },
+          },
           [`${model}Changed`]: {
             subscribe: withFilter(
               () => pubsub.asyncIterator(`${model}Changed`),
@@ -182,6 +196,7 @@ exports.createGraphSchema = (parser) => {
                 const args = _.cloneDeep(args1);
                 const sid = hashObject({ model, args });
                 const { beforeStore, afterStore } = root;
+                const action = `${model}Changed`;
                 context.subscriptions = context.subscriptions || {};
                 context.subscriptions[sid] = [];
 
@@ -190,6 +205,8 @@ exports.createGraphSchema = (parser) => {
 
                 return new Promise((resolve, reject) => {
                   beforeStore.find(model, args.where).then((before) => {
+                    context.store = afterStore;
+
                     Emitter.once('postMutation', async (event) => {
                       const after = await afterStore.find(model, args.where);
                       const diff = _.xorWith(before, after, (a, b) => `${a.id}` === `${b.id}`);
@@ -215,11 +232,9 @@ exports.createGraphSchema = (parser) => {
 
                       if (!updated.length && !added.length && !deleted.length) return resolve(false);
 
-                      const action = `${model}Changed`;
                       updated.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'update', model: result } }));
                       added.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'create', model: result } }));
                       deleted.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'delete', model: result } }));
-                      // console.log(model, JSON.stringify(args), sid);
                       return resolve(true);
                     });
 
@@ -231,7 +246,6 @@ exports.createGraphSchema = (parser) => {
             resolve: (root, args, context) => {
               const sid = hashObject({ model, args });
               const results = context.subscriptions[sid];
-              // console.log(model, JSON.stringify(args), sid);
 
               return results.map((result) => {
                 const [data] = Object.values(result);

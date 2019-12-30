@@ -259,6 +259,5 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
 exports.resolveReferentialIntegrity = async (parser, store, model, id) => {
   const onDeletes = parser.getModelOnDeletes(model);
   const doc = await store.get(model, id);
-  console.log(onDeletes);
   return doc;
 };
