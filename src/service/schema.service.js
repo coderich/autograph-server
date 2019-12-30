@@ -83,6 +83,18 @@ exports.createGraphSchema = (parser) => {
         }
       }
 
+      input ${model}InputSort {
+        ${
+          Object.entries(fields).map(([field, fieldDef]) => {
+            const ref = Parser.getFieldDataRef(fieldDef);
+            return `${field}: ${ref ? `${ucFirst(ref)}InputSort` : 'SortOrderEnum'}`;
+          }).concat(
+            'countSelf: SortOrderEnum',
+            parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).map(([field, ref]) => `count${ucFirst(field)}: SortOrderEnum`),
+          )
+        }
+      }
+
       ${
         Object.entries(fields).filter(([field, fieldDef]) => fieldDef.enum).map(([field, fieldDef]) => {
           return `
@@ -93,22 +105,24 @@ exports.createGraphSchema = (parser) => {
     `).concat([
       'scalar Mixed',
 
+      'enum SortOrderEnum { ASC DESC }',
+
       `type Query {
         System: System!
         ${parser.getModelNames(false).map(model => `get${model}(id: ID!): ${model}`)}
-        ${parser.getModelNames(false).map(model => `find${model}(where: ${ucFirst(model)}InputQuery): [${model}]!`)}
-        ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputQuery): Int!`)}
+        ${parser.getModelNames(false).map(model => `find${model}(where: ${ucFirst(model)}InputQuery sortBy: ${ucFirst(model)}InputSort): [${model}]!`)}
+        ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputQuery sortBy: ${ucFirst(model)}InputSort): Int!`)}
       }`,
 
       `type System {
         ${parser.getModelNames(false).map(model => `get${model}(id: ID!): ${model}`)}
-        ${parser.getModelNames(false).map(model => `find${model}(where: ${ucFirst(model)}InputQuery): [${model}]!`)}
-        ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputQuery): Int!`)}
+        ${parser.getModelNames(false).map(model => `find${model}(where: ${ucFirst(model)}InputQuery sortBy: ${ucFirst(model)}InputSort): [${model}]!`)}
+        ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputQuery sortBy: ${ucFirst(model)}InputSort): Int!`)}
       }`,
 
       `type Subscription {
-        ${parser.getModelNames(false).map(model => `${model}Trigger(where: ${ucFirst(model)}InputQuery): [${model}]!`)}
-        ${parser.getModelNames(false).map(model => `${model}Changed(where: ${ucFirst(model)}InputQuery): [${model}Subscription]!`)}
+        ${parser.getModelNames(false).map(model => `${model}Trigger(where: ${ucFirst(model)}InputQuery sortBy: ${ucFirst(model)}InputSort): [${model}]!`)}
+        ${parser.getModelNames(false).map(model => `${model}Changed(where: ${ucFirst(model)}InputQuery sortBy: ${ucFirst(model)}InputSort): [${model}Subscription]!`)}
       }`,
 
       `type Mutation {
