@@ -60,7 +60,7 @@ module.exports = class Store {
 
   async find(model, args = {}) {
     const { parser } = this;
-    const { where = {} } = args;
+    const { where = {}, limit } = args;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, where);
@@ -68,7 +68,8 @@ module.exports = class Store {
 
     return createSystemEvent('Query', { method: 'find', model, store: this, parser, where }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
-      return store.dao.find(modelAlias, resolvedWhere);
+      const results = await store.dao.find(modelAlias, resolvedWhere);
+      return results.slice(0, limit > 0 ? limit : undefined);
     });
   }
 
