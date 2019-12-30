@@ -38,8 +38,9 @@ module.exports = class {
 
   async delete(model, id) {
     const value = await this.store.delete(model, id);
-    const key = hashObject({ op: 'get', model, data: id });
-    this.loader.clear(key);
+    const key1 = hashObject({ op: 'get', model, data: id });
+    const key2 = hashObject({ op: 'find', model, data: {} });
+    this.loader.clear(key1).clear(key2);
     return value;
   }
 

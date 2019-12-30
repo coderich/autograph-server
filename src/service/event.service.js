@@ -3,9 +3,10 @@ const { ucFirst } = require('./app.service');
 
 // Event emitters
 const eventEmitter = new EventEmitter();
-
+const internalEmitter = new EventEmitter();
 const systemEvent = new EventEmitter().on('system', async (event, next) => {
   const { type, data } = event;
+  await internalEmitter.emit(type, data);
   await eventEmitter.emit(type, data);
   next();
 });
@@ -20,5 +21,5 @@ exports.createSystemEvent = (name, event = {}, thunk = () => {}) => {
     return result;
   });
 };
-
 exports.eventEmitter = eventEmitter;
+exports.internalEmitter = internalEmitter;

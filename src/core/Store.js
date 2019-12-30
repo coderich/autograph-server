@@ -141,6 +141,7 @@ module.exports = class Store {
   }
 
   dataLoader() {
-    return new DataLoader(this);
+    this.loader = new DataLoader(this);
+    return this.loader;
   }
 };

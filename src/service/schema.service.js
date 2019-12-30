@@ -2,7 +2,7 @@ const _ = require('lodash');
 const { withFilter, PubSub } = require('graphql-subscriptions');
 const Parser = require('../core/Parser');
 const Resolver = require('../core/Resolver');
-const { eventEmitter: Emitter } = require('./event.service');
+const { internalEmitter: Emitter } = require('./event.service');
 const { ucFirst, hashObject } = require('./app.service');
 
 const pubsub = new PubSub();
@@ -19,9 +19,12 @@ const getFieldType = (model, field, fieldDef, suffix) => {
 exports.createGraphSchema = (parser) => {
   const resolver = new Resolver(parser);
 
-  Emitter.on('preMutation', ({ method }, next) => {
+  Emitter.on('preMutation', ({ method, store }, next) => {
+    const beforeStore = store.loader || store.dataLoader();
+    const afterStore = store.dataLoader();
+
     Promise.all(parser.getModelNames(false).map((model) => {
-      const payload = { method, next: undefined };
+      const payload = { method, beforeStore, afterStore, next: undefined };
 
       return new Promise((resolve) => {
         pubsub.publish(`${model}Changed`, payload);
@@ -178,6 +181,7 @@ exports.createGraphSchema = (parser) => {
                 let nextPromise;
                 const args = _.cloneDeep(args1);
                 const sid = hashObject({ model, args });
+                const { beforeStore, afterStore } = root;
                 context.subscriptions = context.subscriptions || {};
                 context.subscriptions[sid] = [];
 
@@ -185,9 +189,9 @@ exports.createGraphSchema = (parser) => {
                 root.next = new Promise(resolve => (nextPromise = resolve));
 
                 return new Promise((resolve, reject) => {
-                  resolver.find(context, model, args.where, true).then((before) => {
+                  beforeStore.find(model, args.where).then((before) => {
                     Emitter.once('postMutation', async (event) => {
-                      const after = await resolver.find(context, model, args.where, true);
+                      const after = await afterStore.find(model, args.where);
                       const diff = _.xorWith(before, after, (a, b) => `${a.id}` === `${b.id}`);
                       const updated = _.intersectionWith(before, after, (a, b) => `${a.id}` === `${b.id}`).filter((el) => {
                         const a = before.find(e => `${e.id}` === `${el.id}`);
@@ -215,6 +219,7 @@ exports.createGraphSchema = (parser) => {
                       updated.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'update', model: result } }));
                       added.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'create', model: result } }));
                       deleted.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'delete', model: result } }));
+                      // console.log(model, JSON.stringify(args), sid);
                       return resolve(true);
                     });
 
@@ -226,6 +231,7 @@ exports.createGraphSchema = (parser) => {
             resolve: (root, args, context) => {
               const sid = hashObject({ model, args });
               const results = context.subscriptions[sid];
+              // console.log(model, JSON.stringify(args), sid);
 
               return results.map((result) => {
                 const [data] = Object.values(result);
