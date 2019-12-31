@@ -1,5 +1,7 @@
 const _ = require('lodash');
+const GraphqlFields = require('graphql-fields');
 const { withFilter, PubSub } = require('graphql-subscriptions');
+const DataLoader = require('../core/DataLoader');
 const Parser = require('../core/Parser');
 const Resolver = require('../core/Resolver');
 const { internalEmitter: Emitter } = require('./event.service');
@@ -20,12 +22,12 @@ exports.createGraphSchema = (parser) => {
   const resolver = new Resolver(parser);
 
   Emitter.on('postMutation', ({ store }) => {
-    const loader = store.loader || store.dataLoader();
+    const loader = (store instanceof DataLoader ? store : store.dataLoader());
     parser.getModelNames(false).forEach(model => pubsub.publish(`${model}Trigger`, { store: loader }));
   });
 
   Emitter.on('preMutation', ({ method, store }, next) => {
-    const beforeStore = store.loader || store.dataLoader();
+    const beforeStore = (store instanceof DataLoader ? store : store.dataLoader());
     const afterStore = store.dataLoader();
 
     Promise.all(parser.getModelNames(false).map((model) => {
@@ -48,7 +50,10 @@ exports.createGraphSchema = (parser) => {
     typeDefs: parser.getModelNamesAndFields().map(([model, fields]) => `
       type ${model} {
         ${parser.getModel(model).hideFromApi ? '' : 'id: ID!'}
-        ${Object.entries(fields).map(([field, fieldDef]) => `${field}: ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`)}
+        ${Object.entries(fields).map(([field, fieldDef]) => {
+          if (Parser.getFieldDataRef(fieldDef)) return `${field}(query: ${model}InputQuery): ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`;
+          return `${field}: ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`;
+        })}
         countSelf(where: ${model}InputWhere): Int!
         ${parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).map(([field, ref]) => `count${ucFirst(field)}(where: ${ref}InputWhere): Int!`)}
       }
@@ -155,7 +160,7 @@ exports.createGraphSchema = (parser) => {
       return Object.assign(prev, {
         [model]: Object.entries(fields).filter(([field, fieldDef]) => !fieldDef.embedded).reduce((def, [field, fieldDef]) => {
           return Object.assign(def, {
-            [field]: (root, args, context) => resolver.resolve(context, model, root, field),
+            [field]: (root, args, context) => resolver.resolve(context, model, root, field, args.query),
           });
         }, parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).reduce((counters, [field, ref, by]) => {
           return Object.assign(counters, {
@@ -171,7 +176,7 @@ exports.createGraphSchema = (parser) => {
       Query: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
-          [`find${model}`]: (root, args, context) => resolver.find(context, model, args.query),
+          [`find${model}`]: (root, args, context, info) => resolver.find(context, model, { fields: GraphqlFields(info), ...args.query }),
           [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
         });
       }, {
@@ -181,7 +186,7 @@ exports.createGraphSchema = (parser) => {
       System: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
-          [`find${model}`]: (root, args, context) => resolver.find(context, model, args.query),
+          [`find${model}`]: (root, args, context, info) => resolver.find(context, model, { fields: GraphqlFields(info), ...args.query }),
           [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
         });
       }, {}),

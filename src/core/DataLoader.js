@@ -28,8 +28,8 @@ module.exports = class {
     return this.loader.load({ op: 'rollup', model, args: [doc, field, where] });
   }
 
-  resolve(model, doc, field) {
-    return this.loader.load({ op: 'resolve', model, args: [doc, field] });
+  resolve(model, doc, field, query = {}) {
+    return this.loader.load({ op: 'resolve', model, args: [doc, field, query] });
   }
 
   create(model, data) {
@@ -54,5 +54,9 @@ module.exports = class {
 
   idField(model) {
     return this.store.idField(model);
+  }
+
+  dataLoader() {
+    return this.store.dataLoader();
   }
 };
