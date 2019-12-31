@@ -155,45 +155,16 @@ exports.createGraphSchema = (parser) => {
       return Object.assign(prev, {
         [model]: Object.entries(fields).filter(([field, fieldDef]) => !fieldDef.embedded).reduce((def, [field, fieldDef]) => {
           return Object.assign(def, {
-            [field]: (root, args, context) => {
-              const value = root[parser.getModelFieldAlias(model, field)];
-              const dataType = Parser.getFieldDataType(fieldDef);
-
-              // Scalar Resolvers
-              if (Parser.isScalarField(fieldDef)) return value;
-
-              // Array Resolvers
-              if (Array.isArray(dataType)) {
-                if (fieldDef.by) return resolver.find(context, dataType[0], { [parser.getModelFieldAlias(dataType[0], fieldDef.by)]: root.id });
-                return Promise.all((value || []).map(id => resolver.get(context, dataType[0], id, fieldDef.required).catch(() => null)));
-              }
-
-              // Object Resolvers
-              if (fieldDef.by) return resolver.find(context, dataType, { [parser.getModelFieldAlias(dataType, fieldDef.by)]: root.id }).then(results => results[0]);
-              return resolver.get(context, dataType, value, fieldDef.required);
-            },
+            [field]: (root, args, context) => resolver.resolve(context, model, root, field),
           });
         }, parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).reduce((counters, [field, ref, by]) => {
           return Object.assign(counters, {
             [`count${ucFirst(field)}`]: (root, args, context) => {
-              if (by) {
-                args.where = args.where || {};
-                args.where[by] = root.id;
-                return resolver.count(context, ref, args);
-              }
-
-              if (!args.where) {
-                return (root[field] || []).length; // Making big assumption that it's an array
-              }
-
-              const ids = (root[field] || []);
-              args.where = args.where || {};
-              args.where[context.store.idField(ref)] = ids;
-              return resolver.count(context, ref, args);
+              return resolver.rollup(context, model, root, field, args.where);
             },
           });
         }, {
-          countSelf: (root, args, context) => resolver.count(context, model, args),
+          countSelf: (root, args, context) => resolver.count(context, model, args.where),
         })),
       });
     }, {
@@ -201,7 +172,7 @@ exports.createGraphSchema = (parser) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
           [`find${model}`]: (root, args, context) => resolver.find(context, model, args.query),
-          [`count${model}`]: (root, args, context) => resolver.count(context, model, args),
+          [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
         });
       }, {
         System: (root, args) => ({}),
@@ -211,7 +182,7 @@ exports.createGraphSchema = (parser) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
           [`find${model}`]: (root, args, context) => resolver.find(context, model, args.query),
-          [`count${model}`]: (root, args, context) => resolver.count(context, model, args),
+          [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
         });
       }, {}),
 

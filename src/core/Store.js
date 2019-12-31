@@ -1,3 +1,4 @@
+const Parser = require('./Parser');
 const DataLoader = require('./DataLoader');
 const RedisStore = require('../store/RedisStore');
 const MongoStore = require('../store/MongoStore');
@@ -48,19 +49,28 @@ module.exports = class Store {
     parser.getModelNamesAndIndexes().forEach(([model, indexes]) => this.storeMap[model].dao.createIndexes(this.parser.getModelAlias(model), indexes));
   }
 
+  toObject(model, doc) {
+    if (!doc) return undefined;
+
+    // Magic methods
+    Object.defineProperty(doc, '$resolve', { value: field => this.resolve(model, doc, field) });
+    Object.defineProperty(doc, '$rollup', { value: (field, where) => this.rollup(model, doc, field, where) });
+    return doc;
+  }
+
   get(model, id) {
     const { parser } = this;
     const store = this.storeMap[model];
     const modelAlias = this.parser.getModelAlias(model);
 
     return createSystemEvent('Query', { method: 'get', model, store: this, parser, id }, async () => {
-      return store.dao.get(modelAlias, store.idValue(id));
+      return store.dao.get(modelAlias, store.idValue(id)).then(doc => this.toObject(model, doc));
     });
   }
 
-  async find(model, args = {}) {
+  async find(model, query = {}) {
     const { parser } = this;
-    const { where = {}, limit } = args;
+    const { where = {}, limit } = query;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, where);
@@ -69,13 +79,12 @@ module.exports = class Store {
     return createSystemEvent('Query', { method: 'find', model, store: this, parser, where }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, this, model, where);
       const results = await store.dao.find(modelAlias, resolvedWhere);
-      return results.slice(0, limit > 0 ? limit : undefined);
+      return results.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
     });
   }
 
-  async count(model, args = {}) {
+  async count(model, where = {}) {
     const { parser } = this;
-    const { where = {} } = args;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, where);
@@ -87,6 +96,44 @@ module.exports = class Store {
     });
   }
 
+  rollup(model, doc, field, where = {}) {
+    const { parser, loader = this } = this;
+    const [, ref, by] = parser.getModelFieldAndDataRef(model, field);
+
+    if (by) {
+      where[by] = doc.id;
+      return loader.count(ref, where);
+    }
+
+    if (!Object.keys(where).length) {
+      return (doc[field] || []).length; // Making big assumption that it's an array
+    }
+
+    const ids = (doc[field] || []);
+    where[loader.idField(ref)] = ids;
+    return loader.count(ref, where);
+  }
+
+  resolve(model, doc, field) {
+    const { parser, loader = this } = this;
+    const fieldDef = parser.getModelFieldDef(model, field);
+    const dataType = Parser.getFieldDataType(fieldDef);
+    const value = doc[parser.getModelFieldAlias(model, field)];
+
+    // Scalar Resolvers
+    if (Parser.isScalarField(fieldDef)) return value;
+
+    // Array Resolvers
+    if (Array.isArray(dataType)) {
+      if (fieldDef.by) return loader.find(dataType[0], { where: { [parser.getModelFieldAlias(dataType[0], fieldDef.by)]: doc.id } });
+      return Promise.all((value || []).map(id => loader.get(dataType[0], id, fieldDef.required).catch(() => null)));
+    }
+
+    // Object Resolvers
+    if (fieldDef.by) return loader.find(dataType, { where: { [parser.getModelFieldAlias(dataType, fieldDef.by)]: doc.id } }).then(results => results[0]);
+    return loader.get(dataType, value, fieldDef.required);
+  }
+
   async create(model, data) {
     const { parser } = this;
     const store = this.storeMap[model];
@@ -96,7 +143,7 @@ module.exports = class Store {
     await validateModelData(parser, this, model, data, {}, 'create');
 
     return createSystemEvent('Mutation', { method: 'create', model, store: this, parser, data }, () => {
-      return store.dao.create(modelAlias, data);
+      return store.dao.create(modelAlias, data).then(doc => this.toObject(model, doc));
     });
   }
 
@@ -111,7 +158,7 @@ module.exports = class Store {
 
     return createSystemEvent('Mutation', { method: 'update', model, store: this, parser, id, data }, async () => {
       const merged = normalizeModelData(parser, this, model, mergeDeep(doc, data));
-      return store.dao.replace(modelAlias, store.idValue(id), data, merged);
+      return store.dao.replace(modelAlias, store.idValue(id), data, merged).then(res => this.toObject(model, res));
     });
   }
 
@@ -122,7 +169,7 @@ module.exports = class Store {
     const doc = await ensureModel(this, model, id);
 
     return createSystemEvent('Mutation', { method: 'delete', model, store: this, parser, id }, () => {
-      return resolveReferentialIntegrity(parser, this, model, id).then(() => store.dao.delete(modelAlias, store.idValue(id), doc));
+      return resolveReferentialIntegrity(parser, this, model, id).then(() => store.dao.delete(modelAlias, store.idValue(id), doc).then(res => this.toObject(model, res)));
     });
   }
 

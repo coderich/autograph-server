@@ -57,9 +57,15 @@ module.exports = class Parser {
     return Object.values(fields).map(field => Parser.getFieldDataRef(field)).filter(ref => ref);
   }
 
+  getModelFieldAndDataRef(model, field) {
+    const fieldDef = this.getModelFieldDef(model, field);
+    return [field, Parser.getFieldDataRef(fieldDef), fieldDef.by, Parser.isArrayField(fieldDef)];
+  }
+
   getModelFieldsAndDataRefs(model) {
-    const fields = this.getModelFields(model);
-    return Object.entries(fields).map(([field, fieldDef]) => [field, Parser.getFieldDataRef(fieldDef), fieldDef.by, Parser.isArrayField(fieldDef)]).filter(([field, ref]) => ref);
+    const fields = Object.keys(this.getModelFields(model));
+    return fields.map(field => this.getModelFieldAndDataRef(model, field)).filter(([field, ref]) => ref);
+    // return Object.entries(fields).map(([field, fieldDef]) => [field, Parser.getFieldDataRef(fieldDef), fieldDef.by, Parser.isArrayField(fieldDef)]).filter(([field, ref]) => ref);
   }
 
   getModelOnDeletes(model) {

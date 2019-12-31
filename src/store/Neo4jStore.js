@@ -134,6 +134,7 @@ exports.Neo4jRest = class Neo4jRest extends Cypher {
 
       const { metadata, data } = result;
       return Object.defineProperty(Neo4jRest.deserialize(data), 'id', {
+        enumerable: true,
         get: () => metadata.id,
       });
     });
@@ -157,6 +158,7 @@ exports.Neo4jDriver = class Neo4jDriver extends Cypher {
 
       const doc = node.properties;
       return Object.defineProperty(Neo4jDriver.deserialize(doc), 'id', {
+        enumerable: true,
         get: () => node.identity,
       });
     });

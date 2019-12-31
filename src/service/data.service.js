@@ -1,11 +1,11 @@
-const Boom = require('@hapi/boom');
 const { ObjectID } = require('mongodb');
 const Parser = require('../core/Parser');
+const { NotFoundError, BadRequestError } = require('../service/error.service');
 const { uniq, isScalarValue, isPlainObject, promiseChain, isIdValue } = require('../service/app.service');
 
 exports.ensureModel = (store, model, id) => {
   return store.get(model, id).then((doc) => {
-    if (!doc) throw Boom.notFound(`${model} Not Found`);
+    if (!doc) throw new NotFoundError(`${model} Not Found`);
     return doc;
   });
 };
@@ -31,7 +31,7 @@ exports.validateModelData = (parser, store, model, data, oldData, op) => {
     if (!Object.prototype.hasOwnProperty.call(data, key)) return;
 
     // Data type check
-    if (isValueArray !== isTypeArray) throw Boom.badRequest(`${path} invalid array`);
+    if (isValueArray !== isTypeArray) throw new BadRequestError(`${path} invalid array`);
 
     // Recursive/Promises lookup
     if (isValueArray) {

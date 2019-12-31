@@ -6,22 +6,30 @@ module.exports = class {
     this.store = store;
 
     this.loader = new DataLoader((keys) => {
-      return Promise.all(keys.map(({ op, model, data }) => this.store[op](model, data)));
+      return Promise.all(keys.map(({ op, model, args }) => this.store[op](model, ...args)));
     }, {
       cacheKeyFn: key => hashObject(key),
     });
   }
 
   get(model, id) {
-    return this.loader.load({ op: 'get', model, data: id });
+    return this.loader.load({ op: 'get', model, args: [id] });
   }
 
-  find(model, args = {}) {
-    return this.loader.load({ op: 'find', model, data: args });
+  find(model, query = {}) {
+    return this.loader.load({ op: 'find', model, args: [query] });
   }
 
-  count(model, args = {}) {
-    return this.loader.load({ op: 'count', model, data: args });
+  count(model, where = {}) {
+    return this.loader.load({ op: 'count', model, args: [where] });
+  }
+
+  rollup(model, doc, field, where = {}) {
+    return this.loader.load({ op: 'rollup', model, args: [doc, field, where] });
+  }
+
+  resolve(model, doc, field) {
+    return this.loader.load({ op: 'resolve', model, args: [doc, field] });
   }
 
   create(model, data) {

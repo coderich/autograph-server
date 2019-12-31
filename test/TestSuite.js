@@ -315,49 +315,49 @@ module.exports = (name, db = 'mongo') => {
     describe('Count (find)', () => {
       test('Person', async () => {
         expect(await dao.count('Person')).toBe(2);
-        expect(await dao.count('Person', { where: { name: 'richard' } })).toBe(1);
-        expect(await dao.count('Person', { where: { name: 'Christie' } })).toBe(1);
+        expect(await dao.count('Person', { name: 'richard' })).toBe(1);
+        expect(await dao.count('Person', { name: 'Christie' })).toBe(1);
       });
 
       test('Book', async () => {
         expect(await dao.count('Book')).toBe(2);
-        expect(await dao.count('Book', { where: { author: richard.id } })).toBe(1);
-        expect(await dao.count('Book', { where: { price: 9.99 } })).toBe(1);
-        expect(await dao.count('Book', { where: { price: '9.99' } })).toBe(1);
-        expect(await dao.count('Book', { where: { author: christie.id } })).toBe(1);
+        expect(await dao.count('Book', { author: richard.id })).toBe(1);
+        expect(await dao.count('Book', { price: 9.99 })).toBe(1);
+        expect(await dao.count('Book', { price: '9.99' })).toBe(1);
+        expect(await dao.count('Book', { author: christie.id })).toBe(1);
       });
 
       test('Chapter', async () => {
         expect(await dao.count('Chapter')).toBe(2);
-        expect(await dao.count('Chapter', { where: { name: 'cHAPter1' } })).toBe(1);
-        expect(await dao.count('Chapter', { where: { name: 'cHAPteR2' } })).toBe(1);
-        expect(await dao.count('Chapter', { where: { name: 'cHAPteR3' } })).toBe(0);
-        expect(await dao.count('Chapter', { where: { book: mobyDick.id } })).toBe(0);
-        expect(await dao.count('Chapter', { where: { book: 'some-odd-id' } })).toEqual(0);
-        expect(await dao.count('Chapter', { where: { book: healthBook.id } })).toBe(2);
+        expect(await dao.count('Chapter', { name: 'cHAPter1' })).toBe(1);
+        expect(await dao.count('Chapter', { name: 'cHAPteR2' })).toBe(1);
+        expect(await dao.count('Chapter', { name: 'cHAPteR3' })).toBe(0);
+        expect(await dao.count('Chapter', { book: mobyDick.id })).toBe(0);
+        expect(await dao.count('Chapter', { book: 'some-odd-id' })).toEqual(0);
+        expect(await dao.count('Chapter', { book: healthBook.id })).toBe(2);
       });
 
       test('Page', async () => {
         expect(await dao.count('Page')).toBe(4);
-        expect(await dao.count('Page', { where: { chapter: chapter1.id } })).toBe(2);
-        expect(await dao.count('Page', { where: { chapter: chapter2.id } })).toBe(2);
-        expect(await dao.count('Page', { where: { number: 1 } })).toBe(2);
-        expect(await dao.count('Page', { where: { number: '2' } })).toBe(2);
+        expect(await dao.count('Page', { chapter: chapter1.id })).toBe(2);
+        expect(await dao.count('Page', { chapter: chapter2.id })).toBe(2);
+        expect(await dao.count('Page', { number: 1 })).toBe(2);
+        expect(await dao.count('Page', { number: '2' })).toBe(2);
       });
 
       test('Building', async () => {
         expect(await dao.count('Building')).toBe(3);
-        expect(await dao.count('Building', { where: { tenants: [richard.id] } })).toBe(1);
-        expect(await dao.count('Building', { where: { tenants: [christie.id] } })).toBe(3);
-        expect(await dao.count('Building', { where: { tenants: [richard.id, christie.id] } })).toBe(3);
-        expect(await dao.count('Building', { where: { tenants: [richard.id, christie.id], landlord: richard.id } })).toBe(1);
-        expect(await dao.count('Building', { where: { tenants: [richard.id, christie.id], landlord: christie.id } })).toBe(0);
+        expect(await dao.count('Building', { tenants: [richard.id] })).toBe(1);
+        expect(await dao.count('Building', { tenants: [christie.id] })).toBe(3);
+        expect(await dao.count('Building', { tenants: [richard.id, christie.id] })).toBe(3);
+        expect(await dao.count('Building', { tenants: [richard.id, christie.id], landlord: richard.id })).toBe(1);
+        expect(await dao.count('Building', { tenants: [richard.id, christie.id], landlord: christie.id })).toBe(0);
       });
 
       test('BookStore', async () => {
         expect(await dao.count('BookStore')).toBe(2);
-        expect(await dao.count('BookStore', { where: { books: [mobyDick.id] } })).toBe(2);
-        expect(await dao.count('BookStore', { where: { name: 'new books' } })).toBe(1);
+        expect(await dao.count('BookStore', { books: [mobyDick.id] })).toBe(2);
+        expect(await dao.count('BookStore', { name: 'new books' })).toBe(1);
       });
 
       test('Library', async () => {
