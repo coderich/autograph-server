@@ -1,9 +1,10 @@
+const _ = require('lodash');
 const Parser = require('./Parser');
 const DataLoader = require('./DataLoader');
 const RedisStore = require('../store/RedisStore');
 const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
-const { mergeDeep } = require('../service/app.service');
+const { mergeDeep, isScalarValue } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
 const {
   ensureModel,
@@ -68,18 +69,32 @@ module.exports = class Store {
     });
   }
 
+  query(model, query = {}) {
+    const { parser, loader = this } = this;
+    const { fields = {}, limit } = query;
+
+    // console.log(JSON.stringify(fields));
+
+    return createSystemEvent('Query', { method: 'query', model, store: loader, parser, query }, async () => {
+      const results = await this.find(model, query);
+      const hydratedResults = await this.hydrate(model, results, { fields });
+      // console.log(JSON.stringify(hydratedResults));
+      return hydratedResults.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
+      // return results.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
+    });
+  }
+
   async find(model, query = {}) {
     const { parser, loader = this } = this;
-    const { where = {}, limit } = query;
+    const { where = {} } = query;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, where);
-    normalizeModelWhere(parser, this, model, where);
+    const normalizedWhere = normalizeModelWhere(parser, this, model, where);
 
-    return createSystemEvent('Query', { method: 'find', model, store: loader, parser, where }, async () => {
-      const resolvedWhere = await resolveModelWhereClause(parser, loader, model, where);
-      const results = await store.dao.find(modelAlias, resolvedWhere);
-      return results.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
+    return createSystemEvent('Query', { method: 'find', model, store: loader, parser, query }, async () => {
+      const resolvedWhere = await resolveModelWhereClause(parser, loader, model, normalizedWhere);
+      return store.dao.find(modelAlias, resolvedWhere);
     });
   }
 
@@ -88,10 +103,10 @@ module.exports = class Store {
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, where);
-    normalizeModelWhere(parser, this, model, where);
+    const normalizedWhere = normalizeModelWhere(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'count', model, store: loader, parser, where }, async () => {
-      const resolvedWhere = await resolveModelWhereClause(parser, loader, model, where);
+      const resolvedWhere = await resolveModelWhereClause(parser, loader, model, normalizedWhere);
       return store.dao.count(modelAlias, resolvedWhere);
     });
   }
@@ -175,7 +190,8 @@ module.exports = class Store {
     return loader.count(ref, where);
   }
 
-  resolve(model, doc, field, query = {}) {
+  resolve(model, doc, field, q = {}) {
+    const query = _.cloneDeep(q);
     query.where = query.where || {};
     const { parser, loader = this } = this;
     const fieldDef = parser.getModelFieldDef(model, field);
@@ -189,17 +205,47 @@ module.exports = class Store {
     if (Array.isArray(dataType)) {
       query.where[parser.getModelFieldAlias(dataType[0], fieldDef.by)] = doc.id;
       if (fieldDef.by) return loader.find(dataType[0], query);
-      return Promise.all((value || []).map(id => loader.get(dataType[0], id, fieldDef.required).catch(() => null)));
+      const valueIds = (value || []).map(v => (isScalarValue(v) ? v : v.id));
+      return Promise.all(valueIds.map(id => loader.get(dataType[0], id, fieldDef.required).catch(() => null)));
     }
 
     // Object Resolvers
-    query.where[parser.getModelFieldAlias(dataType, fieldDef.by)] = doc.id;
-    if (fieldDef.by) return loader.find(dataType, query).then(results => results[0]);
-    return loader.get(dataType, value, fieldDef.required);
+    if (fieldDef.by) {
+      query.where[parser.getModelFieldAlias(dataType, fieldDef.by)] = doc.id;
+      return loader.find(dataType, query).then(results => results[0]);
+    }
+
+    const id = isScalarValue(value) ? value : value.id;
+    return loader.get(dataType, id, fieldDef.required);
   }
 
-  hydrate(model, results, fields) {
+  async hydrate(model, results, query = {}) {
     const { loader = this } = this;
-    return results;
+    const { where = {}, fields = {} } = query;
+    const isArray = Array.isArray(results);
+    const modelFields = Object.keys(this.parser.getModelFields(model));
+    results = isArray ? results : [results];
+
+    const data = await Promise.all(results.map(async (doc) => {
+      const fieldEntries = Object.entries(fields).filter(([k]) => modelFields.indexOf(k) > -1);
+
+      const fieldValues = await Promise.all(fieldEntries.map(async ([field, subFields]) => {
+        const [arg = {}] = (fields[field].__arguments || []).filter(el => el.query).map(el => el.query.value); // eslint-disable-line
+
+        const def = this.parser.getModelFieldDef(model, field);
+        const ref = Parser.getFieldDataRef(def);
+        const resolved = await loader.resolve(model, doc, field, arg);
+        if (Object.keys(subFields).length && ref) return this.hydrate(ref, resolved, { ...arg, fields: subFields });
+        return resolved;
+      }));
+
+      return fieldEntries.reduce((prev, [field], i) => {
+        return Object.assign(prev, { [field]: fieldValues[i] });
+      }, {
+        id: doc.id,
+      });
+    }));
+
+    return isArray ? data : data[0];
   }
 };

@@ -11,6 +11,7 @@ module.exports = class Resolver {
       });
     };
 
+    this.query = ({ store }, model, query = {}) => store.query(model, query);
     this.find = ({ store }, model, query = {}) => store.find(model, query);
     this.count = ({ store }, model, where = {}) => store.count(model, where);
     this.rollup = ({ store }, model, doc, field, where = {}) => store.rollup(model, doc, field, where);

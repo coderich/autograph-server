@@ -159,9 +159,10 @@ exports.createGraphSchema = (parser) => {
     resolvers: parser.getModelNamesAndFields().reduce((prev, [model, fields]) => {
       return Object.assign(prev, {
         [model]: Object.entries(fields).filter(([field, fieldDef]) => !fieldDef.embedded).reduce((def, [field, fieldDef]) => {
-          return Object.assign(def, {
-            [field]: (root, args, context) => resolver.resolve(context, model, root, field, args.query),
-          });
+          return def;
+          // return Object.assign(def, {
+          //   [field]: (root, args, context) => resolver.resolve(context, model, root, field, args.query),
+          // });
         }, parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).reduce((counters, [field, ref, by]) => {
           return Object.assign(counters, {
             [`count${ucFirst(field)}`]: (root, args, context) => {
@@ -176,7 +177,7 @@ exports.createGraphSchema = (parser) => {
       Query: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
-          [`find${model}`]: (root, args, context, info) => resolver.find(context, model, { fields: GraphqlFields(info), ...args.query }),
+          [`find${model}`]: (root, args, context, info) => resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
           [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
         });
       }, {
@@ -186,7 +187,7 @@ exports.createGraphSchema = (parser) => {
       System: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
-          [`find${model}`]: (root, args, context, info) => resolver.find(context, model, { fields: GraphqlFields(info), ...args.query }),
+          [`find${model}`]: (root, args, context, info) => resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
           [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
         });
       }, {}),
@@ -198,7 +199,7 @@ exports.createGraphSchema = (parser) => {
             resolve: (root, args, context) => {
               const { store } = root;
               context.store = store;
-              return store.find(model, args.query);
+              return store.query(model, args.query);
             },
           },
           [`${model}Changed`]: {
@@ -217,11 +218,11 @@ exports.createGraphSchema = (parser) => {
                 root.next = new Promise(resolve => (nextPromise = resolve));
 
                 return new Promise((resolve, reject) => {
-                  beforeStore.find(model, args.query).then((before) => {
+                  beforeStore.query(model, args.query).then((before) => {
                     context.store = afterStore;
 
                     Emitter.once('postMutation', async (event) => {
-                      const after = await afterStore.find(model, args.query);
+                      const after = await afterStore.query(model, args.query);
                       const diff = _.xorWith(before, after, (a, b) => `${a.id}` === `${b.id}`);
                       const updated = _.intersectionWith(before, after, (a, b) => `${a.id}` === `${b.id}`).filter((el) => {
                         const a = before.find(e => `${e.id}` === `${el.id}`);

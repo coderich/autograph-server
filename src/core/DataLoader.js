@@ -16,6 +16,10 @@ module.exports = class {
     return this.loader.load({ op: 'get', model, args: [id] });
   }
 
+  query(model, query = {}) {
+    return this.loader.load({ op: 'query', model, args: [query] });
+  }
+
   find(model, query = {}) {
     return this.loader.load({ op: 'find', model, args: [query] });
   }
