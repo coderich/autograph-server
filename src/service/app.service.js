@@ -23,8 +23,6 @@ exports.keyPaths = (obj, keys = [], path) => {
   }, keys);
 };
 
-
-
 exports.promiseChain = (promises) => {
   return promises.reduce((chain, promise) => {
     return chain.then(chainResults => promise().then(promiseResult => [...chainResults, promiseResult]));

@@ -184,6 +184,14 @@ exports.createGraphSchema = (parser) => {
         System: (root, args) => ({}),
       }),
 
+      Mutation: parser.getModelNames(false).reduce((prev, model) => {
+        return Object.assign(prev, {
+          [`create${model}`]: (root, args, context) => resolver.create(context, model, args.data),
+          [`update${model}`]: (root, args, context) => resolver.update(context, model, args.id, args.data),
+          [`delete${model}`]: (root, args, context) => resolver.delete(context, model, args.id),
+        });
+      }, {}),
+
       System: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
@@ -196,21 +204,22 @@ exports.createGraphSchema = (parser) => {
         return Object.assign(prev, {
           [`${model}Trigger`]: {
             subscribe: () => pubsub.asyncIterator(`${model}Trigger`),
-            resolve: (root, args, context) => {
+            resolve: (root, args, context, info) => {
               const { store } = root;
               context.store = store;
-              return store.query(model, args.query);
+              return store.query(model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query });
             },
           },
           [`${model}Changed`]: {
             subscribe: withFilter(
               () => pubsub.asyncIterator(`${model}Changed`),
-              (root, args1, context) => {
+              (root, args1, context, info) => {
                 let nextPromise;
                 const args = _.cloneDeep(args1);
                 const sid = hashObject({ model, args });
                 const { beforeStore, afterStore } = root;
                 const action = `${model}Changed`;
+                const fields = GraphqlFields(info, {}, { processArguments: true });
                 context.subscriptions = context.subscriptions || {};
                 context.subscriptions[sid] = [];
 
@@ -218,11 +227,11 @@ exports.createGraphSchema = (parser) => {
                 root.next = new Promise(resolve => (nextPromise = resolve));
 
                 return new Promise((resolve, reject) => {
-                  beforeStore.query(model, args.query).then((before) => {
+                  beforeStore.query(model, { fields, ...args.query }).then((before) => {
                     context.store = afterStore;
 
                     Emitter.once('postMutation', async (event) => {
-                      const after = await afterStore.query(model, args.query);
+                      const after = await afterStore.query(model, { fields, ...args.query });
                       const diff = _.xorWith(before, after, (a, b) => `${a.id}` === `${b.id}`);
                       const updated = _.intersectionWith(before, after, (a, b) => `${a.id}` === `${b.id}`).filter((el) => {
                         const a = before.find(e => `${e.id}` === `${el.id}`);
@@ -267,14 +276,6 @@ exports.createGraphSchema = (parser) => {
               });
             },
           },
-        });
-      }, {}),
-
-      Mutation: parser.getModelNames(false).reduce((prev, model) => {
-        return Object.assign(prev, {
-          [`create${model}`]: (root, args, context) => resolver.create(context, model, args.data),
-          [`update${model}`]: (root, args, context) => resolver.update(context, model, args.id, args.data),
-          [`delete${model}`]: (root, args, context) => resolver.delete(context, model, args.id),
         });
       }, {}),
     }),

@@ -73,12 +73,9 @@ module.exports = class Store {
     const { parser, loader = this } = this;
     const { fields = {}, limit } = query;
 
-    // console.log(JSON.stringify(fields));
-
     return createSystemEvent('Query', { method: 'query', model, store: loader, parser, query }, async () => {
       const results = await this.find(model, query);
       const hydratedResults = await this.hydrate(model, results, { fields });
-      // console.log(JSON.stringify(hydratedResults));
       return hydratedResults.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
       // return results.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
     });
@@ -90,10 +87,10 @@ module.exports = class Store {
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, where);
-    const normalizedWhere = normalizeModelWhere(parser, this, model, where);
+    normalizeModelWhere(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'find', model, store: loader, parser, query }, async () => {
-      const resolvedWhere = await resolveModelWhereClause(parser, loader, model, normalizedWhere);
+      const resolvedWhere = await resolveModelWhereClause(parser, loader, model, where);
       return store.dao.find(modelAlias, resolvedWhere);
     });
   }
@@ -103,10 +100,10 @@ module.exports = class Store {
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, where);
-    const normalizedWhere = normalizeModelWhere(parser, this, model, where);
+    normalizeModelWhere(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'count', model, store: loader, parser, where }, async () => {
-      const resolvedWhere = await resolveModelWhereClause(parser, loader, model, normalizedWhere);
+      const resolvedWhere = await resolveModelWhereClause(parser, loader, model, where);
       return store.dao.count(modelAlias, resolvedWhere);
     });
   }
@@ -221,7 +218,7 @@ module.exports = class Store {
 
   async hydrate(model, results, query = {}) {
     const { loader = this } = this;
-    const { where = {}, fields = {} } = query;
+    const { fields = {} } = query;
     const isArray = Array.isArray(results);
     const modelFields = Object.keys(this.parser.getModelFields(model));
     results = isArray ? results : [results];
