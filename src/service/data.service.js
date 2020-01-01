@@ -282,7 +282,5 @@ exports.sortData = (data, sortBy) => {
     orders: [],
   });
 
-  console.log(info);
-
   return _.orderBy(data, info.iteratees, info.orders);
 };

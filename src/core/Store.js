@@ -4,7 +4,7 @@ const DataLoader = require('./DataLoader');
 const RedisStore = require('../store/RedisStore');
 const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
-const { mergeDeep, isScalarValue } = require('../service/app.service');
+const { lcFirst, ucFirst, mergeDeep, isScalarValue } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
 const {
   ensureModel,
@@ -228,22 +228,31 @@ module.exports = class Store {
 
     const data = await Promise.all(results.map(async (doc) => {
       const fieldEntries = Object.entries(fields).filter(([k]) => modelFields.indexOf(k) > -1);
+      const countEntries = Object.entries(fields).filter(([k]) => modelFields.indexOf(lcFirst(k.substr(5))) > -1); // eg. countAuthored
 
-      const fieldValues = await Promise.all(fieldEntries.map(async ([field, subFields]) => {
-        const [arg = {}] = (fields[field].__arguments || []).filter(el => el.query).map(el => el.query.value); // eslint-disable-line
-
-        const def = this.parser.getModelFieldDef(model, field);
-        const ref = Parser.getFieldDataRef(def);
-        const resolved = await loader.resolve(model, doc, field, { ...query, ...arg });
-        if (Object.keys(subFields).length && ref) return this.hydrate(ref, resolved, { ...query, ...arg, fields: subFields });
-        return resolved;
-      }));
+      // Resolve all values
+      const [fieldValues, countValues] = await Promise.all([
+        Promise.all(fieldEntries.map(async ([field, subFields]) => {
+          const [arg = {}] = (fields[field].__arguments || []).filter(el => el.query).map(el => el.query.value); // eslint-disable-line
+          const def = this.parser.getModelFieldDef(model, field);
+          const ref = Parser.getFieldDataRef(def);
+          const resolved = await loader.resolve(model, doc, field, { ...query, ...arg });
+          if (Object.keys(subFields).length && ref) return this.hydrate(ref, resolved, { ...query, ...arg, fields: subFields });
+          return resolved;
+        })),
+        Promise.all(countEntries.map(async ([field, subFields]) => {
+          const [arg = {}] = (fields[field].__arguments || []).filter(el => el.query).map(el => el.query.value); // eslint-disable-line
+          return loader.rollup(model, doc, lcFirst(field.substr(5)), arg);
+        })),
+      ]);
 
       return fieldEntries.reduce((prev, [field], i) => {
         return Object.assign(prev, { [field]: fieldValues[i] });
+      }, countEntries.reduce((prev, [field], i) => {
+        return Object.assign(prev, { [field]: countValues[i] });
       }, {
         id: doc.id,
-      });
+      }));
     }));
 
     return isArray ? data : data[0];

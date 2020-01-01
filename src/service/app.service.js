@@ -6,6 +6,7 @@ const ObjectHash = require('object-hash');
 exports.id = '3d896496-02a3-4ee5-8e42-2115eb215f7e';
 exports.generateId = () => UUID();
 exports.ucFirst = string => string.charAt(0).toUpperCase() + string.slice(1);
+exports.lcFirst = string => string.charAt(0).toLowerCase() + string.slice(1);
 exports.isPlainObject = obj => typeof obj === 'object' && !Array.isArray(obj) && !(obj instanceof ObjectID);
 exports.isScalarValue = value => typeof value !== 'object' && typeof value !== 'function';
 exports.isIdValue = value => exports.isScalarValue(value) || value instanceof ObjectID;

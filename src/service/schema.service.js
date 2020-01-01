@@ -160,15 +160,8 @@ exports.createGraphSchema = (parser) => {
       return Object.assign(prev, {
         [model]: Object.entries(fields).filter(([field, fieldDef]) => !fieldDef.embedded).reduce((def, [field, fieldDef]) => {
           return def;
-          // return Object.assign(def, {
-          //   [field]: (root, args, context) => resolver.resolve(context, model, root, field, args.query),
-          // });
         }, parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).reduce((counters, [field, ref, by]) => {
-          return Object.assign(counters, {
-            [`count${ucFirst(field)}`]: (root, args, context) => {
-              return resolver.rollup(context, model, root, field, args.where);
-            },
-          });
+          return counters;
         }, {
           countSelf: (root, args, context) => resolver.count(context, model, args.where),
         })),
