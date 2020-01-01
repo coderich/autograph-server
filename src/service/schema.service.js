@@ -51,7 +51,8 @@ exports.createGraphSchema = (parser) => {
       type ${model} {
         ${parser.getModel(model).hideFromApi ? '' : 'id: ID!'}
         ${Object.entries(fields).map(([field, fieldDef]) => {
-          if (Parser.getFieldDataRef(fieldDef)) return `${field}(query: ${model}InputQuery): ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`;
+          const ref = Parser.getFieldDataRef(fieldDef);
+          if (ref) return `${field}(query: ${ref}InputQuery): ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`;
           return `${field}: ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`;
         })}
         countSelf(where: ${model}InputWhere): Int!
