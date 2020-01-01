@@ -14,6 +14,7 @@ const {
   normalizeModelWhere,
   resolveModelWhereClause,
   resolveReferentialIntegrity,
+  sortData,
 } = require('../service/data.service');
 
 module.exports = class Store {
@@ -71,19 +72,19 @@ module.exports = class Store {
 
   query(model, query = {}) {
     const { parser, loader = this } = this;
-    const { fields = {}, limit } = query;
+    const { sortBy = {}, fields = {}, limit } = query;
 
     return createSystemEvent('Query', { method: 'query', model, store: loader, parser, query }, async () => {
-      const results = await this.find(model, query);
+      const results = await this.find(model, { ...query, sortBy: {}, limit: 0 });
       const hydratedResults = await this.hydrate(model, results, { fields });
-      return hydratedResults.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
-      // return results.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
+      const sortedResults = sortData(hydratedResults, sortBy);
+      return sortedResults.slice(0, limit > 0 ? limit : undefined);
     });
   }
 
   async find(model, query = {}) {
     const { parser, loader = this } = this;
-    const { where = {} } = query;
+    const { where = {}, sortBy = {}, limit } = query;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, where);
@@ -91,7 +92,9 @@ module.exports = class Store {
 
     return createSystemEvent('Query', { method: 'find', model, store: loader, parser, query }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, loader, model, where);
-      return store.dao.find(modelAlias, resolvedWhere);
+      const results = await store.dao.find(modelAlias, resolvedWhere);
+      const sortedResults = sortData(results, sortBy);
+      return sortedResults.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
     });
   }
 
@@ -231,8 +234,8 @@ module.exports = class Store {
 
         const def = this.parser.getModelFieldDef(model, field);
         const ref = Parser.getFieldDataRef(def);
-        const resolved = await loader.resolve(model, doc, field, arg);
-        if (Object.keys(subFields).length && ref) return this.hydrate(ref, resolved, { ...arg, fields: subFields });
+        const resolved = await loader.resolve(model, doc, field, { ...query, ...arg });
+        if (Object.keys(subFields).length && ref) return this.hydrate(ref, resolved, { ...query, ...arg, fields: subFields });
         return resolved;
       }));
 

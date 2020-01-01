@@ -2,7 +2,7 @@ const _ = require('lodash');
 const { ObjectID } = require('mongodb');
 const Parser = require('../core/Parser');
 const { NotFoundError, BadRequestError } = require('../service/error.service');
-const { uniq, isScalarValue, isPlainObject, promiseChain, isIdValue } = require('../service/app.service');
+const { uniq, isScalarValue, isPlainObject, promiseChain, isIdValue, keyPaths } = require('../service/app.service');
 
 exports.ensureModel = (store, model, id) => {
   return store.get(model, id).then((doc) => {
@@ -261,4 +261,28 @@ exports.resolveReferentialIntegrity = async (parser, store, model, id) => {
   const onDeletes = parser.getModelOnDeletes(model);
   const doc = await store.get(model, id);
   return doc;
+};
+
+exports.sortData = (data, sortBy) => {
+  const paths = keyPaths(sortBy);
+
+  const info = paths.reduce((prev, path, i) => {
+    const nextPath = paths[i + 1] || '';
+    const prevPath = paths[i - 1] || '';
+
+    if (nextPath.indexOf(`${path}.`) === 0) return prev;
+    if (prevPath.indexOf(path) === 0) return prev; // Work to do here
+
+    const order = _.get(sortBy, path, 'asc').toLowerCase();
+    prev.iteratees.push(path);
+    prev.orders.push(order);
+    return prev;
+  }, {
+    iteratees: [],
+    orders: [],
+  });
+
+  console.log(info);
+
+  return _.orderBy(data, info.iteratees, info.orders);
 };
