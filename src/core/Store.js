@@ -172,7 +172,8 @@ module.exports = class Store {
   }
 
   // You may want to move these out of here?
-  rollup(model, doc, field, where = {}) {
+  rollup(model, doc, field, w = {}) {
+    const where = _.cloneDeep(w);
     const { parser, loader = this } = this;
     const [, ref, by] = parser.getModelFieldAndDataRef(model, field);
 
@@ -241,7 +242,7 @@ module.exports = class Store {
           return resolved;
         })),
         Promise.all(countEntries.map(async ([field, subFields]) => {
-          const [arg = {}] = (fields[field].__arguments || []).filter(el => el.query).map(el => el.query.value); // eslint-disable-line
+          const [arg = {}] = (fields[field].__arguments || []).filter(el => el.where).map(el => el.where.value); // eslint-disable-line
           return loader.rollup(model, doc, lcFirst(field.substr(5)), arg);
         })),
       ]);
