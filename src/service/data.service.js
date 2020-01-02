@@ -271,7 +271,7 @@ exports.sortData = (data, sortBy) => {
     const prevPath = paths[i - 1] || '';
 
     if (nextPath.indexOf(`${path}.`) === 0) return prev;
-    if (prevPath.indexOf(path) === 0) return prev; // Work to do here
+    if (prevPath.indexOf(path) === 0) return prev; // Work to do here (nested path)
 
     const order = _.get(sortBy, path, 'asc').toLowerCase();
     prev.iteratees.push(path);
@@ -285,27 +285,6 @@ exports.sortData = (data, sortBy) => {
   return _.orderBy(data, info.iteratees, info.orders);
 };
 
-exports.filterDataByCounts = async (parser, store, model, data, where) => {
-  const modelFields = Object.keys(parser.getModelFields(model));
-  const countEntries = Object.entries(where).filter(([k]) => modelFields.indexOf(lcFirst(k.substr(5))) > -1); // eg. countAuthored
-
-  // Resolve all values
-  // const [fieldValues, countValues] = await Promise.all([
-  //   Promise.all(fieldEntries.map(async ([field, subFields]) => {
-  //     const [arg = {}] = (fields[field].__arguments || []).filter(el => el.query).map(el => el.query.value); // eslint-disable-line
-  //     // console.log(arg);
-  //     const def = this.parser.getModelFieldDef(model, field);
-  //     const ref = Parser.getFieldDataRef(def);
-  //     const resolved = await loader.resolve(model, doc, field, { ...query, ...arg });
-  //     if (Object.keys(subFields).length && ref) return this.hydrate(ref, resolved, { ...query, ...arg, fields: subFields });
-  //     return resolved;
-  //   })),
-  //   Promise.all(countEntries.map(async ([field, subFields]) => {
-  //     const [arg = {}] = (fields[field].__arguments || []).filter(el => el.where).map(el => el.where.value); // eslint-disable-line
-  //     // console.log(arg);
-  //     return loader.rollup(model, doc, lcFirst(field.substr(5)), arg);
-  //   })),
-  // ]);
-
-  return data;
+exports.filterDataByCounts = (store, model, data, countPaths) => {
+  return data.filter(doc => Object.entries(countPaths).every(([path, value]) => Number(_.get(doc, path)) === Number(value)));
 };
