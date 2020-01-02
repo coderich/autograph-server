@@ -1,7 +1,6 @@
-const PicoMatch = require('picomatch');
 const { MongoClient, ObjectID } = require('mongodb');
 const Parser = require('../core/Parser');
-const { proxyDeep } = require('../service/app.service');
+const { globToRegex, proxyDeep } = require('../service/app.service');
 
 const toObject = (doc) => {
   if (!doc) return undefined;
@@ -80,7 +79,7 @@ module.exports = class MongoStore {
         const value = Reflect.get(target, prop, rec);
         if (Array.isArray(value)) return { $in: value };
         if (typeof value === 'function') return value.bind(target);
-        if (typeof value === 'string') return PicoMatch.makeRe(value, { nocase: true, regex: true, unescape: true, maxLength: 100 });
+        if (typeof value === 'string') { return globToRegex(value, { nocase: true, regex: true }); }
         return value;
       },
     }).toObject();

@@ -1,7 +1,7 @@
 const Axios = require('axios');
 const Neo4j = require('neo4j-driver');
 const PicoMatch = require('picomatch');
-const { proxyDeep, isScalarValue } = require('../service/app.service');
+const { globToRegex, proxyDeep, isScalarValue } = require('../service/app.service');
 
 class Cypher {
   constructor(uri, parser, options = {}) {
@@ -71,7 +71,7 @@ class Cypher {
         }
 
         if (typeof value === 'string') {
-          $params[prop] = `(?i)${PicoMatch.makeRe(value.toLowerCase(), { unescape: true, regex: false, maxLength: 100 }).toString().slice(1, -1)}`;
+          $params[prop] = `(?i)${globToRegex(value.toLowerCase(), { unescape: true, regex: false, maxLength: 100 }).toString().slice(1, -1)}`;
           return `toString(n.${prop}) =~ $${prop}`;
         }
 

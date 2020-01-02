@@ -27,6 +27,7 @@
     "change-case": "^4.1.0",
     "dataloader": "^2.0.0",
     "deepmerge": "^4.2.2",
+    "fill-range": "^7.0.1",
     "graphql-fields": "^2.0.3",
     "graphql-subscriptions": "^1.1.0",
     "lodash": "^4.17.15",

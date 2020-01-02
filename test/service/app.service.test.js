@@ -36,9 +36,11 @@ const doc2 = {
 
 describe('AppService', () => {
   // test('picomatch', () => {
-  //   const re = `(?i)${PicoMatch.makeRe('{citizen,chap*}', { unescape: true, regex: false, maxLength: 100 }).toString().slice(1, -1)}`;
-  //   console.log('wtf man', re.toString());
-  //   expect(re).not.toBeDefined();
+  //   const value = 'a.b.c.com';
+  //   const reg = PicoMatch.makeRe('!(^*.com$)', { nocase: true, regex: true, dot: true, unescape: true, maxLength: 100 });
+  //   const re = PicoMatch.toRegex(reg);
+  //   console.log(value.match(re));
+  //   expect(1).toBe(1);
   // });
 
   test('object.reduce', () => {
