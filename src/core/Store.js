@@ -4,7 +4,7 @@ const DataLoader = require('./DataLoader');
 const RedisStore = require('../store/RedisStore');
 const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
-const { lcFirst, ucFirst, mergeDeep, isScalarValue } = require('../service/app.service');
+const { lcFirst, mergeDeep, isScalarValue } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
 const {
   ensureModel,
@@ -15,6 +15,7 @@ const {
   resolveModelWhereClause,
   resolveReferentialIntegrity,
   sortData,
+  filterDataByCounts,
 } = require('../service/data.service');
 
 module.exports = class Store {
@@ -82,7 +83,7 @@ module.exports = class Store {
     });
   }
 
-  async find(model, query = {}) {
+  find(model, query = {}) {
     const { parser, loader = this } = this;
     const { where = {}, sortBy = {}, limit } = query;
     const store = this.storeMap[model];
@@ -93,12 +94,13 @@ module.exports = class Store {
     return createSystemEvent('Query', { method: 'find', model, store: loader, parser, query }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, loader, model, where);
       const results = await store.dao.find(modelAlias, resolvedWhere);
-      const sortedResults = sortData(results, sortBy);
+      const filteredData = await filterDataByCounts(parser, loader, model, results, where);
+      const sortedResults = sortData(filteredData, sortBy);
       return sortedResults.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
     });
   }
 
-  async count(model, where = {}) {
+  count(model, where = {}) {
     const { parser, loader = this } = this;
     const store = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
@@ -225,16 +227,16 @@ module.exports = class Store {
     const { fields = {} } = query;
     const isArray = Array.isArray(results);
     const modelFields = Object.keys(this.parser.getModelFields(model));
+    const fieldEntries = Object.entries(fields).filter(([k]) => modelFields.indexOf(k) > -1);
+    const countEntries = Object.entries(fields).filter(([k]) => modelFields.indexOf(lcFirst(k.substr(5))) > -1); // eg. countAuthored
     results = isArray ? results : [results];
 
     const data = await Promise.all(results.map(async (doc) => {
-      const fieldEntries = Object.entries(fields).filter(([k]) => modelFields.indexOf(k) > -1);
-      const countEntries = Object.entries(fields).filter(([k]) => modelFields.indexOf(lcFirst(k.substr(5))) > -1); // eg. countAuthored
-
       // Resolve all values
       const [fieldValues, countValues] = await Promise.all([
         Promise.all(fieldEntries.map(async ([field, subFields]) => {
           const [arg = {}] = (fields[field].__arguments || []).filter(el => el.query).map(el => el.query.value); // eslint-disable-line
+          // console.log(arg);
           const def = this.parser.getModelFieldDef(model, field);
           const ref = Parser.getFieldDataRef(def);
           const resolved = await loader.resolve(model, doc, field, { ...query, ...arg });
@@ -243,6 +245,7 @@ module.exports = class Store {
         })),
         Promise.all(countEntries.map(async ([field, subFields]) => {
           const [arg = {}] = (fields[field].__arguments || []).filter(el => el.where).map(el => el.where.value); // eslint-disable-line
+          // console.log(arg);
           return loader.rollup(model, doc, lcFirst(field.substr(5)), arg);
         })),
       ]);

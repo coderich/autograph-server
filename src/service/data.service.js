@@ -2,7 +2,7 @@ const _ = require('lodash');
 const { ObjectID } = require('mongodb');
 const Parser = require('../core/Parser');
 const { NotFoundError, BadRequestError } = require('../service/error.service');
-const { uniq, isScalarValue, isPlainObject, promiseChain, isIdValue, keyPaths } = require('../service/app.service');
+const { uniq, lcFirst, isScalarValue, isPlainObject, promiseChain, isIdValue, keyPaths } = require('../service/app.service');
 
 exports.ensureModel = (store, model, id) => {
   return store.get(model, id).then((doc) => {
@@ -283,4 +283,29 @@ exports.sortData = (data, sortBy) => {
   });
 
   return _.orderBy(data, info.iteratees, info.orders);
+};
+
+exports.filterDataByCounts = async (parser, store, model, data, where) => {
+  const modelFields = Object.keys(parser.getModelFields(model));
+  const countEntries = Object.entries(where).filter(([k]) => modelFields.indexOf(lcFirst(k.substr(5))) > -1); // eg. countAuthored
+
+  // Resolve all values
+  // const [fieldValues, countValues] = await Promise.all([
+  //   Promise.all(fieldEntries.map(async ([field, subFields]) => {
+  //     const [arg = {}] = (fields[field].__arguments || []).filter(el => el.query).map(el => el.query.value); // eslint-disable-line
+  //     // console.log(arg);
+  //     const def = this.parser.getModelFieldDef(model, field);
+  //     const ref = Parser.getFieldDataRef(def);
+  //     const resolved = await loader.resolve(model, doc, field, { ...query, ...arg });
+  //     if (Object.keys(subFields).length && ref) return this.hydrate(ref, resolved, { ...query, ...arg, fields: subFields });
+  //     return resolved;
+  //   })),
+  //   Promise.all(countEntries.map(async ([field, subFields]) => {
+  //     const [arg = {}] = (fields[field].__arguments || []).filter(el => el.where).map(el => el.where.value); // eslint-disable-line
+  //     // console.log(arg);
+  //     return loader.rollup(model, doc, lcFirst(field.substr(5)), arg);
+  //   })),
+  // ]);
+
+  return data;
 };

@@ -85,7 +85,10 @@ exports.createGraphSchema = (parser) => {
           Object.entries(fields).map(([field, fieldDef]) => {
             const ref = Parser.getFieldDataRef(fieldDef);
             return `${field}: ${ref ? `${ucFirst(ref)}InputWhere` : 'String'}`;
-          })
+          }).concat(
+            'countSelf: String',
+            parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).map(([field, ref]) => `count${ucFirst(field)}: String`),
+          )
         }
       }
 
