@@ -185,7 +185,9 @@ exports.createGraphSchema = (parser) => {
     resolvers: parser.getModelNamesAndFields().reduce((prev, [model, fields]) => {
       return Object.assign(prev, {
         [model]: Object.entries(fields).filter(([field, fieldDef]) => !fieldDef.embedded).reduce((def, [field, fieldDef]) => {
-          return def;
+          return Object.assign(def, {
+            [field]: root => root[`$${field}`],
+          });
         }, parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).reduce((counters, [field, ref, by]) => {
           return counters;
         }, {
@@ -201,7 +203,7 @@ exports.createGraphSchema = (parser) => {
       Query: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
-          [`find${model}`]: (root, args, context, info) => resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
+          [`find${model}`]: (root, args, context, info) => { console.log(args); return resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }); },
           [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
         });
       }, {

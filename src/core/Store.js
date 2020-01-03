@@ -81,6 +81,11 @@ module.exports = class Store {
   query(model, query = {}) {
     const { parser, loader = this } = this;
     const { where = {}, sortBy = {}, fields = {}, limit } = query;
+    const sortFields = keyPaths(sortBy).reduce((prev, path) => {
+      if (path.indexOf('count') === 0 || path.indexOf('.count') === 0) return Object.assign(prev, { [path]: _.get(sortBy, path) });
+      const $path = path.split('.').map(s => `$${s}`).join('.');
+      return Object.assign(prev, { [$path]: _.get(sortBy, path) });
+    }, {});
     const countPaths = keyPaths(where).filter(p => p.indexOf('count') === 0 || p.indexOf('.count') > 0);
     const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
     countPaths.forEach(p => _.unset(where, p));
@@ -89,8 +94,8 @@ module.exports = class Store {
       const results = await this.find(model, { ...query, sortBy: {}, limit: 0 });
       const hydratedResults = await this.hydrate(model, results, { fields });
       const filteredData = filterDataByCounts(loader, model, hydratedResults, countFields);
-      const sortedResults = sortData(filteredData, sortBy);
-      return sortedResults.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
+      const sortedResults = sortData(filteredData, sortFields);
+      return sortedResults.slice(0, limit > 0 ? limit : undefined);
     });
   }
 
@@ -99,6 +104,11 @@ module.exports = class Store {
     const { where = {}, sortBy = {}, limit } = query;
     const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
+    const sortFields = keyPaths(sortBy).reduce((prev, path) => {
+      if (path.indexOf('count') === 0 || path.indexOf('.count') === 0) return Object.assign(prev, { [path]: _.get(sortBy, path) });
+      const $path = path.split('.').map(s => `$${s}`).join('.');
+      return Object.assign(prev, { [$path]: _.get(sortBy, path) });
+    }, {});
     const countPaths = keyPaths(where).filter(p => p.indexOf('count') === 0 || p.indexOf('.count') > 0);
     const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
     countPaths.forEach(p => _.unset(where, p));
@@ -110,7 +120,7 @@ module.exports = class Store {
       const results = await dao.find(modelAlias, resolvedWhere);
       // normalizeModelDataOut(parser, this, model, results);
       const filteredData = filterDataByCounts(loader, model, results, countFields);
-      const sortedResults = sortData(filteredData, sortBy);
+      const sortedResults = sortData(filteredData, sortFields);
       return sortedResults.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
     });
   }
@@ -286,12 +296,12 @@ module.exports = class Store {
       ]);
 
       return fieldEntries.reduce((prev, [field], i) => {
-        return Object.assign(prev, { [field]: fieldValues[i] });
+        return Object.assign(prev, { [`$${field}`]: fieldValues[i] });
       }, countEntries.reduce((prev, [field], i) => {
         return Object.assign(prev, { [field]: countValues[i] });
       }, {
         id: doc.id,
-        guid: doc.guid,
+        $id: toGUID(model, doc.id),
       }));
     }));
 

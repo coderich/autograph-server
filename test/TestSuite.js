@@ -1,5 +1,4 @@
-const Hapi = require('@hapi/hapi');
-const { ApolloServer, makeExecutableSchema } = require('apollo-server-hapi');
+const { ApolloServer, makeExecutableSchema } = require('apollo-server');
 // const Neo4j = require('neodb');
 // const Redis = require('redis-mock');
 const { MongoMemoryServer } = require('mongodb-memory-server');
@@ -9,7 +8,6 @@ const Parser = require('../src/core/Parser');
 const Store = require('../src/core/Store');
 const Resolver = require('../src/core/Resolver');
 const { schema, stores } = require('../schema');
-const Client = require('./Client');
 
 let dao;
 let richard;
@@ -80,7 +78,6 @@ module.exports = (name, db = 'mongo') => {
       const parser = new Parser(schema);
       const store = new Store(parser, stores, storeArgs);
       const resolver = new Resolver();
-      const hapiServer = Hapi.server({ port: 3000 });
       const graphSchema = createGraphSchema(parser, resolver);
       const executableSchema = makeExecutableSchema(graphSchema);
 
@@ -97,8 +94,7 @@ module.exports = (name, db = 'mongo') => {
         case 'Resolver': {
           dao = new Client(parser, 'http://localhost:3000/graphql');
           const apolloServer = makeApolloServer(executableSchema, store, Boolean(name === 'DataLoader'));
-          apolloServer.applyMiddleware({ app: hapiServer });
-          await hapiServer.start();
+          await apolloServer.start(3000);
           break;
         }
         default: {
@@ -463,7 +459,7 @@ module.exports = (name, db = 'mongo') => {
 
 
     describe('Data Normalization', () => {
-      test('idkYet', async () => {
+      test('uniq', async () => {
         richard = await dao.update('Person', richard.id, { name: 'richard', friends: [christie.id, christie.id, christie.id] });
         expect(richard.name).toEqual('Richard');
         expect(richard.friends).toEqual([christie.id]);
@@ -471,7 +467,7 @@ module.exports = (name, db = 'mongo') => {
     });
 
 
-    describe('Search', () => {
+    describe('Find (Deep)', () => {
       test('Person', async () => {
         expect(await dao.find('Person', { where: { authored: { name: 'Moby Dick' } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
         expect(await dao.find('Person', { where: { authored: { author: { name: 'ChRist??' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
@@ -504,10 +500,42 @@ module.exports = (name, db = 'mongo') => {
     describe('Update', () => {
       test('Person', async () => {
         expect(await dao.update('Person', richard.id, { name: 'Rich' })).toMatchObject({ id: richard.id, name: 'Rich' });
+        expect(await dao.update('Person', richard.id, { name: 'richard' })).toMatchObject({ id: richard.id, name: 'Richard' });
       });
 
       test('Book', async () => {
         expect(await dao.update('Book', mobyDick.id, { name: 'mopey dick' })).toMatchObject({ id: mobyDick.id, name: 'Mopey Dick' });
+        expect(await dao.update('Book', mobyDick.id, { name: 'moby dick' })).toMatchObject({ id: mobyDick.id, name: 'Moby Dick' });
+      });
+    });
+
+
+    describe('Query (Deep)', () => {
+      test('Person', async () => {
+        expect(await dao.query('Person', { where: { authored: { name: 'Moby Dick' } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dao.query('Person', { where: { authored: { author: { name: 'ChRist??' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.query('Person', { where: { friends: { name: 'Christie' } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dao.query('Person', { where: { friends: { authored: { name: 'Health*' } } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dao.query('Person', { where: { friends: { authored: { name: 'Cray Cray*' } } } })).toMatchObject([]);
+        expect(await dao.query('Person', { where: { authored: { chapters: { pages: { verbage: 'city lust' } } } } })).toMatchObject([]);
+        expect(await dao.query('Person', { where: { authored: { chapters: { pages: { verbage: 'the end.' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.query('Person', { where: { authored: { chapters: { pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.query('Person', { where: { authored: { chapters: { name: 'citizen', pages: { verbage: '*intro*' } } } } })).toMatchObject([]);
+        expect(await dao.query('Person', { where: { authored: { chapters: { name: 'chapter*', pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.query('Person', { where: { authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+      });
+
+      test('Book', async () => {
+        expect(await dao.query('Book', { where: { author: { name: 'Richard' } } })).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dao.query('Book', { where: { author: { authored: { name: 'Moby*' } } } })).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dao.query('Book', { where: { author: { authored: { name: 'Health*' } } } })).toMatchObject([{ id: healthBook.id }]);
+        expect((await dao.query('Book', { where: { author: { authored: { name: '*' } } } })).sort(sorter)).toMatchObject([{ id: healthBook.id }, { id: mobyDick.id }].sort(sorter));
+        expect(await dao.query('Book', { where: { chapters: { name: 'Chapter1' } } })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dao.query('Book', { where: { chapters: { name: ['chapter1', 'chapter2'] } } })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dao.query('Book', { where: { chapters: { name: ['chapter1', 'no-chapter'] } } })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dao.query('Book', { where: { chapters: { name: '*' } } })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dao.query('Book', { where: { chapters: { pages: { number: 1 } } } })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dao.query('Book', { where: { chapters: [{ name: 'HongKong' }, chapter1.id] } })).toMatchObject([{ id: healthBook.id }]);
       });
     });
   });
