@@ -80,7 +80,9 @@ module.exports = class Store {
 
   query(model, query = {}) {
     const { parser, loader = this } = this;
-    const { where = {}, sortBy = {}, fields = {}, limit } = query;
+    const { fields, where = {}, sortBy = {}, limit } = query;
+    const modelFields = Object.entries(this.parser.getModelFields(model)).filter(([, fieldDef]) => Parser.isScalarField(fieldDef)).map(([k]) => k);
+    const selectFields = fields || modelFields.reduce((prev, field) => Object.assign(prev, { [field]: {} }), {});
     const sortFields = keyPaths(sortBy).reduce((prev, path) => {
       if (path.indexOf('count') === 0 || path.indexOf('.count') === 0) return Object.assign(prev, { [path]: _.get(sortBy, path) });
       const $path = path.split('.').map(s => `$${s}`).join('.');
@@ -92,7 +94,7 @@ module.exports = class Store {
 
     return createSystemEvent('Query', { method: 'query', model, store: loader, parser, query }, async () => {
       const results = await this.find(model, { ...query, sortBy: {}, limit: 0 });
-      const hydratedResults = await this.hydrate(model, results, { fields });
+      const hydratedResults = await this.hydrate(model, results, { fields: selectFields });
       const filteredData = filterDataByCounts(loader, model, hydratedResults, countFields);
       const sortedResults = sortData(filteredData, sortFields);
       return sortedResults.slice(0, limit > 0 ? limit : undefined);
@@ -103,7 +105,6 @@ module.exports = class Store {
     const { parser, loader = this } = this;
     const { where = {}, sortBy = {}, limit } = query;
     const { dao } = this.storeMap[model];
-    const modelAlias = parser.getModelAlias(model);
     const sortFields = keyPaths(sortBy).reduce((prev, path) => {
       if (path.indexOf('count') === 0 || path.indexOf('.count') === 0) return Object.assign(prev, { [path]: _.get(sortBy, path) });
       const $path = path.split('.').map(s => `$${s}`).join('.');
@@ -116,6 +117,7 @@ module.exports = class Store {
     normalizeModelWhere(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'find', model, store: loader, parser, query }, async () => {
+      const modelAlias = parser.getModelAlias(model);
       const resolvedWhere = await resolveModelWhereClause(parser, loader, model, where);
       const results = await dao.find(modelAlias, resolvedWhere);
       // normalizeModelDataOut(parser, this, model, results);
@@ -296,7 +298,8 @@ module.exports = class Store {
       ]);
 
       return fieldEntries.reduce((prev, [field], i) => {
-        return Object.assign(prev, { [`$${field}`]: fieldValues[i] });
+        prev[field] = doc[field]; // Retain original values
+        return Object.assign(prev, { [`$${field}`]: fieldValues[i] }); // $hydrated values
       }, countEntries.reduce((prev, [field], i) => {
         return Object.assign(prev, { [field]: countValues[i] });
       }, {
