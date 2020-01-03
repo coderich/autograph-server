@@ -2,7 +2,7 @@ const _ = require('lodash');
 const { ObjectID } = require('mongodb');
 const Parser = require('../core/Parser');
 const { NotFoundError, BadRequestError } = require('../service/error.service');
-const { uniq, globToRegexp, isScalarValue, isPlainObject, promiseChain, isIdValue, keyPaths } = require('../service/app.service');
+const { uniq, globToRegexp, isScalarValue, isPlainObject, promiseChain, isIdValue, keyPaths, proxyDeep } = require('../service/app.service');
 
 exports.ensureModel = (store, model, id) => {
   return store.get(model, id).then((doc) => {
@@ -161,6 +161,36 @@ exports.normalizeModelData = (parser, store, model, data) => {
 
     return prev;
   }, data);
+};
+
+exports.normalizeModelDataOut = (parser, store, model, data) => {
+  const isArray = Array.isArray(data);
+  data = isArray ? data : [data];
+
+  const results = data.map(d => Object.entries(d).reduce((prev, [key, value]) => {
+    const field = parser.getModelFieldDef(model, key);
+    if (value == null || field == null) return prev;
+
+    const ref = Parser.getFieldDataRef(field);
+
+    if (ref) {
+      if (isPlainObject(value)) {
+        prev[key] = Object.assign(value, { id: store.idValueOut(value.id) });
+      } else if (Array.isArray(value)) {
+        if (field.embedded || field.by) {
+          prev[key] = value.map(v => exports.normalizeModelDataOut(parser, store, ref, v));
+        } else {
+          prev[key] = value.map(obj => Object.assign(obj, { id: store.idValueOut(obj.id) }));
+        }
+      } else {
+        prev[key] = store.idValueOut(value);
+      }
+    }
+
+    return prev;
+  }, d));
+
+  return isArray ? results : results[0];
 };
 
 exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias = '', lookups2D = [], index = 0) => {

@@ -37,6 +37,7 @@ exports.promiseChain = (promises) => {
 };
 
 exports.proxyDeep = (obj, handler, proxyMap = new WeakMap(), path = '') => {
+  obj = obj || {};
   if (proxyMap.has(obj)) return proxyMap.get(obj);
 
   const proxy = new Proxy(Object.entries(obj).reduce((prev, [key, value]) => {

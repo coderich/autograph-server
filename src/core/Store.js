@@ -11,6 +11,7 @@ const {
   ensureModelArrayTypes,
   validateModelData,
   normalizeModelData,
+  // normalizeModelDataOut,
   normalizeModelWhere,
   resolveModelWhereClause,
   resolveReferentialIntegrity,
@@ -54,12 +55,19 @@ module.exports = class Store {
 
   toObject(model, doc) {
     if (!doc) return undefined;
-    if (doc.guid) return doc;
 
-    // GUID
-    // const guid = toGUID(model, doc.id);
+    // // GUID
+    // let realId;
+
+    // try {
+    //   [, realId] = fromGUID(doc.id).split(':');
+    //   if (!realId) realId = doc.id;
+    // } catch (e) {
+    //   realId = doc.id;
+    // }
+
+    // const guid = toGUID(model, realId);
     // doc.id = guid;
-    // doc.guid = guid;
 
     // Magic methods
     // Object.defineProperty(doc, 'guid', { enumerable: true, value: toGUID(model, doc.id) });
@@ -108,6 +116,7 @@ module.exports = class Store {
     return createSystemEvent('Query', { method: 'find', model, store: loader, parser, query }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, loader, model, where);
       const results = await dao.find(modelAlias, resolvedWhere);
+      // normalizeModelDataOut(parser, this, model, results);
       const filteredData = filterDataByCounts(loader, model, results, countFields);
       const sortedResults = sortData(filteredData, sortBy);
       return sortedResults.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
@@ -145,8 +154,10 @@ module.exports = class Store {
     normalizeModelData(parser, this, model, data);
     await validateModelData(parser, this, model, data, {}, 'create');
 
-    return createSystemEvent('Mutation', { method: 'create', model, store: loader, parser, data }, () => {
-      return dao.create(modelAlias, data).then(doc => this.toObject(model, doc));
+    return createSystemEvent('Mutation', { method: 'create', model, store: loader, parser, data }, async () => {
+      const results = await dao.create(modelAlias, data).then(doc => this.toObject(model, doc));
+      // normalizeModelDataOut(parser, this, model, results);
+      return results;
     });
   }
 
@@ -161,7 +172,9 @@ module.exports = class Store {
 
     return createSystemEvent('Mutation', { method: 'update', model, store: loader, parser, id, data }, async () => {
       const merged = normalizeModelData(parser, loader, model, mergeDeep(doc, data));
-      return dao.replace(modelAlias, this.idValue(model, id), data, merged).then(res => this.toObject(model, res));
+      const results = await dao.replace(modelAlias, this.idValue(model, id), data, merged).then(res => this.toObject(model, res));
+      // normalizeModelDataOut(parser, this, model, results);
+      return results;
     });
   }
 
@@ -172,7 +185,9 @@ module.exports = class Store {
     const doc = await ensureModel(this, model, id);
 
     return createSystemEvent('Mutation', { method: 'delete', model, store: loader, parser, id }, () => {
-      return resolveReferentialIntegrity(parser, loader, model, id).then(() => dao.delete(modelAlias, this.idValue(model, id), doc));
+      return resolveReferentialIntegrity(parser, loader, model, id).then(() => {
+        return dao.delete(modelAlias, this.idValue(model, id), doc);
+      });
     });
   }
 
@@ -184,9 +199,31 @@ module.exports = class Store {
   }
 
   idValue(model, id) {
+    let realId;
+
+    try {
+      [, realId] = fromGUID(id).split(':');
+      if (!realId) realId = id;
+    } catch (e) {
+      realId = id;
+    }
+
     const { idValue } = this.storeMap[model];
-    return idValue(id);
+    return idValue(realId);
   }
+
+  // idValueOut(id) {
+  //   let realId;
+
+  //   try {
+  //     [, realId] = fromGUID(id).split(':');
+  //     if (!realId) realId = id;
+  //   } catch (e) {
+  //     realId = id;
+  //   }
+
+  //   return toGUID(realId);
+  // }
 
   idField(model) {
     return this.storeMap[model].idField;
