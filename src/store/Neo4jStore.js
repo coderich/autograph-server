@@ -133,10 +133,7 @@ exports.Neo4jRest = class Neo4jRest extends Cypher {
       if (isScalarValue(result)) return result;
 
       const { metadata, data } = result;
-      return Object.defineProperty(Neo4jRest.deserialize(data), 'id', {
-        enumerable: true,
-        get: () => metadata.id,
-      });
+      return Object.defineProperty(Neo4jRest.deserialize(data), 'id', { enumerable: true, writable: true, value: metadata.id });
     });
   }
 };
@@ -157,10 +154,7 @@ exports.Neo4jDriver = class Neo4jDriver extends Cypher {
       if (isScalarValue(node)) return node;
 
       const doc = node.properties;
-      return Object.defineProperty(Neo4jDriver.deserialize(doc), 'id', {
-        enumerable: true,
-        get: () => node.identity,
-      });
+      return Object.defineProperty(Neo4jDriver.deserialize(doc), 'id', { enumerable: true, writable: true, value: node.identity });
     });
   }
 };

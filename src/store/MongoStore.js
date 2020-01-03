@@ -4,11 +4,7 @@ const { globToRegex, proxyDeep } = require('../service/app.service');
 
 const toObject = (doc) => {
   if (!doc) return undefined;
-
-  return Object.defineProperty(doc, 'id', {
-    enumerable: true,
-    get() { return this._id; }, // eslint-disable-line
-  });
+  return Object.defineProperty(doc, 'id', { enumerable: true, writable: true, value: doc._id }); // eslint-disable-line
 };
 
 module.exports = class MongoStore {

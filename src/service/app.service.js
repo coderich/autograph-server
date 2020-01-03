@@ -18,6 +18,8 @@ exports.timeout = ms => new Promise(res => setTimeout(res, ms));
 exports.hashObject = obj => ObjectHash(obj, { respectType: false, respectFunctionNames: false, respectFunctionProperties: false, unorderedArrays: true });
 exports.globToRegex = (glob, options = {}) => PicoMatch.makeRe(glob, { maxLength: 100, ...options, expandRange: (a, b) => `(${FillRange(a, b, { toRegex: true })})` });
 exports.globToRegexp = (glob, options = {}) => PicoMatch.toRegex(exports.globToRegex(glob, options));
+exports.toGUID = (model, id) => Buffer.from(`${model}:${id}`).toString('base64');
+exports.fromGUID = guid => Buffer.from(guid, 'base64').toString('ascii');
 
 exports.keyPaths = (obj, keys = [], path) => {
   return Object.entries(obj).reduce((prev, [key, value]) => {

@@ -5,7 +5,7 @@ const DataLoader = require('../core/DataLoader');
 const Parser = require('../core/Parser');
 const Resolver = require('../core/Resolver');
 const { internalEmitter: Emitter } = require('./event.service');
-const { ucFirst, hashObject } = require('./app.service');
+const { ucFirst, hashObject, fromGUID } = require('./app.service');
 
 const pubsub = new PubSub();
 
@@ -50,7 +50,6 @@ exports.createGraphSchema = (parser) => {
     typeDefs: parser.getModelNamesAndFields().map(([model, fields]) => `
       type ${model} implements Node {
         id: ID!
-        guid: ID!
         ${Object.entries(fields).map(([field, fieldDef]) => {
           const ref = Parser.getFieldDataRef(fieldDef);
           if (ref) return `${field}(query: ${ref}InputQuery): ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`;
@@ -196,9 +195,7 @@ exports.createGraphSchema = (parser) => {
     }, {
       Node: {
         __resolveType: async (root, args, context, info) => {
-          const str = Buffer.from(root.guid, 'base64').toString('ascii');
-          const [model] = str.split(':');
-          return model;
+          return fromGUID(root.id).split(':')[0];
         },
       },
       Query: parser.getModelNames(false).reduce((prev, model) => {
@@ -210,8 +207,8 @@ exports.createGraphSchema = (parser) => {
       }, {
         System: (root, args) => ({}),
         node: (root, args, context) => {
-          const str = Buffer.from(args.id, 'base64').toString('ascii');
-          const [model, id] = str.split(':');
+          const { id } = args;
+          const [model] = fromGUID(id).split(':');
           return resolver.get(context, model, id);
         },
       }),

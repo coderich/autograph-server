@@ -4,7 +4,7 @@ const DataLoader = require('./DataLoader');
 const RedisStore = require('../store/RedisStore');
 const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
-const { lcFirst, mergeDeep, isScalarValue, keyPaths } = require('../service/app.service');
+const { lcFirst, mergeDeep, isScalarValue, keyPaths, toGUID, fromGUID } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
 const {
   ensureModel,
@@ -54,9 +54,15 @@ module.exports = class Store {
 
   toObject(model, doc) {
     if (!doc) return undefined;
+    if (doc.guid) return doc;
+
+    // GUID
+    // const guid = toGUID(model, doc.id);
+    // doc.id = guid;
+    // doc.guid = guid;
 
     // Magic methods
-    Object.defineProperty(doc, 'guid', { value: Buffer.from(`${model}:${doc.id}`).toString('base64') });
+    // Object.defineProperty(doc, 'guid', { enumerable: true, value: toGUID(model, doc.id) });
     Object.defineProperty(doc, '$resolve', { value: field => this.resolve(model, doc, field) });
     Object.defineProperty(doc, '$rollup', { value: (field, where) => this.rollup(model, doc, field, where) });
     return doc;
@@ -64,11 +70,11 @@ module.exports = class Store {
 
   get(model, id) {
     const { parser, loader = this } = this;
-    const store = this.storeMap[model];
+    const { dao } = this.storeMap[model];
     const modelAlias = this.parser.getModelAlias(model);
 
     return createSystemEvent('Query', { method: 'get', model, store: loader, parser, id }, async () => {
-      return store.dao.get(modelAlias, store.idValue(id)).then(doc => this.toObject(model, doc));
+      return dao.get(modelAlias, this.idValue(model, id)).then(doc => this.toObject(model, doc));
     });
   }
 
@@ -91,7 +97,7 @@ module.exports = class Store {
   find(model, query = {}) {
     const { parser, loader = this } = this;
     const { where = {}, sortBy = {}, limit } = query;
-    const store = this.storeMap[model];
+    const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     const countPaths = keyPaths(where).filter(p => p.indexOf('count') === 0 || p.indexOf('.count') > 0);
     const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
@@ -101,7 +107,7 @@ module.exports = class Store {
 
     return createSystemEvent('Query', { method: 'find', model, store: loader, parser, query }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, loader, model, where);
-      const results = await store.dao.find(modelAlias, resolvedWhere);
+      const results = await dao.find(modelAlias, resolvedWhere);
       const filteredData = filterDataByCounts(loader, model, results, countFields);
       const sortedResults = sortData(filteredData, sortBy);
       return sortedResults.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
@@ -110,7 +116,7 @@ module.exports = class Store {
 
   count(model, where = {}) {
     const { parser, loader = this } = this;
-    const store = this.storeMap[model];
+    const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     const countPaths = keyPaths(where).filter(p => p.indexOf('count') === 0 || p.indexOf('.count') > 0);
     const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
@@ -127,26 +133,26 @@ module.exports = class Store {
         return filteredData.length;
       }
 
-      return store.dao.count(modelAlias, resolvedWhere);
+      return dao.count(modelAlias, resolvedWhere);
     });
   }
 
   async create(model, data) {
     const { parser, loader = this } = this;
-    const store = this.storeMap[model];
+    const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     ensureModelArrayTypes(parser, this, model, data);
     normalizeModelData(parser, this, model, data);
     await validateModelData(parser, this, model, data, {}, 'create');
 
     return createSystemEvent('Mutation', { method: 'create', model, store: loader, parser, data }, () => {
-      return store.dao.create(modelAlias, data).then(doc => this.toObject(model, doc));
+      return dao.create(modelAlias, data).then(doc => this.toObject(model, doc));
     });
   }
 
   async update(model, id, data) {
     const { parser, loader = this } = this;
-    const store = this.storeMap[model];
+    const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     const doc = await ensureModel(this, model, id);
     ensureModelArrayTypes(parser, this, model, data);
@@ -155,31 +161,31 @@ module.exports = class Store {
 
     return createSystemEvent('Mutation', { method: 'update', model, store: loader, parser, id, data }, async () => {
       const merged = normalizeModelData(parser, loader, model, mergeDeep(doc, data));
-      return store.dao.replace(modelAlias, store.idValue(id), data, merged).then(res => this.toObject(model, res));
+      return dao.replace(modelAlias, this.idValue(model, id), data, merged).then(res => this.toObject(model, res));
     });
   }
 
   async delete(model, id) {
     const { parser, loader = this } = this;
-    const store = this.storeMap[model];
+    const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     const doc = await ensureModel(this, model, id);
 
     return createSystemEvent('Mutation', { method: 'delete', model, store: loader, parser, id }, () => {
-      return resolveReferentialIntegrity(parser, loader, model, id).then(() => store.dao.delete(modelAlias, store.idValue(id), doc));
+      return resolveReferentialIntegrity(parser, loader, model, id).then(() => dao.delete(modelAlias, this.idValue(model, id), doc));
     });
   }
 
   dropModel(model) {
     const { parser } = this;
-    const store = this.storeMap[model];
+    const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    return store.dao.dropModel(modelAlias);
+    return dao.dropModel(modelAlias);
   }
 
   idValue(model, id) {
-    const store = this.storeMap[model];
-    return store.idValue(id);
+    const { idValue } = this.storeMap[model];
+    return idValue(id);
   }
 
   idField(model) {
@@ -272,6 +278,7 @@ module.exports = class Store {
         return Object.assign(prev, { [field]: countValues[i] });
       }, {
         id: doc.id,
+        guid: doc.guid,
       }));
     }));
 
