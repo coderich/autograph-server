@@ -175,15 +175,15 @@ exports.normalizeModelDataOut = (parser, store, model, data) => {
 
     if (ref) {
       if (isPlainObject(value)) {
-        prev[key] = Object.assign(value, { id: store.idValueOut(value.id) });
+        prev[key] = Object.assign(value, { id: store.idValueOut(ref, value.id) });
       } else if (Array.isArray(value)) {
         if (field.embedded || field.by) {
           prev[key] = value.map(v => exports.normalizeModelDataOut(parser, store, ref, v));
         } else {
-          prev[key] = value.map(obj => Object.assign(obj, { id: store.idValueOut(obj.id) }));
+          prev[key] = value.map(obj => Object.assign(obj, { id: store.idValueOut(ref, obj.id) }));
         }
       } else {
-        prev[key] = store.idValueOut(value);
+        prev[key] = store.idValueOut(ref, value);
       }
     }
 

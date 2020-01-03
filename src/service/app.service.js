@@ -20,6 +20,15 @@ exports.globToRegex = (glob, options = {}) => PicoMatch.makeRe(glob, { maxLength
 exports.globToRegexp = (glob, options = {}) => PicoMatch.toRegex(exports.globToRegex(glob, options));
 exports.toGUID = (model, id) => Buffer.from(`${model}:${id}`).toString('base64');
 exports.fromGUID = guid => Buffer.from(guid, 'base64').toString('ascii');
+exports.pullGUID = (model, id) => {
+  try {
+    const [m, i] = exports.fromGUID(id).split(':');
+    if (m !== model || !i) return false;
+    return id;
+  } catch (e) {
+    return false;
+  }
+};
 
 exports.keyPaths = (obj, keys = [], path) => {
   return Object.entries(obj).reduce((prev, [key, value]) => {

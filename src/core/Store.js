@@ -4,7 +4,7 @@ const DataLoader = require('./DataLoader');
 const RedisStore = require('../store/RedisStore');
 const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
-const { lcFirst, mergeDeep, isScalarValue, keyPaths, toGUID, fromGUID } = require('../service/app.service');
+const { lcFirst, mergeDeep, isScalarValue, keyPaths, pullGUID, toGUID } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
 const {
   ensureModel,
@@ -57,15 +57,7 @@ module.exports = class Store {
     if (!doc) return undefined;
 
     // // GUID
-    // let realId;
-
-    // try {
-    //   [, realId] = fromGUID(doc.id).split(':');
-    //   if (!realId) realId = doc.id;
-    // } catch (e) {
-    //   realId = doc.id;
-    // }
-
+    // const realId = pullGUID(model, doc.id) || doc.id;
     // const guid = toGUID(model, realId);
     // doc.id = guid;
 
@@ -199,31 +191,15 @@ module.exports = class Store {
   }
 
   idValue(model, id) {
-    let realId;
-
-    try {
-      [, realId] = fromGUID(id).split(':');
-      if (!realId) realId = id;
-    } catch (e) {
-      realId = id;
-    }
-
+    const realId = pullGUID(model, id) || id;
     const { idValue } = this.storeMap[model];
     return idValue(realId);
   }
 
-  // idValueOut(id) {
-  //   let realId;
-
-  //   try {
-  //     [, realId] = fromGUID(id).split(':');
-  //     if (!realId) realId = id;
-  //   } catch (e) {
-  //     realId = id;
-  //   }
-
-  //   return toGUID(realId);
-  // }
+  idValueOut(model, id) {
+    const realId = pullGUID(model, id) || id;
+    return toGUID(realId);
+  }
 
   idField(model) {
     return this.storeMap[model].idField;
