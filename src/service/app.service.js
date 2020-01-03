@@ -16,7 +16,8 @@ exports.mergeDeep = (...args) => DeepMerge.all(args, { isMergeableObject: obj =>
 exports.uniq = arr => [...new Set(arr.map(a => `${a}`))];
 exports.timeout = ms => new Promise(res => setTimeout(res, ms));
 exports.hashObject = obj => ObjectHash(obj, { respectType: false, respectFunctionNames: false, respectFunctionProperties: false, unorderedArrays: true });
-exports.globToRegex = (glob, options = {}) => PicoMatch.makeRe(glob, { dot: true, unescape: true, maxLength: 100, ...options, expandRange: (a, b) => `(${FillRange(a, b, { toRegex: true })})` });
+exports.globToRegex = (glob, options = {}) => PicoMatch.makeRe(glob, { maxLength: 100, ...options, expandRange: (a, b) => `(${FillRange(a, b, { toRegex: true })})` });
+exports.globToRegexp = (glob, options = {}) => PicoMatch.toRegex(exports.globToRegex(glob, options));
 
 exports.keyPaths = (obj, keys = [], path) => {
   return Object.entries(obj).reduce((prev, [key, value]) => {

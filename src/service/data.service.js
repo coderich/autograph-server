@@ -2,7 +2,7 @@ const _ = require('lodash');
 const { ObjectID } = require('mongodb');
 const Parser = require('../core/Parser');
 const { NotFoundError, BadRequestError } = require('../service/error.service');
-const { uniq, lcFirst, isScalarValue, isPlainObject, promiseChain, isIdValue, keyPaths } = require('../service/app.service');
+const { uniq, globToRegexp, isScalarValue, isPlainObject, promiseChain, isIdValue, keyPaths } = require('../service/app.service');
 
 exports.ensureModel = (store, model, id) => {
   return store.get(model, id).then((doc) => {
@@ -286,5 +286,5 @@ exports.sortData = (data, sortBy) => {
 };
 
 exports.filterDataByCounts = (store, model, data, countPaths) => {
-  return data.filter(doc => Object.entries(countPaths).every(([path, value]) => Number(_.get(doc, path)) === Number(value)));
+  return data.filter(doc => Object.entries(countPaths).every(([path, value]) => String(_.get(doc, path, '')).match(globToRegexp(value))));
 };

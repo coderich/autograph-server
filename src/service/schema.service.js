@@ -48,8 +48,9 @@ exports.createGraphSchema = (parser) => {
 
   return {
     typeDefs: parser.getModelNamesAndFields().map(([model, fields]) => `
-      type ${model} {
-        ${parser.getModel(model).hideFromApi ? '' : 'id: ID!'}
+      type ${model} implements Node {
+        id: ID!
+        guid: ID!
         ${Object.entries(fields).map(([field, fieldDef]) => {
           const ref = Parser.getFieldDataRef(fieldDef);
           if (ref) return `${field}(query: ${ref}InputQuery): ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`;
@@ -118,12 +119,34 @@ exports.createGraphSchema = (parser) => {
         })
       }
     `).concat([
-      'scalar Mixed',
+      `
+      type Connection {
+        edges: [Edge]
+        pageInfo: PageInfo!
+      }
 
-      'enum SortOrderEnum { ASC DESC }',
+      type Edge {
+        node: Node
+        cursor: String!
+      }
+
+      type PageInfo {
+        startCursor: String!
+        endCursor: String!
+        hasPreviousPage: Boolean!
+        hasNextPage: Boolean!
+      }
+
+      interface Node {
+        id: ID!
+      }
+
+      enum SortOrderEnum { ASC DESC }
+      `,
 
       `type Query {
         System: System!
+        node(id: ID!): Node
         ${parser.getModelNames(false).map(model => `get${model}(id: ID!): ${model}`)}
         ${parser.getModelNames(false).map(model => `find${model}(query: ${ucFirst(model)}InputQuery): [${model}]!`)}
         ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputWhere): Int!`)}
@@ -171,6 +194,13 @@ exports.createGraphSchema = (parser) => {
         })),
       });
     }, {
+      Node: {
+        __resolveType: async (root, args, context, info) => {
+          const str = Buffer.from(root.guid, 'base64').toString('ascii');
+          const [model] = str.split(':');
+          return model;
+        },
+      },
       Query: parser.getModelNames(false).reduce((prev, model) => {
         return Object.assign(prev, {
           [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
@@ -179,6 +209,11 @@ exports.createGraphSchema = (parser) => {
         });
       }, {
         System: (root, args) => ({}),
+        node: (root, args, context) => {
+          const str = Buffer.from(args.id, 'base64').toString('ascii');
+          const [model, id] = str.split(':');
+          return resolver.get(context, model, id);
+        },
       }),
 
       Mutation: parser.getModelNames(false).reduce((prev, model) => {

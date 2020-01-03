@@ -56,6 +56,7 @@ module.exports = class Store {
     if (!doc) return undefined;
 
     // Magic methods
+    Object.defineProperty(doc, 'guid', { value: Buffer.from(`${model}:${doc.id}`).toString('base64') });
     Object.defineProperty(doc, '$resolve', { value: field => this.resolve(model, doc, field) });
     Object.defineProperty(doc, '$rollup', { value: (field, where) => this.rollup(model, doc, field, where) });
     return doc;
@@ -83,7 +84,7 @@ module.exports = class Store {
       const hydratedResults = await this.hydrate(model, results, { fields });
       const filteredData = filterDataByCounts(loader, model, hydratedResults, countFields);
       const sortedResults = sortData(filteredData, sortBy);
-      return sortedResults.slice(0, limit > 0 ? limit : undefined);
+      return sortedResults.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
     });
   }
 

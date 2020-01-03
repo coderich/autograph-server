@@ -31,6 +31,7 @@
     "graphql-fields": "^2.0.3",
     "graphql-subscriptions": "^1.1.0",
     "lodash": "^4.17.15",
+    "micromatch": "^4.0.2",
     "mongodb": "^3.3.5",
     "neo4j-driver": "^4.0.0",
     "object-hash": "^2.0.1",
