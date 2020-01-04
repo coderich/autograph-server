@@ -74,8 +74,8 @@ module.exports = (name, db = 'mongo') => {
       }
 
       // Create core classes
-      const schma = new Schema(schema, stores);
-      const store = new Store(schma, stores, driverArgs);
+      const schma = new Schema(schema, stores, driverArgs);
+      const store = new Store(schma);
       const graphSchema = createGraphSchema(schma);
       const executableSchema = makeExecutableSchema(graphSchema);
 

@@ -1,8 +1,5 @@
 const _ = require('lodash');
 const DataLoader = require('./DataLoader');
-const RedisDriver = require('../driver/RedisDriver');
-const MongoDriver = require('../driver/MongoDriver');
-const { Neo4jDriver, Neo4jRestDriver } = require('../driver/Neo4jDriver');
 const { mergeDeep, keyPaths } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
 const {
@@ -18,33 +15,8 @@ const {
 } = require('../service/data.service');
 
 module.exports = class Store {
-  constructor(schema, stores, driverArgs = {}) {
+  constructor(schema) {
     this.schema = schema;
-
-    const availableDrivers = {
-      mongo: MongoDriver,
-      neo4j: Neo4jDriver,
-      neo4jRest: Neo4jRestDriver,
-      redis: RedisDriver,
-    };
-
-    // Create store instances
-    const drivers = Object.entries(stores).reduce((prev, [key, { type, uri, options }]) => {
-      return Object.assign(prev, {
-        [key]: {
-          dao: new availableDrivers[type](uri, schema, options, driverArgs[type]),
-          idValue: availableDrivers[type].idValue,
-          idField: type === 'mongo' ? '_id' : 'id',
-        },
-      });
-    }, {});
-
-    // Create model store map
-    this.storeMap = schema.getModels().reduce((prev, model) => {
-      return Object.assign(prev, {
-        [model.getName()]: drivers[model.getDriverName()],
-      });
-    }, {});
   }
 
   toModel(model) {
@@ -177,16 +149,11 @@ module.exports = class Store {
   idValue(model, id) {
     model = this.toModel(model);
     return model.idValue(id);
-    // const modelName = model.getName();
-    // const { idValue } = this.storeMap[modelName];
-    // return idValue(id);
   }
 
   idField(model) {
     model = this.toModel(model);
     return model.idField();
-    // const modelName = model.getName();
-    // return this.storeMap[modelName].idField;
   }
 
   dataLoader() {
