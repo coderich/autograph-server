@@ -29,6 +29,13 @@ module.exports = class Field {
     }
   }
 
+  getGQLType(suffix) {
+    let type = this.getSimpleType();
+    if (suffix && !isScalarDataType(type)) type = this.options.embedded ? `${type}${suffix}` : 'ID';
+    if (this.options.enum) type = `${this.model.getName()}${ucFirst(this.getName())}Enum`;
+    return this.isArray() ? `[${type}]` : type;
+  }
+
   getDataRef() {
     const ref = this.getSimpleType();
     return isScalarDataType(ref) ? null : ref;
@@ -52,12 +59,5 @@ module.exports = class Field {
 
   isImmutable() {
     return this.options.immutable;
-  }
-
-  toGQL(suffix) {
-    let type = this.getSimpleType();
-    if (suffix && !isScalarDataType(type)) type = this.options.embedded ? `${type}${suffix}` : 'ID';
-    if (this.options.enum) type = `${this.model.getName()}${ucFirst(this.getName())}Enum`;
-    return this.isArray() ? `[${type}]` : type;
   }
 };

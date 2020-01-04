@@ -10,11 +10,11 @@ module.exports = class Schema {
     return this.models.find(model => model.getName() === name);
   }
 
-  getModels(getAll = true) {
-    return this.models.filter(model => getAll || model.isVisible());
+  getModels() {
+    return this.models;
   }
 
-  static isScalarValue(value) {
-    return ['String', 'Float', 'Boolean'].indexOf(value) > -1;
+  getVisibleModels() {
+    return this.models.filter(model => model.isVisible());
   }
 };

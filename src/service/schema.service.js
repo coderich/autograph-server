@@ -2,35 +2,26 @@ const _ = require('lodash');
 const GraphqlFields = require('graphql-fields');
 const { withFilter, PubSub } = require('graphql-subscriptions');
 const DataLoader = require('../core/DataLoader');
-const Parser = require('../core/Parser');
 const Resolver = require('../core/Resolver');
 const { internalEmitter: Emitter } = require('./event.service');
 const { ucFirst, hashObject, fromGUID } = require('./app.service');
 
 const pubsub = new PubSub();
 
-const getFieldType = (model, field, fieldDef, suffix) => {
-  const dataType = Parser.getFieldDataType(fieldDef);
-  let type = Array.isArray(dataType) ? dataType[0] : dataType;
-  if (suffix && !Parser.isScalarValue(type)) type = fieldDef.embedded ? `${type}${suffix}` : 'ID';
-  if (fieldDef.enum) type = `${model}${ucFirst(field)}Enum`;
-  return Array.isArray(dataType) ? `[${type}]` : type;
-};
-
 /* eslint-disable indent, no-underscore-dangle */
 exports.createGraphSchema = (parser, schema) => {
-  const resolver = new Resolver(parser);
+  const resolver = new Resolver(parser, schema);
 
   Emitter.on('postMutation', ({ store }) => {
     const loader = (store instanceof DataLoader ? store : store.dataLoader());
-    schema.getModels(false).forEach(model => pubsub.publish(`${model.getName()}Trigger`, { store: loader }));
+    schema.getVisibleModels().forEach(model => pubsub.publish(`${model.getName()}Trigger`, { store: loader }));
   });
 
   Emitter.on('preMutation', ({ method, store }, next) => {
     const beforeStore = (store instanceof DataLoader ? store : store.dataLoader());
     const afterStore = store.dataLoader();
 
-    Promise.all(schema.getModels(false).map((model) => {
+    Promise.all(schema.getVisibleModels().map((model) => {
       const payload = { method, beforeStore, afterStore, next: undefined };
 
       return new Promise((resolve) => {
@@ -56,8 +47,8 @@ exports.createGraphSchema = (parser, schema) => {
           ${model.getFields().map((field) => {
             const fieldName = field.getName();
             const ref = field.getDataRef();
-            if (ref) return `${fieldName}(query: ${ref}InputQuery): ${field.toGQL().concat(field.isRequired() ? '!' : '')}`;
-            return `${fieldName}: ${field.toGQL().concat(field.isRequired() ? '!' : '')}`;
+            if (ref) return `${fieldName}(query: ${ref}InputQuery): ${field.getGQLType().concat(field.isRequired() ? '!' : '')}`;
+            return `${fieldName}: ${field.getGQLType().concat(field.isRequired() ? '!' : '')}`;
           })}
           countSelf(where: ${modelName}InputWhere): Int!
           ${model.getCountableFields().map(field => `count${ucFirst(field.getName())}(where: ${field.getDataRef()}InputWhere): Int!`)}
@@ -69,11 +60,11 @@ exports.createGraphSchema = (parser, schema) => {
         }
 
         input ${modelName}InputCreate {
-          ${model.getCreateFields().map(field => `${field.getName()}: ${field.toGQL('InputCreate').concat(field.isRequired() ? '!' : '')}`)}
+          ${model.getCreateFields().map(field => `${field.getName()}: ${field.getGQLType('InputCreate').concat(field.isRequired() ? '!' : '')}`)}
         }
 
         input ${modelName}InputUpdate {
-          ${model.getUpdateFields().map(field => `${field.getName()}: ${field.toGQL('InputUpdate')}`)}
+          ${model.getUpdateFields().map(field => `${field.getName()}: ${field.getGQLType('InputUpdate')}`)}
         }
 
         input ${modelName}InputWhere {
@@ -123,54 +114,51 @@ exports.createGraphSchema = (parser, schema) => {
       `type Query {
         System: System!
         node(id: ID!): Node
-        ${parser.getModelNames(false).map(model => `get${model}(id: ID!): ${model}`)}
-        ${parser.getModelNames(false).map(model => `find${model}(query: ${ucFirst(model)}InputQuery): [${model}]!`)}
-        ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputWhere): Int!`)}
+        ${schema.getVisibleModels().map(model => `get${model.getName()}(id: ID!): ${model.getName()}`)}
+        ${schema.getVisibleModels().map(model => `find${model.getName()}(query: ${ucFirst(model.getName())}InputQuery): [${model.getName()}]!`)}
+        ${schema.getVisibleModels().map(model => `count${model.getName()}(where: ${ucFirst(model.getName())}InputWhere): Int!`)}
       }`,
 
       `type System {
-        ${parser.getModelNames(false).map(model => `get${model}(id: ID!): ${model}`)}
-        ${parser.getModelNames(false).map(model => `find${model}(query: ${ucFirst(model)}InputQuery): [${model}]!`)}
-        ${parser.getModelNames(false).map(model => `count${model}(where: ${ucFirst(model)}InputWhere): Int!`)}
+        ${schema.getVisibleModels().map(model => `get${model.getName()}(id: ID!): ${model.getName()}`)}
+        ${schema.getVisibleModels().map(model => `find${model.getName()}(query: ${ucFirst(model.getName())}InputQuery): [${model.getName()}]!`)}
+        ${schema.getVisibleModels().map(model => `count${model.getName()}(where: ${ucFirst(model.getName())}InputWhere): Int!`)}
       }`,
 
       `type Subscription {
-        ${parser.getModelNames(false).map(model => `${model}Trigger(query: ${ucFirst(model)}InputQuery): [${model}]!`)}
-        ${parser.getModelNames(false).map(model => `${model}Changed(query: ${ucFirst(model)}InputQuery): [${model}Subscription]!`)}
+        ${schema.getVisibleModels().map(model => `${model.getName()}Trigger(query: ${ucFirst(model.getName())}InputQuery): [${model.getName()}]!`)}
+        ${schema.getVisibleModels().map(model => `${model.getName()}Changed(query: ${ucFirst(model.getName())}InputQuery): [${model.getName()}Subscription]!`)}
       }`,
 
       `type Mutation {
-        ${parser.getModelNames(false).map(model => `create${model}(data: ${model}InputCreate!): ${model}!`)}
-        ${parser.getModelNames(false).map(model => `update${model}(id: ID! data: ${model}InputUpdate!): ${model}!`)}
-        ${parser.getModelNames(false).map(model => `delete${model}(id: ID!): ${model}!`)}
-        ${parser.getModelNamesAndFields(false).map(([model, fields]) => `
-          ${Object.entries(fields).filter(([field, fieldDef]) => {
-            if (fieldDef.by) return false;
-            return Parser.getFieldArrayType(fieldDef);
-          }).map(([field, fieldDef]) => {
-            const inputType = getFieldType(model, field, fieldDef, 'InputCreate');
-            // const queryType = getFieldType(model, field, fieldDef, 'InputUpdate');
+        ${schema.getVisibleModels().map(model => `create${model.getName()}(data: ${model.getName()}InputCreate!): ${model.getName()}!`)}
+        ${schema.getVisibleModels().map(model => `update${model.getName()}(id: ID! data: ${model.getName()}InputUpdate!): ${model.getName()}!`)}
+        ${schema.getVisibleModels().map(model => `delete${model.getName()}(id: ID!): ${model.getName()}!`)}
+        ${schema.getVisibleModels().map(model => `
+          ${model.getEmbeddedArrayFields().map((field) => {
+            const modelName = model.getName();
+            const fieldName = field.getName();
+            const inputType = field.getGQLType('InputCreate');
 
             return `
-              add${model}${ucFirst(field)}(id: ID! ${field}: ${inputType}!): ${model}!
-              rem${model}${ucFirst(field)}(id: ID! query: ID!): ${model}!
+              add${modelName}${ucFirst(fieldName)}(id: ID! ${fieldName}: ${inputType}!): ${modelName}!
+              rem${modelName}${ucFirst(fieldName)}(id: ID! query: ID!): ${modelName}!
             `;
           })}
         `)}
       }`,
     ]),
-    resolvers: parser.getModelNamesAndFields().reduce((prev, [model, fields]) => {
+    resolvers: schema.getModels().reduce((prev, model) => {
+      const modelName = model.getName();
+
       return Object.assign(prev, {
-        [model]: Object.entries(fields).filter(([field, fieldDef]) => !fieldDef.embedded).reduce((def, [field, fieldDef]) => {
-          return Object.assign(def, {
-            [field]: root => root[`$${field}`],
-          });
-        }, parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).reduce((counters, [field, ref, by]) => {
-          return counters;
+        [modelName]: model.getFields().reduce((def, field) => {
+          const fieldName = field.getName();
+          return Object.assign(def, { [fieldName]: root => root[`$${fieldName}`] });
         }, {
           // id: root => root.$id,
           countSelf: (root, args, context) => resolver.count(context, model, args.where),
-        })),
+        }),
       });
     }, {
       Node: {
@@ -178,56 +166,64 @@ exports.createGraphSchema = (parser, schema) => {
           return fromGUID(root.id).split(':')[0];
         },
       },
-      Query: parser.getModelNames(false).reduce((prev, model) => {
+      Query: schema.getVisibleModels().reduce((prev, model) => {
+        const modelName = model.getName();
+
         return Object.assign(prev, {
-          [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
-          [`find${model}`]: (root, args, context, info) => resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
-          [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
+          [`get${modelName}`]: (root, args, context) => resolver.get(context, modelName, args.id, true),
+          [`find${modelName}`]: (root, args, context, info) => resolver.query(context, modelName, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
+          [`count${modelName}`]: (root, args, context) => resolver.count(context, modelName, args.where),
         });
       }, {
         System: (root, args) => ({}),
         node: (root, args, context) => {
           const { id } = args;
-          const [model] = fromGUID(id).split(':');
-          return resolver.get(context, model, id);
+          const [modelName] = fromGUID(id).split(':');
+          return resolver.get(context, modelName, id);
         },
       }),
 
-      Mutation: parser.getModelNames(false).reduce((prev, model) => {
+      Mutation: schema.getVisibleModels().reduce((prev, model) => {
+        const modelName = model.getName();
+
         return Object.assign(prev, {
-          [`create${model}`]: (root, args, context) => resolver.create(context, model, args.data),
-          [`update${model}`]: (root, args, context) => resolver.update(context, model, args.id, args.data),
-          [`delete${model}`]: (root, args, context) => resolver.delete(context, model, args.id),
+          [`create${modelName}`]: (root, args, context) => resolver.create(context, modelName, args.data),
+          [`update${modelName}`]: (root, args, context) => resolver.update(context, modelName, args.id, args.data),
+          [`delete${modelName}`]: (root, args, context) => resolver.delete(context, modelName, args.id),
         });
       }, {}),
 
-      System: parser.getModelNames(false).reduce((prev, model) => {
+      System: schema.getVisibleModels().reduce((prev, model) => {
+        const modelName = model.getName();
+
         return Object.assign(prev, {
-          [`get${model}`]: (root, args, context) => resolver.get(context, model, args.id, true),
-          [`find${model}`]: (root, args, context, info) => resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
-          [`count${model}`]: (root, args, context) => resolver.count(context, model, args.where),
+          [`get${modelName}`]: (root, args, context) => resolver.get(context, modelName, args.id, true),
+          [`find${modelName}`]: (root, args, context, info) => resolver.query(context, modelName, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
+          [`count${modelName}`]: (root, args, context) => resolver.count(context, modelName, args.where),
         });
       }, {}),
 
-      Subscription: parser.getModelNames(false).reduce((prev, model) => {
+      Subscription: schema.getVisibleModels().reduce((prev, model) => {
+        const modelName = model.getName();
+
         return Object.assign(prev, {
-          [`${model}Trigger`]: {
-            subscribe: () => pubsub.asyncIterator(`${model}Trigger`),
+          [`${modelName}Trigger`]: {
+            subscribe: () => pubsub.asyncIterator(`${modelName}Trigger`),
             resolve: (root, args, context, info) => {
               const { store } = root;
               context.store = store;
-              return store.query(model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query });
+              return store.query(modelName, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query });
             },
           },
-          [`${model}Changed`]: {
+          [`${modelName}Changed`]: {
             subscribe: withFilter(
-              () => pubsub.asyncIterator(`${model}Changed`),
+              () => pubsub.asyncIterator(`${modelName}Changed`),
               (root, args1, context, info) => {
                 let nextPromise;
                 const args = _.cloneDeep(args1);
-                const sid = hashObject({ model, args });
+                const sid = hashObject({ modelName, args });
                 const { beforeStore, afterStore } = root;
-                const action = `${model}Changed`;
+                const action = `${modelName}Changed`;
                 const fields = GraphqlFields(info, {}, { processArguments: true });
                 context.subscriptions = context.subscriptions || {};
                 context.subscriptions[sid] = [];
@@ -236,11 +232,11 @@ exports.createGraphSchema = (parser, schema) => {
                 root.next = new Promise(resolve => (nextPromise = resolve));
 
                 return new Promise((resolve, reject) => {
-                  beforeStore.query(model, { fields, ...args.query }).then((before) => {
+                  beforeStore.query(modelName, { fields, ...args.query }).then((before) => {
                     context.store = afterStore;
 
                     Emitter.once('postMutation', async (event) => {
-                      const after = await afterStore.query(model, { fields, ...args.query });
+                      const after = await afterStore.query(modelName, { fields, ...args.query });
                       const diff = _.xorWith(before, after, (a, b) => `${a.id}` === `${b.id}`);
                       const updated = _.intersectionWith(before, after, (a, b) => `${a.id}` === `${b.id}`).filter((el) => {
                         const a = before.find(e => `${e.id}` === `${el.id}`);
@@ -276,7 +272,7 @@ exports.createGraphSchema = (parser, schema) => {
               },
             ),
             resolve: (root, args, context) => {
-              const sid = hashObject({ model, args });
+              const sid = hashObject({ modelName, args });
               const results = context.subscriptions[sid];
 
               return results.map((result) => {

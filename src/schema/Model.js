@@ -20,6 +20,10 @@ module.exports = class Model {
     return this.fields;
   }
 
+  getEmbeddedArrayFields() {
+    return this.fields.filter(field => field.isArray() && !field.isVirtual());
+  }
+
   getCountableFields() {
     return this.fields.filter(field => field.isArray() && field.getDataRef());
   }
