@@ -70,15 +70,12 @@ module.exports = class Store {
     });
   }
 
-  query(modelName, query = {}) {
-    modelName = this.toModel(modelName);
-    const model = modelName.getName();
-    // const modelName = model.getName();
-    // const modelAlias = model.getAlias();
-    const { parser, loader = this } = this;
+  query(model, query = {}) {
+    model = this.toModel(model);
+    const { loader = this } = this;
     const { fields, where = {}, sortBy = {}, limit } = query;
-    const modelFields = Object.entries(this.parser.getModelFields(model)).filter(([, fieldDef]) => Parser.isScalarField(fieldDef)).map(([k]) => k);
-    const selectFields = fields || modelFields.reduce((prev, field) => Object.assign(prev, { [field]: {} }), {});
+    const modelFields = model.getScalarFields();
+    const selectFields = fields || modelFields.reduce((prev, field) => Object.assign(prev, { [field.getName()]: {} }), {});
     const sortFields = keyPaths(sortBy).reduce((prev, path) => {
       if (path.indexOf('count') === 0 || path.indexOf('.count') === 0) return Object.assign(prev, { [path]: _.get(sortBy, path) });
       const $path = path.split('.').map(s => `$${s}`).join('.');
@@ -88,7 +85,7 @@ module.exports = class Store {
     const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
     countPaths.forEach(p => _.unset(where, p));
 
-    return createSystemEvent('Query', { method: 'query', model, store: loader, parser, query }, async () => {
+    return createSystemEvent('Query', { method: 'query', model, store: loader, query }, async () => {
       const results = await this.find(model, { ...query, sortBy: {}, limit: 0 });
       const hydratedResults = await this.hydrate(model, results, { fields: selectFields });
       const filteredData = filterDataByCounts(loader, model, hydratedResults, countFields);
