@@ -32,8 +32,24 @@ module.exports = class Model {
     return this.driver.dao.find(this.getAlias(), where);
   }
 
+  count(where = {}) {
+    return this.driver.dao.count(this.getAlias(), where);
+  }
+
   create(data) {
     return this.driver.dao.create(this.getAlias(), data);
+  }
+
+  update(id, data, doc) {
+    return this.driver.dao.replace(this.getAlias(), this.idValue(id), data, doc);
+  }
+
+  delete(id, doc) {
+    return this.driver.dao.delete(this.getAlias(), this.idValue(id), doc);
+  }
+
+  drop() {
+    return this.driver.dao.dropModel(this.getAlias());
   }
 
   idValue(id) {

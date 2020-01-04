@@ -111,10 +111,7 @@ module.exports = class Store {
 
   count(model, where = {}) {
     model = this.toModel(model);
-    const modelName = model.getName();
-    const modelAlias = model.getAlias();
     const { loader = this } = this;
-    const { dao } = this.storeMap[modelName];
     const countPaths = keyPaths(where).filter(p => p.indexOf('count') === 0 || p.indexOf('.count') > 0);
     const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
     countPaths.forEach(p => _.unset(where, p));
@@ -122,16 +119,15 @@ module.exports = class Store {
     normalizeModelWhere(this, model, where);
 
     return createSystemEvent('Query', { method: 'count', model, store: loader, where }, async () => {
-      const resolvedWhere = await resolveModelWhereClause(loader, modelName, where);
+      const resolvedWhere = await resolveModelWhereClause(loader, model, where);
 
       if (countPaths.length) {
-        const ma = this.schema.getModel(modelAlias);
-        const results = await this.query(ma, { where: resolvedWhere, fields: countFields });
+        const results = await this.query(model, { where: resolvedWhere, fields: countFields });
         const filteredData = filterDataByCounts(loader, model, results, countFields);
         return filteredData.length;
       }
 
-      return dao.count(modelAlias, resolvedWhere);
+      return model.count(resolvedWhere);
     });
   }
 
@@ -149,10 +145,7 @@ module.exports = class Store {
 
   async update(model, id, data) {
     model = this.toModel(model);
-    const modelName = model.getName();
-    const modelAlias = model.getAlias();
     const { loader = this } = this;
-    const { dao } = this.storeMap[modelName];
     const doc = await ensureModel(this, model, id);
     ensureModelArrayTypes(this, model, data);
     normalizeModelData(this, model, data);
@@ -160,32 +153,25 @@ module.exports = class Store {
 
     return createSystemEvent('Mutation', { method: 'update', model, store: loader, id, data }, async () => {
       const merged = normalizeModelData(loader, model, mergeDeep(doc, data));
-      const results = await dao.replace(modelAlias, this.idValue(model, id), data, merged);
-      return results;
+      return model.update(id, data, merged);
     });
   }
 
   async delete(model, id) {
     model = this.toModel(model);
-    const modelName = model.getName();
-    const modelAlias = model.getAlias();
     const { loader = this } = this;
-    const { dao } = this.storeMap[modelName];
     const doc = await ensureModel(this, model, id);
 
     return createSystemEvent('Mutation', { method: 'delete', model, store: loader, id }, () => {
       return resolveReferentialIntegrity(loader, model, id).then(() => {
-        return dao.delete(modelAlias, this.idValue(model, id), doc);
+        return model.delete(id, doc);
       });
     });
   }
 
   dropModel(model) {
     model = this.toModel(model);
-    const modelName = model.getName();
-    const modelAlias = model.getAlias();
-    const { dao } = this.storeMap[modelName];
-    return dao.dropModel(modelAlias);
+    return model.drop();
   }
 
   idValue(model, id) {
