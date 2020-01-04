@@ -243,37 +243,38 @@ module.exports = class Store {
     return loader.count(fieldRef, where);
   }
 
-  resolve(modelName, doc, field, q = {}) {
-    modelName = this.toModel(modelName);
-    const model = modelName.getName();
+  resolve(model, doc, fieldName, q = {}) {
+    model = this.toModel(model);
+    const field = model.getField(fieldName);
     const query = _.cloneDeep(q);
-    const { parser, loader = this } = this;
-    const fieldDef = parser.getModelFieldDef(model, field);
-    const dataType = Parser.getFieldDataType(fieldDef);
-    const value = doc[parser.getModelFieldAlias(model, field)];
+    const { loader = this } = this;
+    const dataType = field.getDataType();
+    const value = doc[field.getAlias()];
     query.where = query.where || {};
 
     // Scalar Resolvers
-    if (Parser.isScalarField(fieldDef)) return value;
+    if (field.isScalar()) return value;
 
     // Array Resolvers
     if (Array.isArray(dataType)) {
-      if (fieldDef.by) {
-        query.where[parser.getModelFieldAlias(dataType[0], fieldDef.by)] = doc.id;
+      if (field.isVirtual()) {
+        // query.where[parser.getModelFieldAlias(dataType[0], fieldDef.by)] = doc.id;
+        query.where[field.getVirtualField().getAlias()] = doc.id;
         return loader.find(dataType[0], query);
       }
       const valueIds = (value || []).map(v => (isScalarValue(v) ? v : v.id));
-      return Promise.all(valueIds.map(id => loader.get(dataType[0], id, fieldDef.required).catch(() => null)));
+      return Promise.all(valueIds.map(id => loader.get(dataType[0], id, field.isRequired()).catch(() => null)));
     }
 
     // Object Resolvers
-    if (fieldDef.by) {
-      query.where[parser.getModelFieldAlias(dataType, fieldDef.by)] = doc.id;
+    if (field.isVirtual()) {
+      // query.where[parser.getModelFieldAlias(dataType, fieldDef.by)] = doc.id;
+      query.where[field.getVirtualField().getAlias()] = doc.id;
       return loader.find(dataType, query).then(results => results[0]);
     }
 
     const id = isScalarValue(value) ? value : value.id;
-    return loader.get(dataType, id, fieldDef.required);
+    return loader.get(dataType, id, field.isRequired());
   }
 
   async hydrate(modelName, results, query = {}) {
