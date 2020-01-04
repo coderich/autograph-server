@@ -176,8 +176,7 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
   model = store.toModel(model);
 
   const mName = model.getName();
-  const fields = parser.getModelFields(mName);
-  // const fields = model.getFields();
+  const fields = model.getFields();
 
   //
   lookups2D[index] = lookups2D[index] || {
@@ -192,30 +191,33 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
   lookups2D[index].lookups.push({
     modelName: mName,
     query: Object.entries(where).reduce((prev, [key, value]) => {
-      const field = fields[key];
-      const ref = Parser.getFieldDataRef(field);
+      const field = model.getField(key);
 
-      if (ref) {
-        if (isPlainObject(value)) {
-          exports.resolveModelWhereClause(parser, store, ref, value, field.alias || key, lookups2D, index + 1);
-          return prev;
-        }
-        if (Array.isArray(value)) {
-          const scalars = [];
-          const norm = value.map((v) => {
-            if (isPlainObject(v)) return v;
-            if (field.by && isIdValue(v)) return { [store.idField(ref)]: v };
-            scalars.push(v);
-            return null;
-          }).filter(v => v);
-          norm.forEach(val => exports.resolveModelWhereClause(parser, store, ref, val, field.alias || key, lookups2D, index + 1));
-          if (scalars.length) prev[key] = scalars;
-          return prev;
-        }
+      if (field) {
+        const ref = field.getDataRef();
 
-        if (field.by) {
-          exports.resolveModelWhereClause(parser, store, ref, { [store.idField(ref)]: value }, field.alias || key, lookups2D, index + 1);
-          return prev;
+        if (ref) {
+          if (isPlainObject(value)) {
+            exports.resolveModelWhereClause(parser, store, ref, value, field.getAlias(key), lookups2D, index + 1);
+            return prev;
+          }
+          if (Array.isArray(value)) {
+            const scalars = [];
+            const norm = value.map((v) => {
+              if (isPlainObject(v)) return v;
+              if (field.isVirtual() && isIdValue(v)) return { [store.idField(ref)]: v };
+              scalars.push(v);
+              return null;
+            }).filter(v => v);
+            norm.forEach(val => exports.resolveModelWhereClause(parser, store, ref, val, field.getAlias(key), lookups2D, index + 1));
+            if (scalars.length) prev[key] = scalars;
+            return prev;
+          }
+
+          if (field.isVirtual()) {
+            exports.resolveModelWhereClause(parser, store, ref, { [store.idField(ref)]: value }, field.getAlias(key), lookups2D, index + 1);
+            return prev;
+          }
         }
       }
 
@@ -239,13 +241,19 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
           if (parentDataRefs.has(modelName)) {
             parentLookup.lookups.forEach((lookup) => {
               // Anything with type `modelName` should be added to query
-              Object.entries(parentFields).forEach(([field, fieldDef]) => {
-                const ref = Parser.getFieldDataRef(fieldDef);
+              parentFields.forEach((field) => {
+                const ref = field.getDataRef();
 
                 if (ref === modelName) {
-                  if (fieldDef.by) {
+                  if (field.isVirtual()) {
+                    const cField = currentFields.find(f => f.getName() === field.getVirtualRef());
+                    const cAlias = cField.getAlias(field.getVirtualRef());
+
                     Object.assign(lookup.query, {
-                      [store.idField(parentModelName)]: results.map(result => store.idValue(parentModelName, result[currentFields[fieldDef.by].alias || fieldDef.by])),
+                      [store.idField(parentModelName)]: results.map((result) => {
+                        const cValue = result[cAlias];
+                        return store.idValue(parentModelName, cValue);
+                      }),
                     });
                   } else {
                     Object.assign(lookup.query, {
