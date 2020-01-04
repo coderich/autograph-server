@@ -4,7 +4,7 @@ const DataLoader = require('./DataLoader');
 const RedisStore = require('../store/RedisStore');
 const MongoStore = require('../store/MongoStore');
 const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
-const { lcFirst, mergeDeep, isScalarValue, keyPaths, pullGUID, toGUID } = require('../service/app.service');
+const { lcFirst, mergeDeep, isScalarValue, keyPaths, pullGUID, fromGUID, toGUID } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
 const {
   ensureModel,
@@ -56,13 +56,8 @@ module.exports = class Store {
   toObject(model, doc) {
     if (!doc) return undefined;
 
-    // // GUID
-    // const realId = pullGUID(model, doc.id) || doc.id;
-    // const guid = toGUID(model, realId);
-    // doc.id = guid;
-
     // Magic methods
-    // Object.defineProperty(doc, 'guid', { enumerable: true, value: toGUID(model, doc.id) });
+    // Object.defineProperty(doc, '$id', { value: toGUID(model, pullGUID(model, doc.id) || doc.id) }); // GUID
     Object.defineProperty(doc, '$resolve', { value: field => this.resolve(model, doc, field) });
     Object.defineProperty(doc, '$rollup', { value: (field, where) => this.rollup(model, doc, field, where) });
     return doc;
@@ -255,8 +250,10 @@ module.exports = class Store {
 
     // Array Resolvers
     if (Array.isArray(dataType)) {
-      query.where[parser.getModelFieldAlias(dataType[0], fieldDef.by)] = doc.id;
-      if (fieldDef.by) return loader.find(dataType[0], query);
+      if (fieldDef.by) {
+        query.where[parser.getModelFieldAlias(dataType[0], fieldDef.by)] = doc.id;
+        return loader.find(dataType[0], query);
+      }
       const valueIds = (value || []).map(v => (isScalarValue(v) ? v : v.id));
       return Promise.all(valueIds.map(id => loader.get(dataType[0], id, fieldDef.required).catch(() => null)));
     }
@@ -299,12 +296,17 @@ module.exports = class Store {
 
       return fieldEntries.reduce((prev, [field], i) => {
         prev[field] = doc[field]; // Retain original values
-        return Object.assign(prev, { [`$${field}`]: fieldValues[i] }); // $hydrated values
+
+        // $hydrated values
+        const $value = fieldValues[i];
+        // const def = this.parser.getModelFieldDef(model, field);
+        // if (Array.isArray($value) && def) return Object.assign(prev, { [`$${field}`]: $value.map() });
+        return Object.assign(prev, { [`$${field}`]: $value });
       }, countEntries.reduce((prev, [field], i) => {
         return Object.assign(prev, { [field]: countValues[i] });
       }, {
         id: doc.id,
-        $id: toGUID(model, doc.id),
+        $id: doc.$id,
       }));
     }));
 

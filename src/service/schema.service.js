@@ -191,6 +191,7 @@ exports.createGraphSchema = (parser) => {
         }, parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).reduce((counters, [field, ref, by]) => {
           return counters;
         }, {
+          // id: root => root.$id,
           countSelf: (root, args, context) => resolver.count(context, model, args.where),
         })),
       });
