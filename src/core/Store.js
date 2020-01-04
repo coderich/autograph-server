@@ -3,7 +3,7 @@ const DataLoader = require('./DataLoader');
 const RedisDriver = require('../driver/RedisDriver');
 const MongoDriver = require('../driver/MongoDriver');
 const { Neo4jDriver, Neo4jRestDriver } = require('../driver/Neo4jDriver');
-const { lcFirst, mergeDeep, isScalarValue, keyPaths } = require('../service/app.service');
+const { mergeDeep, keyPaths } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
 const {
   ensureModel,
@@ -176,15 +176,17 @@ module.exports = class Store {
 
   idValue(model, id) {
     model = this.toModel(model);
-    const modelName = model.getName();
-    const { idValue } = this.storeMap[modelName];
-    return idValue(id);
+    return model.idValue(id);
+    // const modelName = model.getName();
+    // const { idValue } = this.storeMap[modelName];
+    // return idValue(id);
   }
 
   idField(model) {
     model = this.toModel(model);
-    const modelName = model.getName();
-    return this.storeMap[modelName].idField;
+    return model.idField();
+    // const modelName = model.getName();
+    // return this.storeMap[modelName].idField;
   }
 
   dataLoader() {
@@ -193,101 +195,23 @@ module.exports = class Store {
   }
 
   // You may want to move these out of here?
-  rollup(model, doc, fieldName, w = {}) {
+  rollup(model, doc, fieldName, where = {}) {
     model = this.toModel(model);
-    const field = model.getField(fieldName);
-    const fieldRef = field.getDataRef();
-    const where = _.cloneDeep(w);
     const { loader = this } = this;
-
-    if (field.isVirtual()) {
-      where[field.getVirtualRef()] = doc.id;
-      return loader.count(fieldRef, where);
-    }
-
-    if (!Object.keys(where).length) {
-      return (doc[field.getName()] || []).length; // Making big assumption that it's an array
-    }
-
-    const ids = (doc[field.getName()] || []);
-    where[loader.idField(fieldRef)] = ids;
-    return loader.count(fieldRef, where);
+    const field = model.getField(fieldName);
+    return field.count(loader, doc, where);
   }
 
-  resolve(model, doc, fieldName, q = {}) {
+  resolve(model, doc, fieldName, query = {}) {
     model = this.toModel(model);
     const field = model.getField(fieldName);
-    const query = _.cloneDeep(q);
     const { loader = this } = this;
-    const dataType = field.getDataType();
-    const value = doc[field.getAlias()];
-    query.where = query.where || {};
-
-    // Scalar Resolvers
-    if (field.isScalar()) return value;
-
-    // Array Resolvers
-    if (Array.isArray(dataType)) {
-      if (field.isVirtual()) {
-        query.where[field.getVirtualField().getAlias()] = doc.id;
-        return loader.find(dataType[0], query);
-      }
-      const valueIds = (value || []).map(v => (isScalarValue(v) ? v : v.id));
-      return Promise.all(valueIds.map(id => loader.get(dataType[0], id, field.isRequired()).catch(() => null)));
-    }
-
-    // Object Resolvers
-    if (field.isVirtual()) {
-      query.where[field.getVirtualField().getAlias()] = doc.id;
-      return loader.find(dataType, query).then(results => results[0]);
-    }
-
-    const id = isScalarValue(value) ? value : value.id;
-    return loader.get(dataType, id, field.isRequired());
+    return field.resolve(loader, doc, query);
   }
 
   async hydrate(model, results, query = {}) {
     model = this.toModel(model);
     const { loader = this } = this;
-    const { fields = {} } = query;
-    const isArray = Array.isArray(results);
-    const modelFields = model.getFields().map(f => f.getName());
-    const fieldEntries = Object.entries(fields).filter(([k]) => modelFields.indexOf(k) > -1);
-    const countEntries = Object.entries(fields).filter(([k]) => modelFields.indexOf(lcFirst(k.substr(5))) > -1); // eg. countAuthored
-    results = isArray ? results : [results];
-
-    const data = await Promise.all(results.map(async (doc) => {
-      // Resolve all values
-      const [fieldValues, countValues] = await Promise.all([
-        Promise.all(fieldEntries.map(async ([field, subFields]) => {
-          const [arg = {}] = (fields[field].__arguments || []).filter(el => el.query).map(el => el.query.value); // eslint-disable-line
-          const ref = model.getField(field).getDataRef();
-          const resolved = await loader.resolve(model, doc, field, { ...query, ...arg });
-          if (Object.keys(subFields).length && ref) return this.hydrate(ref, resolved, { ...query, ...arg, fields: subFields });
-          return resolved;
-        })),
-        Promise.all(countEntries.map(async ([field, subFields]) => {
-          const [arg = {}] = (fields[field].__arguments || []).filter(el => el.where).map(el => el.where.value); // eslint-disable-line
-          return loader.rollup(model, doc, lcFirst(field.substr(5)), arg);
-        })),
-      ]);
-
-      return fieldEntries.reduce((prev, [field], i) => {
-        prev[field] = doc[field]; // Retain original values
-
-        // $hydrated values
-        const $value = fieldValues[i];
-        // const def = this.parser.getModelFieldDef(model, field);
-        // if (Array.isArray($value) && def) return Object.assign(prev, { [`$${field}`]: $value.map() });
-        return Object.assign(prev, { [`$${field}`]: $value });
-      }, countEntries.reduce((prev, [field], i) => {
-        return Object.assign(prev, { [field]: countValues[i] });
-      }, {
-        id: doc.id,
-        $id: doc.$id,
-      }));
-    }));
-
-    return isArray ? data : data[0];
+    return model.hydrate(loader, results, query);
   }
 };

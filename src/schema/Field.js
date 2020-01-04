@@ -1,4 +1,5 @@
-const { ucFirst, isScalarDataType } = require('../service/app.service');
+const _ = require('lodash');
+const { ucFirst, isScalarValue, isScalarDataType } = require('../service/app.service');
 
 module.exports = class Field {
   constructor(schema, model, name, options = {}) {
@@ -7,6 +8,56 @@ module.exports = class Field {
     this.name = name;
     this.options = options;
   }
+
+  // CRUD
+  count(loader, doc, w = {}) {
+    const where = _.cloneDeep(w);
+    const fieldRef = this.getDataRef();
+
+    if (this.isVirtual()) {
+      where[this.getVirtualRef()] = doc.id;
+      return loader.count(fieldRef, where);
+    }
+
+    if (!Object.keys(where).length) {
+      return (doc[this.getName()] || []).length; // Making big assumption that it's an array
+    }
+
+    const ids = (doc[this.getName()] || []);
+    where[loader.idField(fieldRef)] = ids;
+    return loader.count(fieldRef, where);
+  }
+
+  resolve(loader, doc, q = {}) {
+    const query = _.cloneDeep(q);
+    const dataType = this.getDataType();
+    const value = doc[this.getAlias()];
+    query.where = query.where || {};
+
+    // Scalar Resolvers
+    if (this.isScalar()) return value;
+
+    // Array Resolvers
+    if (Array.isArray(dataType)) {
+      if (this.isVirtual()) {
+        query.where[this.getVirtualField().getAlias()] = doc.id;
+        return loader.find(dataType[0], query);
+      }
+      const valueIds = (value || []).map(v => (isScalarValue(v) ? v : v.id));
+      return Promise.all(valueIds.map(id => loader.get(dataType[0], id, this.isRequired()).catch(() => null)));
+    }
+
+    // Object Resolvers
+    if (this.isVirtual()) {
+      query.where[this.getVirtualField().getAlias()] = doc.id;
+      return loader.find(dataType, query).then(results => results[0]);
+    }
+
+    const id = isScalarValue(value) ? value : value.id;
+    return loader.get(dataType, id, this.isRequired());
+  }
+
+  //
 
   getName() {
     return this.name;
