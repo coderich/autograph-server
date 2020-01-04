@@ -1,6 +1,5 @@
 const { MongoClient, ObjectID } = require('mongodb');
-const Parser = require('../core/Parser');
-const { globToRegex, proxyDeep } = require('../service/app.service');
+const { globToRegex, proxyDeep, isScalarDataType } = require('../service/app.service');
 
 const toObject = (doc) => {
   if (!doc) return undefined;
@@ -8,8 +7,8 @@ const toObject = (doc) => {
 };
 
 module.exports = class MongoDriver {
-  constructor(uri, parser) {
-    this.parser = parser;
+  constructor(uri, schema) {
+    this.schema = schema;
     this.connection = MongoClient.connect(uri, { useUnifiedTopology: true });
   }
 
@@ -22,12 +21,12 @@ module.exports = class MongoDriver {
   }
 
   find(model, where = {}) {
-    const $where = MongoDriver.normalizeWhereClause(model, this.parser, where);
+    const $where = MongoDriver.normalizeWhereClause(model, this.schema, where);
     return this.query(model, 'aggregate', $where).then(results => results.map(toObject).toArray());
   }
 
   count(model, where = {}) {
-    const $where = MongoDriver.normalizeWhereClause(model, this.parser, where, true);
+    const $where = MongoDriver.normalizeWhereClause(model, this.schema, where, true);
     return this.query(model, 'aggregate', $where).then(cursor => cursor.next().then(data => (data ? data.count : 0)));
   }
 
@@ -69,7 +68,7 @@ module.exports = class MongoDriver {
     }
   }
 
-  static normalizeWhereClause(model, parser, where, count = false) {
+  static normalizeWhereClause(modelName, schema, where, count = false) {
     const $match = proxyDeep(where, {
       get(target, prop, rec) {
         const value = Reflect.get(target, prop, rec);
@@ -81,17 +80,19 @@ module.exports = class MongoDriver {
     }).toObject();
 
     const $agg = [];
+    const model = schema.getModel(modelName);
 
-    const fields = Object.entries(parser.getModelFields(model)).filter(([name, def]) => {
-      const val = where[name];
-      const type = Parser.getFieldDataType(def);
-      if (!Parser.isScalarValue(type)) return false;
+    const fields = model.getFields().filter((field) => {
+      const fieldName = field.getName();
+      const val = where[fieldName];
+      const type = field.getDataType();
+      if (!isScalarDataType(type)) return false;
       const stype = String((type === 'Float' ? 'Number' : type)).toLowerCase();
       if (String(typeof val) === `${stype}`) return false;
       return true;
-    }).map(([name]) => name);
+    });
 
-    const $addFields = fields.reduce((prev, key) => Object.assign(prev, { [key]: { $toString: `$${key}` } }), {});
+    const $addFields = fields.reduce((prev, field) => Object.assign(prev, { [field.getName()]: { $toString: `$${field.getName()}` } }), {});
     if (Object.keys($addFields).length) $agg.push({ $addFields });
     $agg.push({ $match });
     if (count) $agg.push({ $count: 'count' });

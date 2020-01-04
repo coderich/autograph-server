@@ -3,9 +3,9 @@ const Neo4j = require('neo4j-driver');
 const { globToRegex, proxyDeep, isScalarValue } = require('../service/app.service');
 
 class Cypher {
-  constructor(uri, parser, options = {}) {
+  constructor(uri, schema, options = {}) {
     this.uri = uri;
-    this.parser = parser;
+    this.schema = schema;
     this.options = options;
   }
 

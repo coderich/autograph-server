@@ -1,5 +1,5 @@
 const Redis = require('redis');
-const { generateId, proxyDeep } = require('../service/app.service');
+const { generateId } = require('../service/app.service');
 
 const toPromise = (caller, fn, ...args) => {
   return new Promise((resolve, reject) => {
@@ -18,8 +18,8 @@ const toPromise = (caller, fn, ...args) => {
 };
 
 module.exports = class {
-  constructor(uri, parser, options, mockClient) {
-    this.parser = parser;
+  constructor(uri, schema, options, mockClient) {
+    this.schema = schema;
     this.client = mockClient || Redis.createClient();
     this.indexes = {};
   }

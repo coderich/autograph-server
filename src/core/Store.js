@@ -21,6 +21,7 @@ const {
 
 module.exports = class Store {
   constructor(parser, schema, stores, driverArgs = {}) {
+    this.schema = schema;
     this.parser = parser;
     this.subscriptions = [];
 
@@ -35,7 +36,7 @@ module.exports = class Store {
     const storesInstances = Object.entries(stores).reduce((prev, [key, { type, uri, options }]) => {
       return Object.assign(prev, {
         [key]: {
-          dao: new availableDrivers[type](uri, this.parser, options, driverArgs[type]),
+          dao: new availableDrivers[type](uri, schema, options, driverArgs[type]),
           idValue: availableDrivers[type].idValue,
           idField: type === 'mongo' ? '_id' : 'id',
         },
