@@ -81,4 +81,8 @@ module.exports = class Field {
   isImmutable() {
     return this.options.immutable;
   }
+
+  isEmbedded() {
+    return this.options.embedded;
+  }
 };

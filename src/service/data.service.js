@@ -102,35 +102,6 @@ exports.applyFieldValueTransform = (field, value) => {
   return value;
 };
 
-exports.transformFieldValue = (field, value) => {
-  const transforms = field.transforms || [];
-
-  switch (Parser.getFieldSimpleType(field)) {
-    case 'String': {
-      value = `${value}`;
-      break;
-    }
-    case 'Number': case 'Float': {
-      const num = Number(value);
-      if (!Number.isNaN(num)) value = num;
-      break;
-    }
-    case 'Boolean': {
-      if (value === 'true') value = true;
-      if (value === 'false') value = false;
-      break;
-    }
-    default: {
-      break;
-    }
-  }
-
-  // Transforming
-  transforms.forEach(t => (value = t(value)));
-
-  return value;
-};
-
 exports.normalizeModelWhere = (store, model, data) => {
   model = store.toModel(model);
 
@@ -162,67 +133,39 @@ exports.normalizeModelWhere = (store, model, data) => {
   }, data);
 };
 
-exports.normalizeModelData = (parser, store, model, data) => {
+exports.normalizeModelData = (store, model, data) => {
+  model = store.toModel(model);
+
   return Object.entries(data).reduce((prev, [key, value]) => {
-    const field = parser.getModelFieldDef(model, key);
+    const field = model.getField(key);
     if (value == null || field == null) return prev;
 
-    const ref = Parser.getFieldDataRef(field);
-    const type = Parser.getFieldDataType(field);
+    const ref = field.getDataRef();
+    const type = field.getDataType();
 
     if (isPlainObject(value) && ref) {
-      prev[key] = exports.normalizeModelData(parser, store, ref, value);
+      prev[key] = exports.normalizeModelData(store, ref, value);
     } else if (Array.isArray(value)) {
       if (ref) {
-        if (field.embedded || field.by) {
-          prev[key] = value.map(v => exports.normalizeModelData(parser, store, ref, v));
+        if (field.isEmbedded() || field.isVirtual()) {
+          prev[key] = value.map(v => exports.normalizeModelData(store, ref, v));
         } else if (type.isSet) {
           prev[key] = uniq(value).map(v => store.idValue(ref, v));
         } else {
           prev[key] = value.map(v => store.idValue(ref, v));
         }
       } else {
-        prev[key] = value.map(v => exports.transformFieldValue(field, v));
+        prev[key] = value.map(v => exports.applyFieldValueTransform(field, v));
         if (type.isSet) prev[key] = uniq(prev[key]);
       }
     } else if (ref) {
       prev[key] = store.idValue(ref, value);
     } else {
-      prev[key] = exports.transformFieldValue(field, value);
+      prev[key] = exports.applyFieldValueTransform(field, value);
     }
 
     return prev;
   }, data);
-};
-
-exports.normalizeModelDataOut = (parser, store, model, data) => {
-  const isArray = Array.isArray(data);
-  data = isArray ? data : [data];
-
-  const results = data.map(d => Object.entries(d).reduce((prev, [key, value]) => {
-    const field = parser.getModelFieldDef(model, key);
-    if (value == null || field == null) return prev;
-
-    const ref = Parser.getFieldDataRef(field);
-
-    if (ref) {
-      if (isPlainObject(value)) {
-        prev[key] = Object.assign(value, { id: store.idValueOut(ref, value.id) });
-      } else if (Array.isArray(value)) {
-        if (field.embedded || field.by) {
-          prev[key] = value.map(v => exports.normalizeModelDataOut(parser, store, ref, v));
-        } else {
-          prev[key] = value.map(obj => Object.assign(obj, { id: store.idValueOut(ref, obj.id) }));
-        }
-      } else {
-        prev[key] = store.idValueOut(ref, value);
-      }
-    }
-
-    return prev;
-  }, d));
-
-  return isArray ? results : results[0];
 };
 
 exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias = '', lookups2D = [], index = 0) => {
