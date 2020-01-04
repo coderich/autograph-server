@@ -170,16 +170,17 @@ exports.createGraphSchema = (schema) => {
         const modelName = model.getName();
 
         return Object.assign(prev, {
-          [`get${modelName}`]: (root, args, context) => resolver.get(context, modelName, args.id, true),
-          [`find${modelName}`]: (root, args, context, info) => resolver.query(context, modelName, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
-          [`count${modelName}`]: (root, args, context) => resolver.count(context, modelName, args.where),
+          [`get${modelName}`]: (root, args, context) => resolver.get(context, model, args.id, true),
+          [`find${modelName}`]: (root, args, context, info) => resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
+          [`count${modelName}`]: (root, args, context) => resolver.count(context, model, args.where),
         });
       }, {
         System: (root, args) => ({}),
         node: (root, args, context) => {
           const { id } = args;
           const [modelName] = fromGUID(id).split(':');
-          return resolver.get(context, modelName, id);
+          const model = schema.getModel(modelName);
+          return resolver.get(context, model, id);
         },
       }),
 
@@ -187,9 +188,9 @@ exports.createGraphSchema = (schema) => {
         const modelName = model.getName();
 
         return Object.assign(prev, {
-          [`create${modelName}`]: (root, args, context) => resolver.create(context, modelName, args.data),
-          [`update${modelName}`]: (root, args, context) => resolver.update(context, modelName, args.id, args.data),
-          [`delete${modelName}`]: (root, args, context) => resolver.delete(context, modelName, args.id),
+          [`create${modelName}`]: (root, args, context) => resolver.create(context, model, args.data),
+          [`update${modelName}`]: (root, args, context) => resolver.update(context, model, args.id, args.data),
+          [`delete${modelName}`]: (root, args, context) => resolver.delete(context, model, args.id),
         });
       }, {}),
 
@@ -197,9 +198,9 @@ exports.createGraphSchema = (schema) => {
         const modelName = model.getName();
 
         return Object.assign(prev, {
-          [`get${modelName}`]: (root, args, context) => resolver.get(context, modelName, args.id, true),
-          [`find${modelName}`]: (root, args, context, info) => resolver.query(context, modelName, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
-          [`count${modelName}`]: (root, args, context) => resolver.count(context, modelName, args.where),
+          [`get${modelName}`]: (root, args, context) => resolver.get(context, model, args.id, true),
+          [`find${modelName}`]: (root, args, context, info) => resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
+          [`count${modelName}`]: (root, args, context) => resolver.count(context, model, args.where),
         });
       }, {}),
 
@@ -212,7 +213,7 @@ exports.createGraphSchema = (schema) => {
             resolve: (root, args, context, info) => {
               const { store } = root;
               context.store = store;
-              return store.query(modelName, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query });
+              return store.query(model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query });
             },
           },
           [`${modelName}Changed`]: {
@@ -232,11 +233,11 @@ exports.createGraphSchema = (schema) => {
                 root.next = new Promise(resolve => (nextPromise = resolve));
 
                 return new Promise((resolve, reject) => {
-                  beforeStore.query(modelName, { fields, ...args.query }).then((before) => {
+                  beforeStore.query(model, { fields, ...args.query }).then((before) => {
                     context.store = afterStore;
 
                     Emitter.once('postMutation', async (event) => {
-                      const after = await afterStore.query(modelName, { fields, ...args.query });
+                      const after = await afterStore.query(model, { fields, ...args.query });
                       const diff = _.xorWith(before, after, (a, b) => `${a.id}` === `${b.id}`);
                       const updated = _.intersectionWith(before, after, (a, b) => `${a.id}` === `${b.id}`).filter((el) => {
                         const a = before.find(e => `${e.id}` === `${el.id}`);

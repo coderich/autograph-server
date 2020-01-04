@@ -1,7 +1,7 @@
 const Model = require('./Model');
 
 module.exports = class Schema {
-  constructor(schema) {
+  constructor(schema, stores) {
     this.schema = schema;
     this.models = Object.entries(schema).map(([model, options]) => new Model(this, model, options));
   }

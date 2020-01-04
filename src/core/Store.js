@@ -4,7 +4,7 @@ const DataLoader = require('./DataLoader');
 const RedisDriver = require('../driver/RedisDriver');
 const MongoDriver = require('../driver/MongoDriver');
 const { Neo4jDriver, Neo4jRestDriver } = require('../driver/Neo4jDriver');
-const { lcFirst, mergeDeep, isScalarValue, keyPaths, pullGUID, toGUID } = require('../service/app.service');
+const { lcFirst, mergeDeep, isScalarValue, keyPaths } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
 const {
   ensureModel,
@@ -23,7 +23,6 @@ module.exports = class Store {
   constructor(parser, schema, stores, driverArgs = {}) {
     this.schema = schema;
     this.parser = parser;
-    this.subscriptions = [];
 
     const availableDrivers = {
       mongo: MongoDriver,
@@ -54,27 +53,28 @@ module.exports = class Store {
     schema.getModels().forEach(model => this.storeMap[model.getName()].dao.createIndexes(model.getAlias(), model.getIndexes()));
   }
 
-  toObject(model, doc) {
-    if (!doc) return undefined;
-
-    // Magic methods
-    // Object.defineProperty(doc, '$id', { value: toGUID(model, pullGUID(model, doc.id) || doc.id) }); // GUID
-    Object.defineProperty(doc, '$resolve', { value: field => this.resolve(model, doc, field) });
-    Object.defineProperty(doc, '$rollup', { value: (field, where) => this.rollup(model, doc, field, where) });
-    return doc;
+  toModel(model) {
+    if (typeof model === 'string') return this.schema.getModel(model);
+    return model;
   }
 
   get(model, id) {
-    const { parser, loader = this } = this;
-    const { dao } = this.storeMap[model];
-    const modelAlias = this.parser.getModelAlias(model);
+    model = this.toModel(model);
+    const modelName = model.getName();
+    const modelAlias = model.getAlias();
+    const { loader = this } = this;
+    const { dao } = this.storeMap[modelName];
 
-    return createSystemEvent('Query', { method: 'get', model, store: loader, parser, id }, async () => {
-      return dao.get(modelAlias, this.idValue(model, id)).then(doc => this.toObject(model, doc));
+    return createSystemEvent('Query', { method: 'get', model, store: loader, id }, async () => {
+      return dao.get(modelAlias, this.idValue(model, id));
     });
   }
 
-  query(model, query = {}) {
+  query(modelName, query = {}) {
+    modelName = this.toModel(modelName);
+    const model = modelName.getName();
+    // const modelName = model.getName();
+    // const modelAlias = model.getAlias();
     const { parser, loader = this } = this;
     const { fields, where = {}, sortBy = {}, limit } = query;
     const modelFields = Object.entries(this.parser.getModelFields(model)).filter(([, fieldDef]) => Parser.isScalarField(fieldDef)).map(([k]) => k);
@@ -97,7 +97,9 @@ module.exports = class Store {
     });
   }
 
-  find(model, query = {}) {
+  find(modelName, query = {}) {
+    modelName = this.toModel(modelName);
+    const model = modelName.getName();
     const { parser, loader = this } = this;
     const { where = {}, sortBy = {}, limit } = query;
     const { dao } = this.storeMap[model];
@@ -119,11 +121,13 @@ module.exports = class Store {
       // normalizeModelDataOut(parser, this, model, results);
       const filteredData = filterDataByCounts(loader, model, results, countFields);
       const sortedResults = sortData(filteredData, sortFields);
-      return sortedResults.slice(0, limit > 0 ? limit : undefined).map(doc => this.toObject(model, doc));
+      return sortedResults.slice(0, limit > 0 ? limit : undefined);
     });
   }
 
-  count(model, where = {}) {
+  count(modelName, where = {}) {
+    modelName = this.toModel(modelName);
+    const model = modelName.getName();
     const { parser, loader = this } = this;
     const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
@@ -137,7 +141,8 @@ module.exports = class Store {
       const resolvedWhere = await resolveModelWhereClause(parser, loader, model, where);
 
       if (countPaths.length) {
-        const results = await this.query(modelAlias, { where: resolvedWhere, fields: countFields });
+        const ma = this.schema.getModel(modelAlias);
+        const results = await this.query(ma, { where: resolvedWhere, fields: countFields });
         const filteredData = filterDataByCounts(loader, model, results, countFields);
         return filteredData.length;
       }
@@ -146,7 +151,9 @@ module.exports = class Store {
     });
   }
 
-  async create(model, data) {
+  async create(modelName, data) {
+    modelName = this.toModel(modelName);
+    const model = modelName.getName();
     const { parser, loader = this } = this;
     const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
@@ -155,13 +162,15 @@ module.exports = class Store {
     await validateModelData(parser, this, model, data, {}, 'create');
 
     return createSystemEvent('Mutation', { method: 'create', model, store: loader, parser, data }, async () => {
-      const results = await dao.create(modelAlias, data).then(doc => this.toObject(model, doc));
+      const results = await dao.create(modelAlias, data);
       // normalizeModelDataOut(parser, this, model, results);
       return results;
     });
   }
 
-  async update(model, id, data) {
+  async update(modelName, id, data) {
+    modelName = this.toModel(modelName);
+    const model = modelName.getName();
     const { parser, loader = this } = this;
     const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
@@ -172,13 +181,15 @@ module.exports = class Store {
 
     return createSystemEvent('Mutation', { method: 'update', model, store: loader, parser, id, data }, async () => {
       const merged = normalizeModelData(parser, loader, model, mergeDeep(doc, data));
-      const results = await dao.replace(modelAlias, this.idValue(model, id), data, merged).then(res => this.toObject(model, res));
+      const results = await dao.replace(modelAlias, this.idValue(model, id), data, merged);
       // normalizeModelDataOut(parser, this, model, results);
       return results;
     });
   }
 
-  async delete(model, id) {
+  async delete(modelName, id) {
+    modelName = this.toModel(modelName);
+    const model = modelName.getName();
     const { parser, loader = this } = this;
     const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
@@ -191,7 +202,9 @@ module.exports = class Store {
     });
   }
 
-  dropModel(model) {
+  dropModel(modelName) {
+    modelName = this.toModel(modelName);
+    const model = modelName.getName();
     const { parser } = this;
     const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
@@ -199,18 +212,16 @@ module.exports = class Store {
   }
 
   idValue(model, id) {
-    const realId = pullGUID(model, id) || id;
-    const { idValue } = this.storeMap[model];
-    return idValue(realId);
-  }
-
-  idValueOut(model, id) {
-    const realId = pullGUID(model, id) || id;
-    return toGUID(realId);
+    model = this.toModel(model);
+    const modelName = model.getName();
+    const { idValue } = this.storeMap[modelName];
+    return idValue(id);
   }
 
   idField(model) {
-    return this.storeMap[model].idField;
+    model = this.toModel(model);
+    const modelName = model.getName();
+    return this.storeMap[modelName].idField;
   }
 
   dataLoader() {
@@ -219,7 +230,9 @@ module.exports = class Store {
   }
 
   // You may want to move these out of here?
-  rollup(model, doc, field, w = {}) {
+  rollup(modelName, doc, field, w = {}) {
+    modelName = this.toModel(modelName);
+    const model = modelName.getName();
     const where = _.cloneDeep(w);
     const { parser, loader = this } = this;
     const [, ref, by] = parser.getModelFieldAndDataRef(model, field);
@@ -238,7 +251,9 @@ module.exports = class Store {
     return loader.count(ref, where);
   }
 
-  resolve(model, doc, field, q = {}) {
+  resolve(modelName, doc, field, q = {}) {
+    modelName = this.toModel(modelName);
+    const model = modelName.getName();
     const query = _.cloneDeep(q);
     const { parser, loader = this } = this;
     const fieldDef = parser.getModelFieldDef(model, field);
@@ -269,7 +284,9 @@ module.exports = class Store {
     return loader.get(dataType, id, fieldDef.required);
   }
 
-  async hydrate(model, results, query = {}) {
+  async hydrate(modelName, results, query = {}) {
+    modelName = this.toModel(modelName);
+    const model = modelName.getName();
     const { loader = this } = this;
     const { fields = {} } = query;
     const isArray = Array.isArray(results);

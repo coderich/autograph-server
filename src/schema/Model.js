@@ -36,6 +36,10 @@ module.exports = class Model {
     return this.fields.filter(field => !field.isVirtual() && !field.isImmutable());
   }
 
+  getScalarFields() {
+    return this.fields.filter(field => field.isScalar());
+  }
+
   getAlias() {
     return this.options.alias || this.getName();
   }
@@ -54,5 +58,9 @@ module.exports = class Model {
 
   isVisible() {
     return !this.isHidden();
+  }
+
+  toGUID(id) {
+    return Buffer.from(`${this.getName()},${id}`).toString('base64');
   }
 };

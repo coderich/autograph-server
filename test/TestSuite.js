@@ -92,7 +92,7 @@ module.exports = (name, db = 'mongo') => {
           break;
         }
         case 'Resolver': {
-          dao = new Client(parser, 'http://localhost:3000/graphql');
+          dao = new Client('http://localhost:3000/graphql');
           const apolloServer = makeApolloServer(executableSchema, store, Boolean(name === 'DataLoader'));
           await apolloServer.start(3000);
           break;
@@ -105,7 +105,7 @@ module.exports = (name, db = 'mongo') => {
 
       //
       await timeout(2000);
-      await Promise.all(parser.getModelNames().map(model => store.dropModel(model)));
+      await Promise.all(schma.getModels().map(model => store.dropModel(model)));
       await timeout(500);
     });
 

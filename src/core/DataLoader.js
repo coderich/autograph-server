@@ -8,7 +8,7 @@ module.exports = class {
     this.loader = new DataLoader((keys) => {
       return Promise.all(keys.map(({ op, model, args }) => this.store[op](model, ...args)));
     }, {
-      cacheKeyFn: key => hashObject(key),
+      cacheKeyFn: key => hashObject({ ...key, model: store.toModel(key.model).getName() }),
     });
   }
 

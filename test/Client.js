@@ -3,13 +3,12 @@ const { isScalarField } = require('../src/core/Parser');
 const { ucFirst, proxyDeep } = require('../src/service/app.service');
 
 module.exports = class {
-  constructor(parser, endpoint) {
-    this.parser = parser;
+  constructor(endpoint) {
     this.endpoint = endpoint;
   }
 
   query(op, method, model, data = {}) {
-    const fields = this.parser.getModelFields(model);
+    // const fields = this.parser.getModelFields(model);
     const scalars = Object.entries(fields).filter(([, field]) => isScalarField(field)).map(([field]) => field);
     const objects = Object.entries(fields).filter(([, field]) => !isScalarField(field)).map(([field]) => field);
     return Request(this.endpoint, `${op} ${method}${model} (${data.id ? '$id: ID! ' : ''}$data: ${model}Input${ucFirst(method)}!) {
