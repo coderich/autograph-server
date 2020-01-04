@@ -172,7 +172,7 @@ exports.normalizeModelData = (store, model, data) => {
   }, data);
 };
 
-exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias = '', lookups2D = [], index = 0) => {
+exports.resolveModelWhereClause = (store, model, where = {}, fieldAlias = '', lookups2D = [], index = 0) => {
   model = store.toModel(model);
 
   const mName = model.getName();
@@ -183,7 +183,7 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
     parentFieldAlias: fieldAlias,
     parentModelName: mName,
     parentFields: fields,
-    parentDataRefs: new Set(parser.getModelDataRefs(mName)),
+    parentDataRefs: new Set(model.getDataRefFields().map(f => f.getDataRef())),
     lookups: [],
   };
 
@@ -198,7 +198,7 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
 
         if (ref) {
           if (isPlainObject(value)) {
-            exports.resolveModelWhereClause(parser, store, ref, value, field.getAlias(key), lookups2D, index + 1);
+            exports.resolveModelWhereClause(store, ref, value, field.getAlias(key), lookups2D, index + 1);
             return prev;
           }
           if (Array.isArray(value)) {
@@ -209,13 +209,13 @@ exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias 
               scalars.push(v);
               return null;
             }).filter(v => v);
-            norm.forEach(val => exports.resolveModelWhereClause(parser, store, ref, val, field.getAlias(key), lookups2D, index + 1));
+            norm.forEach(val => exports.resolveModelWhereClause(store, ref, val, field.getAlias(key), lookups2D, index + 1));
             if (scalars.length) prev[key] = scalars;
             return prev;
           }
 
           if (field.isVirtual()) {
-            exports.resolveModelWhereClause(parser, store, ref, { [store.idField(ref)]: value }, field.getAlias(key), lookups2D, index + 1);
+            exports.resolveModelWhereClause(store, ref, { [store.idField(ref)]: value }, field.getAlias(key), lookups2D, index + 1);
             return prev;
           }
         }

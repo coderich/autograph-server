@@ -112,7 +112,7 @@ module.exports = class Store {
     normalizeModelWhere(this, model, where);
 
     return createSystemEvent('Query', { method: 'find', model, store: loader, query }, async () => {
-      const resolvedWhere = await resolveModelWhereClause(parser, loader, modelName, where);
+      const resolvedWhere = await resolveModelWhereClause(loader, modelName, where);
       const results = await dao.find(modelAlias, resolvedWhere);
       const filteredData = filterDataByCounts(loader, model, results, countFields);
       const sortedResults = sortData(filteredData, sortFields);
@@ -133,7 +133,7 @@ module.exports = class Store {
     normalizeModelWhere(this, model, where);
 
     return createSystemEvent('Query', { method: 'count', model, store: loader, where }, async () => {
-      const resolvedWhere = await resolveModelWhereClause(parser, loader, modelName, where);
+      const resolvedWhere = await resolveModelWhereClause(loader, modelName, where);
 
       if (countPaths.length) {
         const ma = this.schema.getModel(modelAlias);
