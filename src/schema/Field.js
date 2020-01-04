@@ -93,6 +93,10 @@ module.exports = class Field {
     return isScalarDataType(ref) ? null : ref;
   }
 
+  getModelRef() {
+    return this.schema.getModel(this.getDataRef());
+  }
+
   getAlias(alias) {
     return this.options.alias || alias || this.getName();
   }

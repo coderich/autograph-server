@@ -11,8 +11,6 @@ exports.ensureModel = (store, model, id) => {
 };
 
 exports.validateModelData = (store, model, data, oldData, op) => {
-  model = store.toModel(model);
-
   const promises = [];
   const modelName = model.getName();
   const fields = model.getFields();
@@ -20,7 +18,7 @@ exports.validateModelData = (store, model, data, oldData, op) => {
   fields.forEach((field) => {
     const key = field.getName();
     const rules = field.getRules() || [];
-    const ref = field.getDataRef();
+    const ref = field.getModelRef();
     const isTypeArray = field.isArray();
     const value = data[key];
     const path = `${modelName}.${key}`;
@@ -62,8 +60,6 @@ exports.validateModelData = (store, model, data, oldData, op) => {
 };
 
 exports.ensureModelArrayTypes = (store, model, data) => {
-  model = store.toModel(model);
-
   return Object.entries(data).reduce((prev, [key, value]) => {
     const field = model.getField(key);
     if (value == null || field == null) return prev;
@@ -106,13 +102,11 @@ exports.applyFieldValueTransform = (field, value) => {
 };
 
 exports.normalizeModelWhere = (store, model, data) => {
-  model = store.toModel(model);
-
   return Object.entries(data).reduce((prev, [key, value]) => {
     const field = model.getField(key);
     if (value == null || field == null) return prev;
 
-    const ref = field.getDataRef();
+    const ref = field.getModelRef();
 
     if (ref) {
       if (isPlainObject(value)) {
@@ -137,13 +131,11 @@ exports.normalizeModelWhere = (store, model, data) => {
 };
 
 exports.normalizeModelData = (store, model, data) => {
-  model = store.toModel(model);
-
   return Object.entries(data).reduce((prev, [key, value]) => {
     const field = model.getField(key);
     if (value == null || field == null) return prev;
 
-    const ref = field.getDataRef();
+    const ref = field.getModelRef();
     const type = field.getDataType();
 
     if (isPlainObject(value) && ref) {
@@ -172,8 +164,6 @@ exports.normalizeModelData = (store, model, data) => {
 };
 
 exports.resolveModelWhereClause = (store, model, where = {}, fieldAlias = '', lookups2D = [], index = 0) => {
-  model = store.toModel(model);
-
   const mName = model.getName();
   const fields = model.getFields();
 
@@ -193,7 +183,7 @@ exports.resolveModelWhereClause = (store, model, where = {}, fieldAlias = '', lo
       const field = model.getField(key);
 
       if (field) {
-        const ref = field.getDataRef();
+        const ref = field.getModelRef();
 
         if (ref) {
           if (isPlainObject(value)) {
