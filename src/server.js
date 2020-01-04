@@ -1,5 +1,5 @@
 const { ApolloServer, makeExecutableSchema } = require('apollo-server');
-const Schema = require('./schema');
+const Schema = require('./schema/Schema');
 const Parser = require('./core/Parser');
 const Store = require('./core/Store');
 const SchemaService = require('./service/schema.service');
@@ -8,7 +8,7 @@ const { schema: schemaDef, stores } = require('../schema');
 const schema = new Schema(schemaDef);
 const parser = new Parser(schemaDef);
 const store = new Store(parser, schema, stores);
-const graphSchema = SchemaService.createGraphSchema(parser);
+const graphSchema = SchemaService.createGraphSchema(parser, schema);
 const executableSchema = makeExecutableSchema(graphSchema);
 
 const apolloServer = new ApolloServer({

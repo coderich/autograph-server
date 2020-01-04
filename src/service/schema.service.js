@@ -18,23 +18,23 @@ const getFieldType = (model, field, fieldDef, suffix) => {
 };
 
 /* eslint-disable indent, no-underscore-dangle */
-exports.createGraphSchema = (parser) => {
+exports.createGraphSchema = (parser, schema) => {
   const resolver = new Resolver(parser);
 
   Emitter.on('postMutation', ({ store }) => {
     const loader = (store instanceof DataLoader ? store : store.dataLoader());
-    parser.getModelNames(false).forEach(model => pubsub.publish(`${model}Trigger`, { store: loader }));
+    schema.getModels(false).forEach(model => pubsub.publish(`${model.getName()}Trigger`, { store: loader }));
   });
 
   Emitter.on('preMutation', ({ method, store }, next) => {
     const beforeStore = (store instanceof DataLoader ? store : store.dataLoader());
     const afterStore = store.dataLoader();
 
-    Promise.all(parser.getModelNames(false).map((model) => {
+    Promise.all(schema.getModels(false).map((model) => {
       const payload = { method, beforeStore, afterStore, next: undefined };
 
       return new Promise((resolve) => {
-        pubsub.publish(`${model}Changed`, payload);
+        pubsub.publish(`${model.getName()}Changed`, payload);
 
         setTimeout(() => {
           if (!payload.next) return resolve();
@@ -47,77 +47,54 @@ exports.createGraphSchema = (parser) => {
   });
 
   return {
-    typeDefs: parser.getModelNamesAndFields().map(([model, fields]) => `
-      type ${model} implements Node {
-        id: ID!
-        ${Object.entries(fields).map(([field, fieldDef]) => {
-          const ref = Parser.getFieldDataRef(fieldDef);
-          if (ref) return `${field}(query: ${ref}InputQuery): ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`;
-          return `${field}: ${getFieldType(model, field, fieldDef).concat(fieldDef.required ? '!' : '')}`;
-        })}
-        countSelf(where: ${model}InputWhere): Int!
-        ${parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).map(([field, ref]) => `count${ucFirst(field)}(where: ${ref}InputWhere): Int!`)}
-      }
+    typeDefs: schema.getModels().map((model) => {
+      const modelName = model.getName();
 
-      type ${model}Subscription {
-        op: String!
-        model: ${model}!
-      }
-
-      input ${model}InputCreate {
-        ${
-          Object.entries(fields)
-          .filter(([field, fieldDef]) => !fieldDef.by)
-          .map(([field, fieldDef]) => `${field}: ${getFieldType(model, field, fieldDef, 'InputCreate').concat(fieldDef.required ? '!' : '')}`)
+      return `
+        type ${modelName} implements Node {
+          id: ID!
+          ${model.getFields().map((field) => {
+            const fieldName = field.getName();
+            const ref = field.getDataRef();
+            if (ref) return `${fieldName}(query: ${ref}InputQuery): ${field.toGQL().concat(field.isRequired() ? '!' : '')}`;
+            return `${fieldName}: ${field.toGQL().concat(field.isRequired() ? '!' : '')}`;
+          })}
+          countSelf(where: ${modelName}InputWhere): Int!
+          ${model.getCountableFields().map(field => `count${ucFirst(field.getName())}(where: ${field.getDataRef()}InputWhere): Int!`)}
         }
-      }
 
-      input ${model}InputUpdate {
-        ${
-          Object.entries(fields)
-          .filter(([field, fieldDef]) => !fieldDef.by && !fieldDef.immutable)
-          .map(([field, fieldDef]) => `${field}: ${getFieldType(model, field, fieldDef, 'InputUpdate')}`)
+        type ${modelName}Subscription {
+          op: String!
+          model: ${modelName}!
         }
-      }
 
-      input ${model}InputWhere {
-        ${
-          Object.entries(fields).map(([field, fieldDef]) => {
-            const ref = Parser.getFieldDataRef(fieldDef);
-            return `${field}: ${ref ? `${ucFirst(ref)}InputWhere` : 'String'}`;
-          }).concat(
-            'countSelf: String',
-            parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).map(([field, ref]) => `count${ucFirst(field)}: String`),
-          )
+        input ${modelName}InputCreate {
+          ${model.getCreateFields().map(field => `${field.getName()}: ${field.toGQL('InputCreate').concat(field.isRequired() ? '!' : '')}`)}
         }
-      }
 
-      input ${model}InputSort {
-        ${
-          Object.entries(fields).map(([field, fieldDef]) => {
-            const ref = Parser.getFieldDataRef(fieldDef);
-            return `${field}: ${ref ? `${ucFirst(ref)}InputSort` : 'SortOrderEnum'}`;
-          }).concat(
-            'countSelf: SortOrderEnum',
-            parser.getModelFieldsAndDataRefs(model).filter(([,,, isArray]) => isArray).map(([field, ref]) => `count${ucFirst(field)}: SortOrderEnum`),
-          )
+        input ${modelName}InputUpdate {
+          ${model.getUpdateFields().map(field => `${field.getName()}: ${field.toGQL('InputUpdate')}`)}
         }
-      }
 
-      input ${model}InputQuery {
-        where: ${model}InputWhere
-        sortBy: ${model}InputSort
-        limit: Int
-      }
+        input ${modelName}InputWhere {
+          ${model.getFields().map(field => `${field.getName()}: ${field.getDataRef() ? `${ucFirst(field.getDataRef())}InputWhere` : 'String'}`)}
+          countSelf: String
+          ${model.getCountableFields().map(field => `count${ucFirst(field.getName())}: String`)}
+        }
 
-      ${
-        Object.entries(fields).filter(([field, fieldDef]) => fieldDef.enum).map(([field, fieldDef]) => {
-          return `
-            enum ${model}${ucFirst(field)}Enum { ${fieldDef.enum.join(' ')} }
-          `;
-        })
-      }
-    `).concat([
+        input ${modelName}InputSort {
+          ${model.getFields().map(field => `${field.getName()}: ${field.getDataRef() ? `${ucFirst(field.getDataRef())}InputSort` : 'SortOrderEnum'}`)}
+          countSelf: SortOrderEnum
+          ${model.getCountableFields().map(field => `count${ucFirst(field.getName())}: SortOrderEnum`)}
+        }
+
+        input ${modelName}InputQuery {
+          where: ${modelName}InputWhere
+          sortBy: ${modelName}InputSort
+          limit: Int
+        }
+      `;
+    }).concat([
       `
       type Connection {
         edges: [Edge]
