@@ -1,12 +1,27 @@
 const Field = require('./Field');
 
 module.exports = class Model {
-  constructor(schema, name, options = {}) {
+  constructor(schema, name, driver, options = {}) {
     this.schema = schema;
     this.name = name;
+    this.driver = driver;
     this.options = options;
     this.fields = Object.entries(options.fields).map(([field, def]) => new Field(schema, this, field, def));
+
+    // Create indexes
+    driver.dao.createIndexes(this.getAlias(), this.getIndexes());
   }
+
+  // CRUD
+  get(id) {
+    return this.driver.dao.get(this.getAlias(), this.idValue(id));
+  }
+
+  idValue(id) {
+    return this.driver.idValue(id);
+  }
+
+  //
 
   getName() {
     return this.name;
@@ -52,8 +67,8 @@ module.exports = class Model {
     return this.options.indexes || [];
   }
 
-  getDriver() {
-    return this.options.store || 'default';
+  getDriverName() {
+    return this.options.driver || 'default';
   }
 
   isHidden() {

@@ -46,14 +46,14 @@ module.exports = (name, db = 'mongo') => {
     beforeAll(async () => {
       jest.setTimeout(10000);
 
-      const storeArgs = {};
+      const driverArgs = {};
 
       // Start in-memory db
       switch (db) {
         case 'redis': {
           // const redisClient = Redis.createClient();
           stores.default.type = 'redis';
-          // storeArgs.redis = redisClient;
+          // driverArgs.redis = redisClient;
           break;
         }
         case 'neo4j': {
@@ -74,8 +74,8 @@ module.exports = (name, db = 'mongo') => {
       }
 
       // Create core classes
-      const schma = new Schema(schema);
-      const store = new Store(schma, stores, storeArgs);
+      const schma = new Schema(schema, stores);
+      const store = new Store(schma, stores, driverArgs);
       const graphSchema = createGraphSchema(schma);
       const executableSchema = makeExecutableSchema(graphSchema);
 

@@ -4,7 +4,7 @@ const Store = require('./core/Store');
 const SchemaService = require('./service/schema.service');
 const { schema: schemaDef, stores } = require('../schema');
 
-const schema = new Schema(schemaDef);
+const schema = new Schema(schemaDef, stores);
 const store = new Store(schema, stores);
 const graphSchema = SchemaService.createGraphSchema(schema);
 const executableSchema = makeExecutableSchema(graphSchema);

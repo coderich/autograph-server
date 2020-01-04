@@ -42,12 +42,9 @@ module.exports = class Store {
     // Create model store map
     this.storeMap = schema.getModels().reduce((prev, model) => {
       return Object.assign(prev, {
-        [model.getName()]: drivers[model.getDriver()],
+        [model.getName()]: drivers[model.getDriverName()],
       });
     }, {});
-
-    // Create model indexes
-    schema.getModels().forEach(model => this.storeMap[model.getName()].dao.createIndexes(model.getAlias(), model.getIndexes()));
   }
 
   toModel(model) {
@@ -57,13 +54,10 @@ module.exports = class Store {
 
   get(model, id) {
     model = this.toModel(model);
-    const modelName = model.getName();
-    const modelAlias = model.getAlias();
     const { loader = this } = this;
-    const { dao } = this.storeMap[modelName];
 
     return createSystemEvent('Query', { method: 'get', model, store: loader, id }, async () => {
-      return dao.get(modelAlias, this.idValue(model, id));
+      return model.get(id);
     });
   }
 
