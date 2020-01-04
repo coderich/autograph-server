@@ -62,6 +62,10 @@ module.exports = class Field {
     return this.options.transforms;
   }
 
+  getRules() {
+    return this.options.rules;
+  }
+
   isArray() {
     return Array.isArray(this.getDataType());
   }

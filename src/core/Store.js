@@ -150,11 +150,11 @@ module.exports = class Store {
     model = this.toModel(model);
     const modelName = model.getName();
     const modelAlias = model.getAlias();
-    const { parser, loader = this } = this;
+    const { loader = this } = this;
     const { dao } = this.storeMap[modelName];
     ensureModelArrayTypes(this, model, data);
     normalizeModelData(this, model, data);
-    await validateModelData(parser, this, modelName, data, {}, 'create');
+    await validateModelData(this, modelName, data, {}, 'create');
 
     return createSystemEvent('Mutation', { method: 'create', model, store: loader, data }, async () => {
       const results = await dao.create(modelAlias, data);
@@ -171,9 +171,9 @@ module.exports = class Store {
     const doc = await ensureModel(this, model, id);
     ensureModelArrayTypes(this, model, data);
     normalizeModelData(this, model, data);
-    await validateModelData(parser, this, model, data, doc, 'update');
+    await validateModelData(this, model, data, doc, 'update');
 
-    return createSystemEvent('Mutation', { method: 'update', model, store: loader, parser, id, data }, async () => {
+    return createSystemEvent('Mutation', { method: 'update', model, store: loader, id, data }, async () => {
       const merged = normalizeModelData(loader, model, mergeDeep(doc, data));
       const results = await dao.replace(modelAlias, this.idValue(model, id), data, merged);
       return results;

@@ -11,17 +11,21 @@ exports.ensureModel = (store, model, id) => {
   });
 };
 
-exports.validateModelData = (parser, store, model, data, oldData, op) => {
-  const promises = [];
-  const fields = parser.getModelFields(model);
+exports.validateModelData = (store, model, data, oldData, op) => {
+  model = store.toModel(model);
 
-  Object.entries(fields).forEach(([key, field]) => {
+  const promises = [];
+  const modelName = model.getName();
+  const fields = model.getFields();
+
+  fields.forEach((field) => {
+    const key = field.getName();
+    const rules = field.getRules() || [];
+    const ref = field.getDataRef();
+    const isTypeArray = field.isArray();
     const value = data[key];
-    const rules = field.rules || [];
-    const ref = Parser.getFieldDataRef(field);
-    const path = `${model}.${key}`;
+    const path = `${modelName}.${key}`;
     const isValueArray = Array.isArray(value);
-    const isTypeArray = Boolean(Parser.getFieldArrayType(field));
 
     // User-Defined Validation Rules
     if (value == null || isScalarValue(value) || value instanceof ObjectID) {
@@ -37,8 +41,8 @@ exports.validateModelData = (parser, store, model, data, oldData, op) => {
     // Recursive/Promises lookup
     if (isValueArray) {
       if (ref) {
-        if (field.embedded) {
-          promises.push(...value.map(v => exports.validateModelData(parser, store, ref, v, oldData, op)));
+        if (field.isEmbedded()) {
+          promises.push(...value.map(v => exports.validateModelData(store, ref, v, oldData, op)));
         } else {
           promises.push(...value.map(v => exports.ensureModel(store, ref, v)));
           value.forEach(v => rules.forEach(rule => rule(v, oldData, op, path)));
@@ -47,8 +51,8 @@ exports.validateModelData = (parser, store, model, data, oldData, op) => {
         value.forEach(v => rules.forEach(rule => rule(v, oldData, op, path)));
       }
     } else if (ref) {
-      if (field.embedded) {
-        promises.push(exports.validateModelData(parser, store, ref, value, oldData, op));
+      if (field.isEmbedded()) {
+        promises.push(exports.validateModelData(store, ref, value, oldData, op));
       } else {
         promises.push(exports.ensureModel(store, ref, value));
       }
