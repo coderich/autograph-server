@@ -162,12 +162,12 @@ module.exports = class Store {
     });
   }
 
-  async update(modelName, id, data) {
-    modelName = this.toModel(modelName);
-    const model = modelName.getName();
-    const { parser, loader = this } = this;
-    const { dao } = this.storeMap[model];
-    const modelAlias = parser.getModelAlias(model);
+  async update(model, id, data) {
+    model = this.toModel(model);
+    const modelName = model.getName();
+    const modelAlias = model.getAlias();
+    const { loader = this } = this;
+    const { dao } = this.storeMap[modelName];
     const doc = await ensureModel(this, model, id);
     ensureModelArrayTypes(this, model, data);
     normalizeModelData(this, model, data);
