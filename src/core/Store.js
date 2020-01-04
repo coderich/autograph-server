@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const Parser = require('./Parser');
 const DataLoader = require('./DataLoader');
 const RedisDriver = require('../driver/RedisDriver');
 const MongoDriver = require('../driver/MongoDriver');
@@ -19,9 +18,8 @@ const {
 } = require('../service/data.service');
 
 module.exports = class Store {
-  constructor(parser, schema, stores, driverArgs = {}) {
+  constructor(schema, stores, driverArgs = {}) {
     this.schema = schema;
-    this.parser = parser;
 
     const availableDrivers = {
       mongo: MongoDriver,
@@ -97,7 +95,7 @@ module.exports = class Store {
     model = this.toModel(model);
     const modelName = model.getName();
     const modelAlias = model.getAlias();
-    const { parser, loader = this } = this;
+    const { loader = this } = this;
     const { where = {}, sortBy = {}, limit } = query;
     const { dao } = this.storeMap[modelName];
     const sortFields = keyPaths(sortBy).reduce((prev, path) => {
@@ -124,7 +122,7 @@ module.exports = class Store {
     model = this.toModel(model);
     const modelName = model.getName();
     const modelAlias = model.getAlias();
-    const { parser, loader = this } = this;
+    const { loader = this } = this;
     const { dao } = this.storeMap[modelName];
     const countPaths = keyPaths(where).filter(p => p.indexOf('count') === 0 || p.indexOf('.count') > 0);
     const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});

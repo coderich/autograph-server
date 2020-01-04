@@ -5,7 +5,6 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 const { createGraphSchema } = require('../src/service/schema.service');
 const { timeout } = require('../src/service/app.service');
 const Schema = require('../src/schema/Schema');
-const Parser = require('../src/core/Parser');
 const Store = require('../src/core/Store');
 const { schema, stores } = require('../schema');
 
@@ -76,8 +75,7 @@ module.exports = (name, db = 'mongo') => {
 
       // Create core classes
       const schma = new Schema(schema);
-      const parser = new Parser(schema);
-      const store = new Store(parser, schma, stores, storeArgs);
+      const store = new Store(schma, stores, storeArgs);
       const graphSchema = createGraphSchema(schma);
       const executableSchema = makeExecutableSchema(graphSchema);
 
