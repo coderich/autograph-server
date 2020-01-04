@@ -87,11 +87,8 @@ module.exports = class Store {
 
   find(model, query = {}) {
     model = this.toModel(model);
-    const modelName = model.getName();
-    const modelAlias = model.getAlias();
     const { loader = this } = this;
     const { where = {}, sortBy = {}, limit } = query;
-    const { dao } = this.storeMap[modelName];
     const sortFields = keyPaths(sortBy).reduce((prev, path) => {
       if (path.indexOf('count') === 0 || path.indexOf('.count') === 0) return Object.assign(prev, { [path]: _.get(sortBy, path) });
       const $path = path.split('.').map(s => `$${s}`).join('.');
@@ -104,8 +101,8 @@ module.exports = class Store {
     normalizeModelWhere(this, model, where);
 
     return createSystemEvent('Query', { method: 'find', model, store: loader, query }, async () => {
-      const resolvedWhere = await resolveModelWhereClause(loader, modelName, where);
-      const results = await dao.find(modelAlias, resolvedWhere);
+      const resolvedWhere = await resolveModelWhereClause(loader, model, where);
+      const results = await model.find(resolvedWhere);
       const filteredData = filterDataByCounts(loader, model, results, countFields);
       const sortedResults = sortData(filteredData, sortFields);
       return sortedResults.slice(0, limit > 0 ? limit : undefined);
@@ -140,17 +137,13 @@ module.exports = class Store {
 
   async create(model, data) {
     model = this.toModel(model);
-    const modelName = model.getName();
-    const modelAlias = model.getAlias();
     const { loader = this } = this;
-    const { dao } = this.storeMap[modelName];
     ensureModelArrayTypes(this, model, data);
     normalizeModelData(this, model, data);
-    await validateModelData(this, modelName, data, {}, 'create');
+    await validateModelData(this, model, data, {}, 'create');
 
     return createSystemEvent('Mutation', { method: 'create', model, store: loader, data }, async () => {
-      const results = await dao.create(modelAlias, data);
-      return results;
+      return model.create(data);
     });
   }
 

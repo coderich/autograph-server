@@ -18,7 +18,7 @@ module.exports = class Schema {
     const drivers = Object.entries(stores).reduce((prev, [key, { type, uri, options }]) => {
       return Object.assign(prev, {
         [key]: {
-          dao: new availableDrivers[type](uri, schema, options, driverArgs[type]),
+          dao: new availableDrivers[type](uri, this, options, driverArgs[type]),
           idValue: availableDrivers[type].idValue,
           idField: type === 'mongo' ? '_id' : 'id',
         },

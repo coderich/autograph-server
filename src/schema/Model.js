@@ -1,4 +1,15 @@
 const Field = require('./Field');
+// const {
+//   ensureModel,
+//   ensureModelArrayTypes,
+//   validateModelData,
+//   normalizeModelData,
+//   normalizeModelWhere,
+//   resolveModelWhereClause,
+//   resolveReferentialIntegrity,
+//   sortData,
+//   filterDataByCounts,
+// } = require('../service/data.service');
 
 module.exports = class Model {
   constructor(schema, name, driver, options = {}) {
@@ -15,6 +26,14 @@ module.exports = class Model {
   // CRUD
   get(id) {
     return this.driver.dao.get(this.getAlias(), this.idValue(id));
+  }
+
+  find(where = {}) {
+    return this.driver.dao.find(this.getAlias(), where);
+  }
+
+  create(data) {
+    return this.driver.dao.create(this.getAlias(), data);
   }
 
   idValue(id) {
