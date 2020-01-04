@@ -1,6 +1,5 @@
 const _ = require('lodash');
 const { ObjectID } = require('mongodb');
-const Parser = require('../core/Parser');
 const { NotFoundError, BadRequestError } = require('../service/error.service');
 const { uniq, globToRegexp, isScalarValue, isPlainObject, promiseChain, isIdValue, keyPaths } = require('../service/app.service');
 
