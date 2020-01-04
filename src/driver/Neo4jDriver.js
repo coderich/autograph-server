@@ -1,6 +1,5 @@
 const Axios = require('axios');
 const Neo4j = require('neo4j-driver');
-const PicoMatch = require('picomatch');
 const { globToRegex, proxyDeep, isScalarValue } = require('../service/app.service');
 
 class Cypher {
@@ -118,14 +117,14 @@ class Cypher {
   }
 }
 
-exports.Neo4jRest = class Neo4jRest extends Cypher {
+exports.Neo4jRestDriver = class Neo4jRestDriver extends Cypher {
   constructor(uri, options) {
     super(uri, options);
     this.cypher = Axios.get(`${uri}/db/data/`).then(({ data }) => data.cypher);
   }
 
   query(query, params = {}) {
-    return this.cypher.then(url => Axios.post(url, { query, params: Neo4jRest.serialize(params) }).then(({ data }) => Neo4jRest.toObject(data.data || [])));
+    return this.cypher.then(url => Axios.post(url, { query, params: Neo4jRestDriver.serialize(params) }).then(({ data }) => Neo4jRestDriver.toObject(data.data || [])));
   }
 
   static toObject(records) {
@@ -133,7 +132,7 @@ exports.Neo4jRest = class Neo4jRest extends Cypher {
       if (isScalarValue(result)) return result;
 
       const { metadata, data } = result;
-      return Object.defineProperty(Neo4jRest.deserialize(data), 'id', { enumerable: true, writable: true, value: metadata.id });
+      return Object.defineProperty(Neo4jRestDriver.deserialize(data), 'id', { enumerable: true, writable: true, value: metadata.id });
     });
   }
 };

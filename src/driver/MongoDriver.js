@@ -7,7 +7,7 @@ const toObject = (doc) => {
   return Object.defineProperty(doc, 'id', { enumerable: true, writable: true, value: doc._id }); // eslint-disable-line
 };
 
-module.exports = class MongoStore {
+module.exports = class MongoDriver {
   constructor(uri, parser) {
     this.parser = parser;
     this.connection = MongoClient.connect(uri, { useUnifiedTopology: true });
@@ -22,12 +22,12 @@ module.exports = class MongoStore {
   }
 
   find(model, where = {}) {
-    const $where = MongoStore.normalizeWhereClause(model, this.parser, where);
+    const $where = MongoDriver.normalizeWhereClause(model, this.parser, where);
     return this.query(model, 'aggregate', $where).then(results => results.map(toObject).toArray());
   }
 
   count(model, where = {}) {
-    const $where = MongoStore.normalizeWhereClause(model, this.parser, where, true);
+    const $where = MongoDriver.normalizeWhereClause(model, this.parser, where, true);
     return this.query(model, 'aggregate', $where).then(cursor => cursor.next().then(data => (data ? data.count : 0)));
   }
 

@@ -1,11 +1,13 @@
 const { ApolloServer, makeExecutableSchema } = require('apollo-server');
+const Schema = require('./schema');
 const Parser = require('./core/Parser');
 const Store = require('./core/Store');
 const SchemaService = require('./service/schema.service');
-const { schema, stores } = require('../schema');
+const { schema: schemaDef, stores } = require('../schema');
 
-const parser = new Parser(schema);
-const store = new Store(parser, stores);
+const schema = new Schema(schemaDef);
+const parser = new Parser(schemaDef);
+const store = new Store(parser, schema, stores);
 const graphSchema = SchemaService.createGraphSchema(parser);
 const executableSchema = makeExecutableSchema(graphSchema);
 

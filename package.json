@@ -19,6 +19,8 @@
     "test": "jest test --passWithNoTests --detectOpenHandles --forceExit --runInBand",
     "test-inspect": "node --inspect-brk --inspect ./node_modules/.bin/jest test --passWithNoTests --detectOpenHandles --forceExit --runInBand",
     "inspect": "node --expose-gc --inspect=9222 ./src/server",
+    "lint": "ratchet lint",
+    "ratchet": "ratchet",
     "uuid": "uuid"
   },
   "dependencies": {
@@ -41,6 +43,7 @@
     "validator": "^12.1.0"
   },
   "devDependencies": {
+    "@coderich/ratchet": "^1.2.5",
     "apollo-server": "^2.9.15",
     "eslint": "^6.7.2",
     "eslint-config-airbnb": "^18.0.1",

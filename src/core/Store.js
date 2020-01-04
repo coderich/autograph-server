@@ -1,10 +1,10 @@
 const _ = require('lodash');
 const Parser = require('./Parser');
 const DataLoader = require('./DataLoader');
-const RedisStore = require('../store/RedisStore');
-const MongoStore = require('../store/MongoStore');
-const { Neo4jDriver, Neo4jRest } = require('../store/Neo4jStore');
-const { lcFirst, mergeDeep, isScalarValue, keyPaths, pullGUID, fromGUID, toGUID } = require('../service/app.service');
+const RedisDriver = require('../driver/RedisDriver');
+const MongoDriver = require('../driver/MongoDriver');
+const { Neo4jDriver, Neo4jRestDriver } = require('../driver/Neo4jDriver');
+const { lcFirst, mergeDeep, isScalarValue, keyPaths, pullGUID, toGUID } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
 const {
   ensureModel,
@@ -20,23 +20,23 @@ const {
 } = require('../service/data.service');
 
 module.exports = class Store {
-  constructor(parser, stores, storeArgs = {}) {
+  constructor(parser, schema, stores, driverArgs = {}) {
     this.parser = parser;
     this.subscriptions = [];
 
-    const availableStores = {
-      mongo: MongoStore,
+    const availableDrivers = {
+      mongo: MongoDriver,
       neo4j: Neo4jDriver,
-      neo4jRest: Neo4jRest,
-      redis: RedisStore,
+      neo4jRest: Neo4jRestDriver,
+      redis: RedisDriver,
     };
 
     // Create store instances
     const storesInstances = Object.entries(stores).reduce((prev, [key, { type, uri, options }]) => {
       return Object.assign(prev, {
         [key]: {
-          dao: new availableStores[type](uri, this.parser, options, storeArgs[type]),
-          idValue: availableStores[type].idValue,
+          dao: new availableDrivers[type](uri, this.parser, options, driverArgs[type]),
+          idValue: availableDrivers[type].idValue,
           idField: type === 'mongo' ? '_id' : 'id',
         },
       });
