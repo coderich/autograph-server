@@ -120,20 +120,20 @@ module.exports = class Store {
     });
   }
 
-  count(modelName, where = {}) {
-    modelName = this.toModel(modelName);
-    const model = modelName.getName();
+  count(model, where = {}) {
+    model = this.toModel(model);
+    const modelName = model.getName();
+    const modelAlias = model.getAlias();
     const { parser, loader = this } = this;
-    const { dao } = this.storeMap[model];
-    const modelAlias = parser.getModelAlias(model);
+    const { dao } = this.storeMap[modelName];
     const countPaths = keyPaths(where).filter(p => p.indexOf('count') === 0 || p.indexOf('.count') > 0);
     const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
     countPaths.forEach(p => _.unset(where, p));
     ensureModelArrayTypes(this, model, where);
     normalizeModelWhere(this, model, where);
 
-    return createSystemEvent('Query', { method: 'count', model, store: loader, parser, where }, async () => {
-      const resolvedWhere = await resolveModelWhereClause(parser, loader, model, where);
+    return createSystemEvent('Query', { method: 'count', model, store: loader, where }, async () => {
+      const resolvedWhere = await resolveModelWhereClause(parser, loader, modelName, where);
 
       if (countPaths.length) {
         const ma = this.schema.getModel(modelAlias);
