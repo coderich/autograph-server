@@ -146,17 +146,17 @@ module.exports = class Store {
     });
   }
 
-  async create(modelName, data) {
-    modelName = this.toModel(modelName);
-    const model = modelName.getName();
+  async create(model, data) {
+    model = this.toModel(model);
+    const modelName = model.getName();
+    const modelAlias = model.getAlias();
     const { parser, loader = this } = this;
-    const { dao } = this.storeMap[model];
-    const modelAlias = parser.getModelAlias(model);
+    const { dao } = this.storeMap[modelName];
     ensureModelArrayTypes(this, model, data);
-    normalizeModelData(parser, this, model, data);
-    await validateModelData(parser, this, model, data, {}, 'create');
+    normalizeModelData(parser, this, modelName, data);
+    await validateModelData(parser, this, modelName, data, {}, 'create');
 
-    return createSystemEvent('Mutation', { method: 'create', model, store: loader, parser, data }, async () => {
+    return createSystemEvent('Mutation', { method: 'create', model, store: loader, data }, async () => {
       const results = await dao.create(modelAlias, data);
       return results;
     });
