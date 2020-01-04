@@ -258,7 +258,6 @@ module.exports = class Store {
     // Array Resolvers
     if (Array.isArray(dataType)) {
       if (field.isVirtual()) {
-        // query.where[parser.getModelFieldAlias(dataType[0], fieldDef.by)] = doc.id;
         query.where[field.getVirtualField().getAlias()] = doc.id;
         return loader.find(dataType[0], query);
       }
@@ -268,7 +267,6 @@ module.exports = class Store {
 
     // Object Resolvers
     if (field.isVirtual()) {
-      // query.where[parser.getModelFieldAlias(dataType, fieldDef.by)] = doc.id;
       query.where[field.getVirtualField().getAlias()] = doc.id;
       return loader.find(dataType, query).then(results => results[0]);
     }
@@ -277,13 +275,12 @@ module.exports = class Store {
     return loader.get(dataType, id, field.isRequired());
   }
 
-  async hydrate(modelName, results, query = {}) {
-    modelName = this.toModel(modelName);
-    const model = modelName.getName();
+  async hydrate(model, results, query = {}) {
+    model = this.toModel(model);
     const { loader = this } = this;
     const { fields = {} } = query;
     const isArray = Array.isArray(results);
-    const modelFields = Object.keys(this.parser.getModelFields(model));
+    const modelFields = model.getFields().map(f => f.getName());
     const fieldEntries = Object.entries(fields).filter(([k]) => modelFields.indexOf(k) > -1);
     const countEntries = Object.entries(fields).filter(([k]) => modelFields.indexOf(lcFirst(k.substr(5))) > -1); // eg. countAuthored
     results = isArray ? results : [results];
@@ -293,8 +290,7 @@ module.exports = class Store {
       const [fieldValues, countValues] = await Promise.all([
         Promise.all(fieldEntries.map(async ([field, subFields]) => {
           const [arg = {}] = (fields[field].__arguments || []).filter(el => el.query).map(el => el.query.value); // eslint-disable-line
-          const def = this.parser.getModelFieldDef(model, field);
-          const ref = Parser.getFieldDataRef(def);
+          const ref = model.getField(field).getDataRef();
           const resolved = await loader.resolve(model, doc, field, { ...query, ...arg });
           if (Object.keys(subFields).length && ref) return this.hydrate(ref, resolved, { ...query, ...arg, fields: subFields });
           return resolved;
