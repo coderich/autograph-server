@@ -173,20 +173,24 @@ exports.normalizeModelData = (store, model, data) => {
 };
 
 exports.resolveModelWhereClause = (parser, store, model, where = {}, fieldAlias = '', lookups2D = [], index = 0) => {
-  const fields = parser.getModelFields(model);
+  model = store.toModel(model);
+
+  const mName = model.getName();
+  const fields = parser.getModelFields(mName);
+  // const fields = model.getFields();
 
   //
   lookups2D[index] = lookups2D[index] || {
     parentFieldAlias: fieldAlias,
-    parentModelName: model,
+    parentModelName: mName,
     parentFields: fields,
-    parentDataRefs: new Set(parser.getModelDataRefs(model)),
+    parentDataRefs: new Set(parser.getModelDataRefs(mName)),
     lookups: [],
   };
 
   // Depth first traversal to create 2d array of lookups
   lookups2D[index].lookups.push({
-    modelName: model,
+    modelName: mName,
     query: Object.entries(where).reduce((prev, [key, value]) => {
       const field = fields[key];
       const ref = Parser.getFieldDataRef(field);
