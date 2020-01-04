@@ -1,7 +1,8 @@
 const { ucFirst, isScalarDataType } = require('../service/app.service');
 
 module.exports = class Field {
-  constructor(model, name, options = {}) {
+  constructor(schema, model, name, options = {}) {
+    this.schema = schema;
     this.model = model;
     this.name = name;
     this.options = options;
@@ -41,12 +42,24 @@ module.exports = class Field {
     return isScalarDataType(ref) ? null : ref;
   }
 
-  getTransforms() {
-    return this.options.transforms;
+  getAlias(alias) {
+    return this.options.alias || alias || this.getName();
   }
 
-  getOptions() {
-    return this.options;
+  getVirtualRef() {
+    return this.options.by;
+  }
+
+  getVirtualModel() {
+    return this.schema.getModel(this.getSimpleType());
+  }
+
+  getVirtualField() {
+    return this.getVirtualModel().getField(this.getVirtualRef());
+  }
+
+  getTransforms() {
+    return this.options.transforms;
   }
 
   isArray() {

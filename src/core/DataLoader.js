@@ -60,6 +60,10 @@ module.exports = class {
     return this.store.idField(model);
   }
 
+  toModel(model) {
+    return this.store.toModel(model);
+  }
+
   dataLoader() {
     return this.store.dataLoader();
   }

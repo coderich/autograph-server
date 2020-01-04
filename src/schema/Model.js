@@ -5,7 +5,7 @@ module.exports = class Model {
     this.schema = schema;
     this.name = name;
     this.options = options;
-    this.fields = Object.entries(options.fields).map(([field, def]) => new Field(this, field, def));
+    this.fields = Object.entries(options.fields).map(([field, def]) => new Field(schema, this, field, def));
   }
 
   getName() {
@@ -34,6 +34,10 @@ module.exports = class Model {
 
   getUpdateFields() {
     return this.fields.filter(field => !field.isVirtual() && !field.isImmutable());
+  }
+
+  getDataRefFields() {
+    return this.fields.filter(field => Boolean(field.getDataRef()));
   }
 
   getScalarFields() {
