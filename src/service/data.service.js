@@ -72,6 +72,36 @@ exports.ensureModelArrayTypes = (store, model, data) => {
   }, data);
 };
 
+exports.applyFieldValueTransform = (field, value) => {
+  const type = field.getSimpleType();
+  const transforms = field.getTransforms() || [];
+
+  switch (type) {
+    case 'String': {
+      value = `${value}`;
+      break;
+    }
+    case 'Number': case 'Float': {
+      const num = Number(value);
+      if (!Number.isNaN(num)) value = num;
+      break;
+    }
+    case 'Boolean': {
+      if (value === 'true') value = true;
+      if (value === 'false') value = false;
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+
+  // Transforming
+  transforms.forEach(t => (value = t(value)));
+
+  return value;
+};
+
 exports.transformFieldValue = (field, value) => {
   const transforms = field.transforms || [];
 
@@ -101,20 +131,21 @@ exports.transformFieldValue = (field, value) => {
   return value;
 };
 
+exports.normalizeModelWhere = (store, model, data) => {
+  model = store.toModel(model);
 
-exports.normalizeModelWhere = (parser, store, model, data) => {
   return Object.entries(data).reduce((prev, [key, value]) => {
-    const field = parser.getModelFieldDef(model, key);
+    const field = model.getField(key);
     if (value == null || field == null) return prev;
 
-    const ref = Parser.getFieldDataRef(field);
+    const ref = field.getDataRef();
 
     if (ref) {
       if (isPlainObject(value)) {
-        prev[key] = exports.normalizeModelWhere(parser, store, ref, value);
+        prev[key] = exports.normalizeModelWhere(store, ref, value);
       } else if (Array.isArray(value)) {
         prev[key] = value.map((val) => {
-          if (isPlainObject(val)) return exports.normalizeModelWhere(parser, store, ref, val);
+          if (isPlainObject(val)) return exports.normalizeModelWhere(store, ref, val);
           if (isIdValue(val)) return store.idValue(ref, val);
           return val;
         });
@@ -122,9 +153,9 @@ exports.normalizeModelWhere = (parser, store, model, data) => {
         prev[key] = store.idValue(ref, value);
       }
     } else if (Array.isArray(value)) {
-      prev[key] = value.map(val => exports.transformFieldValue(field, val));
+      prev[key] = value.map(val => exports.applyFieldValueTransform(field, val));
     } else {
-      prev[key] = exports.transformFieldValue(field, value);
+      prev[key] = exports.applyFieldValueTransform(field, value);
     }
 
     return prev;

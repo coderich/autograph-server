@@ -41,6 +41,14 @@ module.exports = class Field {
     return isScalarDataType(ref) ? null : ref;
   }
 
+  getTransforms() {
+    return this.options.transforms;
+  }
+
+  getOptions() {
+    return this.options;
+  }
+
   isArray() {
     return Array.isArray(this.getDataType());
   }

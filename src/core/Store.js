@@ -112,7 +112,7 @@ module.exports = class Store {
     const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
     countPaths.forEach(p => _.unset(where, p));
     ensureModelArrayTypes(this, model, where);
-    normalizeModelWhere(parser, this, model, where);
+    normalizeModelWhere(this, model, where);
 
     return createSystemEvent('Query', { method: 'find', model, store: loader, parser, query }, async () => {
       const modelAlias = parser.getModelAlias(model);
@@ -135,7 +135,7 @@ module.exports = class Store {
     const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
     countPaths.forEach(p => _.unset(where, p));
     ensureModelArrayTypes(this, model, where);
-    normalizeModelWhere(parser, this, model, where);
+    normalizeModelWhere(this, model, where);
 
     return createSystemEvent('Query', { method: 'count', model, store: loader, parser, where }, async () => {
       const resolvedWhere = await resolveModelWhereClause(parser, loader, model, where);
