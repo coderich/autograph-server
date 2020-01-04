@@ -58,14 +58,15 @@ exports.validateModelData = (parser, store, model, data, oldData, op) => {
   return Promise.all(promises);
 };
 
-exports.ensureModelArrayTypes = (parser, store, model, data) => {
+exports.ensureModelArrayTypes = (store, model, data) => {
+  model = store.toModel(model);
+
   return Object.entries(data).reduce((prev, [key, value]) => {
-    const field = parser.getModelFieldDef(model, key);
+    const field = model.getField(key);
     if (value == null || field == null) return prev;
 
     // Ensure array if type array
-    const isArrayType = Boolean(Parser.getFieldArrayType(field));
-    if (isArrayType && !Array.isArray(value)) prev[key] = [value];
+    if (field.isArray() && !Array.isArray(value)) prev[key] = [value];
 
     return prev;
   }, data);

@@ -111,7 +111,7 @@ module.exports = class Store {
     const countPaths = keyPaths(where).filter(p => p.indexOf('count') === 0 || p.indexOf('.count') > 0);
     const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
     countPaths.forEach(p => _.unset(where, p));
-    ensureModelArrayTypes(parser, this, model, where);
+    ensureModelArrayTypes(this, model, where);
     normalizeModelWhere(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'find', model, store: loader, parser, query }, async () => {
@@ -134,7 +134,7 @@ module.exports = class Store {
     const countPaths = keyPaths(where).filter(p => p.indexOf('count') === 0 || p.indexOf('.count') > 0);
     const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
     countPaths.forEach(p => _.unset(where, p));
-    ensureModelArrayTypes(parser, this, model, where);
+    ensureModelArrayTypes(this, model, where);
     normalizeModelWhere(parser, this, model, where);
 
     return createSystemEvent('Query', { method: 'count', model, store: loader, parser, where }, async () => {
@@ -157,7 +157,7 @@ module.exports = class Store {
     const { parser, loader = this } = this;
     const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
-    ensureModelArrayTypes(parser, this, model, data);
+    ensureModelArrayTypes(this, model, data);
     normalizeModelData(parser, this, model, data);
     await validateModelData(parser, this, model, data, {}, 'create');
 
@@ -175,7 +175,7 @@ module.exports = class Store {
     const { dao } = this.storeMap[model];
     const modelAlias = parser.getModelAlias(model);
     const doc = await ensureModel(this, model, id);
-    ensureModelArrayTypes(parser, this, model, data);
+    ensureModelArrayTypes(this, model, data);
     normalizeModelData(parser, this, model, data);
     await validateModelData(parser, this, model, data, doc, 'update');
 
