@@ -11,7 +11,6 @@ const {
   ensureModelArrayTypes,
   validateModelData,
   normalizeModelData,
-  // normalizeModelDataOut,
   normalizeModelWhere,
   resolveModelWhereClause,
   resolveReferentialIntegrity,
@@ -94,12 +93,13 @@ module.exports = class Store {
     });
   }
 
-  find(modelName, query = {}) {
-    modelName = this.toModel(modelName);
-    const model = modelName.getName();
+  find(model, query = {}) {
+    model = this.toModel(model);
+    const modelName = model.getName();
+    const modelAlias = model.getAlias();
     const { parser, loader = this } = this;
     const { where = {}, sortBy = {}, limit } = query;
-    const { dao } = this.storeMap[model];
+    const { dao } = this.storeMap[modelName];
     const sortFields = keyPaths(sortBy).reduce((prev, path) => {
       if (path.indexOf('count') === 0 || path.indexOf('.count') === 0) return Object.assign(prev, { [path]: _.get(sortBy, path) });
       const $path = path.split('.').map(s => `$${s}`).join('.');
@@ -111,11 +111,9 @@ module.exports = class Store {
     ensureModelArrayTypes(this, model, where);
     normalizeModelWhere(this, model, where);
 
-    return createSystemEvent('Query', { method: 'find', model, store: loader, parser, query }, async () => {
-      const modelAlias = parser.getModelAlias(model);
-      const resolvedWhere = await resolveModelWhereClause(parser, loader, model, where);
+    return createSystemEvent('Query', { method: 'find', model, store: loader, query }, async () => {
+      const resolvedWhere = await resolveModelWhereClause(parser, loader, modelName, where);
       const results = await dao.find(modelAlias, resolvedWhere);
-      // normalizeModelDataOut(parser, this, model, results);
       const filteredData = filterDataByCounts(loader, model, results, countFields);
       const sortedResults = sortData(filteredData, sortFields);
       return sortedResults.slice(0, limit > 0 ? limit : undefined);
@@ -160,7 +158,6 @@ module.exports = class Store {
 
     return createSystemEvent('Mutation', { method: 'create', model, store: loader, parser, data }, async () => {
       const results = await dao.create(modelAlias, data);
-      // normalizeModelDataOut(parser, this, model, results);
       return results;
     });
   }
@@ -179,7 +176,6 @@ module.exports = class Store {
     return createSystemEvent('Mutation', { method: 'update', model, store: loader, parser, id, data }, async () => {
       const merged = normalizeModelData(parser, loader, model, mergeDeep(doc, data));
       const results = await dao.replace(modelAlias, this.idValue(model, id), data, merged);
-      // normalizeModelDataOut(parser, this, model, results);
       return results;
     });
   }
