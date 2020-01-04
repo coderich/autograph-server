@@ -180,27 +180,26 @@ module.exports = class Store {
     });
   }
 
-  async delete(modelName, id) {
-    modelName = this.toModel(modelName);
-    const model = modelName.getName();
-    const { parser, loader = this } = this;
-    const { dao } = this.storeMap[model];
-    const modelAlias = parser.getModelAlias(model);
+  async delete(model, id) {
+    model = this.toModel(model);
+    const modelName = model.getName();
+    const modelAlias = model.getAlias();
+    const { loader = this } = this;
+    const { dao } = this.storeMap[modelName];
     const doc = await ensureModel(this, model, id);
 
-    return createSystemEvent('Mutation', { method: 'delete', model, store: loader, parser, id }, () => {
-      return resolveReferentialIntegrity(parser, loader, model, id).then(() => {
+    return createSystemEvent('Mutation', { method: 'delete', model, store: loader, id }, () => {
+      return resolveReferentialIntegrity(loader, model, id).then(() => {
         return dao.delete(modelAlias, this.idValue(model, id), doc);
       });
     });
   }
 
-  dropModel(modelName) {
-    modelName = this.toModel(modelName);
-    const model = modelName.getName();
-    const { parser } = this;
-    const { dao } = this.storeMap[model];
-    const modelAlias = parser.getModelAlias(model);
+  dropModel(model) {
+    model = this.toModel(model);
+    const modelName = model.getName();
+    const modelAlias = model.getAlias();
+    const { dao } = this.storeMap[modelName];
     return dao.dropModel(modelAlias);
   }
 
@@ -223,25 +222,25 @@ module.exports = class Store {
   }
 
   // You may want to move these out of here?
-  rollup(modelName, doc, field, w = {}) {
-    modelName = this.toModel(modelName);
-    const model = modelName.getName();
+  rollup(model, doc, fieldName, w = {}) {
+    model = this.toModel(model);
+    const field = model.getField(fieldName);
+    const fieldRef = field.getDataRef();
     const where = _.cloneDeep(w);
-    const { parser, loader = this } = this;
-    const [, ref, by] = parser.getModelFieldAndDataRef(model, field);
+    const { loader = this } = this;
 
-    if (by) {
-      where[by] = doc.id;
-      return loader.count(ref, where);
+    if (field.isVirtual()) {
+      where[field.getVirtualRef()] = doc.id;
+      return loader.count(fieldRef, where);
     }
 
     if (!Object.keys(where).length) {
-      return (doc[field] || []).length; // Making big assumption that it's an array
+      return (doc[field.getName()] || []).length; // Making big assumption that it's an array
     }
 
-    const ids = (doc[field] || []);
-    where[loader.idField(ref)] = ids;
-    return loader.count(ref, where);
+    const ids = (doc[field.getName()] || []);
+    where[loader.idField(fieldRef)] = ids;
+    return loader.count(fieldRef, where);
   }
 
   resolve(modelName, doc, field, q = {}) {
