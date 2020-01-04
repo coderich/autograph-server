@@ -8,7 +8,7 @@ const { schema: schemaDef, stores } = require('../schema');
 const schema = new Schema(schemaDef);
 const parser = new Parser(schemaDef);
 const store = new Store(parser, schema, stores);
-const graphSchema = SchemaService.createGraphSchema(parser, schema);
+const graphSchema = SchemaService.createGraphSchema(schema);
 const executableSchema = makeExecutableSchema(graphSchema);
 
 const apolloServer = new ApolloServer({

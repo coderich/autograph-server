@@ -9,8 +9,8 @@ const { ucFirst, hashObject, fromGUID } = require('./app.service');
 const pubsub = new PubSub();
 
 /* eslint-disable indent, no-underscore-dangle */
-exports.createGraphSchema = (parser, schema) => {
-  const resolver = new Resolver(parser, schema);
+exports.createGraphSchema = (schema) => {
+  const resolver = new Resolver();
 
   Emitter.on('postMutation', ({ store }) => {
     const loader = (store instanceof DataLoader ? store : store.dataLoader());

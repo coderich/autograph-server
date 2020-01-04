@@ -78,7 +78,7 @@ module.exports = (name, db = 'mongo') => {
       const schma = new Schema(schema);
       const parser = new Parser(schema);
       const store = new Store(parser, schma, stores, storeArgs);
-      const graphSchema = createGraphSchema(parser, schma);
+      const graphSchema = createGraphSchema(schma);
       const executableSchema = makeExecutableSchema(graphSchema);
 
       //

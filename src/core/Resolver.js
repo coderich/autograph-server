@@ -2,9 +2,7 @@ const { NotFoundError } = require('../service/error.service');
 const { pullID } = require('../service/app.service');
 
 module.exports = class Resolver {
-  constructor(parser) {
-    this.parser = parser;
-
+  constructor() {
     this.get = ({ store }, model, id, required = false) => {
       return store.get(model, pullID(model, id)).then((doc) => {
         if (!doc && required) throw new NotFoundError(`${model} Not Found`);
