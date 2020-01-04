@@ -33,7 +33,7 @@ module.exports = class Store {
     };
 
     // Create store instances
-    const storesInstances = Object.entries(stores).reduce((prev, [key, { type, uri, options }]) => {
+    const drivers = Object.entries(stores).reduce((prev, [key, { type, uri, options }]) => {
       return Object.assign(prev, {
         [key]: {
           dao: new availableDrivers[type](uri, schema, options, driverArgs[type]),
@@ -44,14 +44,14 @@ module.exports = class Store {
     }, {});
 
     // Create model store map
-    this.storeMap = parser.getModelNamesAndStores().reduce((prev, [modelName, storeType]) => {
+    this.storeMap = schema.getModels().reduce((prev, model) => {
       return Object.assign(prev, {
-        [modelName]: storesInstances[storeType],
+        [model.getName()]: drivers[model.getDriver()],
       });
     }, {});
 
-    // Create store indexes
-    parser.getModelNamesAndIndexes().forEach(([model, indexes]) => this.storeMap[model].dao.createIndexes(this.parser.getModelAlias(model), indexes));
+    // Create model indexes
+    schema.getModels().forEach(model => this.storeMap[model.getName()].dao.createIndexes(model.getAlias(), model.getIndexes()));
   }
 
   toObject(model, doc) {

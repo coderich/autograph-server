@@ -37,7 +37,11 @@ module.exports = class Model {
   }
 
   getAlias() {
-    return this.options.alias || this.name;
+    return this.options.alias || this.getName();
+  }
+
+  getIndexes() {
+    return this.options.indexes || [];
   }
 
   getDriver() {
