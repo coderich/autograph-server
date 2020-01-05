@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const Query = require('../query/Query');
 const DataLoader = require('./DataLoader');
 const { mergeDeep, keyPaths } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
@@ -33,43 +34,26 @@ module.exports = class Store {
     });
   }
 
-  query(model, query = {}) {
+  query(model, q) {
     model = this.toModel(model);
     const { loader = this } = this;
-    const { fields, where = {}, sortBy = {}, limit } = query;
-    const modelFields = model.getScalarFields();
-    const selectFields = fields || modelFields.reduce((prev, field) => Object.assign(prev, { [field.getName()]: {} }), {});
-    const finalSelectFields = { ...where, ...selectFields };
-    const sortFields = keyPaths(sortBy).reduce((prev, path) => {
-      if (path.indexOf('count') === 0 || path.indexOf('.count') === 0) return Object.assign(prev, { [path]: _.get(sortBy, path) });
-      const $path = path.split('.').map(s => `$${s}`).join('.');
-      return Object.assign(prev, { [$path]: _.get(sortBy, path) });
-    }, {});
-    const countPaths = keyPaths(where).filter(p => p.indexOf('count') === 0 || p.indexOf('.count') > 0);
-    const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
-    countPaths.forEach(p => _.unset(where, p));
+    const query = new Query(model, q);
+    const [limit, selectFields, countFields, sortFields] = [query.getLimit(), query.getSelectFields(), query.getCountFields(), query.getSortFields()];
 
     return createSystemEvent('Query', { method: 'query', model, store: loader, query }, async () => {
-      const results = await this.find(model, { ...query, sortBy: {}, limit: 0 });
-      const hydratedResults = await model.hydrate(loader, results, { fields: finalSelectFields });
+      const results = await this.find(model, { ...q, sortBy: {}, limit: 0 });
+      const hydratedResults = await model.hydrate(loader, results, { fields: selectFields });
       const filteredData = filterDataByCounts(loader, model, hydratedResults, countFields);
       const sortedResults = sortData(filteredData, sortFields);
       return sortedResults.slice(0, limit > 0 ? limit : undefined);
     });
   }
 
-  find(model, query = {}) {
+  find(model, q) {
     model = this.toModel(model);
     const { loader = this } = this;
-    const { where = {}, sortBy = {}, limit } = query;
-    const sortFields = keyPaths(sortBy).reduce((prev, path) => {
-      if (path.indexOf('count') === 0 || path.indexOf('.count') === 0) return Object.assign(prev, { [path]: _.get(sortBy, path) });
-      const $path = path.split('.').map(s => `$${s}`).join('.');
-      return Object.assign(prev, { [$path]: _.get(sortBy, path) });
-    }, {});
-    const countPaths = keyPaths(where).filter(p => p.indexOf('count') === 0 || p.indexOf('.count') > 0);
-    const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
-    countPaths.forEach(p => _.unset(where, p));
+    const query = new Query(model, q);
+    const [where, limit, countFields, sortFields] = [query.getWhere(), query.getLimit(), query.getCountFields(), query.getSortFields()];
     ensureModelArrayTypes(this, model, where);
     normalizeModelWhere(this, model, where);
 
@@ -82,12 +66,11 @@ module.exports = class Store {
     });
   }
 
-  count(model, where = {}) {
+  count(model, w) {
     model = this.toModel(model);
     const { loader = this } = this;
-    const countPaths = keyPaths(where).filter(p => p.indexOf('count') === 0 || p.indexOf('.count') > 0);
-    const countFields = countPaths.reduce((prev, path) => Object.assign(prev, { [path]: _.get(where, path) }), {});
-    countPaths.forEach(p => _.unset(where, p));
+    const query = new Query(model, { where: w });
+    const [where, countFields, countPaths] = [query.getWhere(), query.getCountFields(), query.getCountPaths()];
     ensureModelArrayTypes(this, model, where);
     normalizeModelWhere(this, model, where);
 
