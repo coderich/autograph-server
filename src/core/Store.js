@@ -1,7 +1,6 @@
-const _ = require('lodash');
 const Query = require('../query/Query');
 const DataLoader = require('./DataLoader');
-const { mergeDeep, keyPaths } = require('../service/app.service');
+const { mergeDeep } = require('../service/app.service');
 const { createSystemEvent } = require('../service/event.service');
 const {
   ensureModel,
