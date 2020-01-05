@@ -112,21 +112,21 @@ exports.createGraphSchema = (schema) => {
       `,
 
       `type Query {
-        System: System!
+        Schema: Schema!
         node(id: ID!): Node
         ${schema.getVisibleModels().map(model => `get${model.getName()}(id: ID!): ${model.getName()}`)}
-        ${schema.getVisibleModels().map(model => `find${model.getName()}(query: ${ucFirst(model.getName())}InputQuery): [${model.getName()}]!`)}
+        ${schema.getVisibleModels().map(model => `find${model.getName()}(query: ${ucFirst(model.getName())}InputQuery): Connection!`)}
         ${schema.getVisibleModels().map(model => `count${model.getName()}(where: ${ucFirst(model.getName())}InputWhere): Int!`)}
       }`,
 
-      `type System {
+      `type Schema {
         ${schema.getVisibleModels().map(model => `get${model.getName()}(id: ID!): ${model.getName()}`)}
-        ${schema.getVisibleModels().map(model => `find${model.getName()}(query: ${ucFirst(model.getName())}InputQuery): [${model.getName()}]!`)}
+        ${schema.getVisibleModels().map(model => `find${model.getName()}(query: ${ucFirst(model.getName())}InputQuery): Connection!`)}
         ${schema.getVisibleModels().map(model => `count${model.getName()}(where: ${ucFirst(model.getName())}InputWhere): Int!`)}
       }`,
 
       `type Subscription {
-        ${schema.getVisibleModels().map(model => `${model.getName()}Trigger(query: ${ucFirst(model.getName())}InputQuery): [${model.getName()}]!`)}
+        ${schema.getVisibleModels().map(model => `${model.getName()}Trigger(query: ${ucFirst(model.getName())}InputQuery): Connection!`)}
         ${schema.getVisibleModels().map(model => `${model.getName()}Changed(query: ${ucFirst(model.getName())}InputQuery): [${model.getName()}Subscription]!`)}
       }`,
 
@@ -154,7 +154,9 @@ exports.createGraphSchema = (schema) => {
       return Object.assign(prev, {
         [modelName]: model.getFields().reduce((def, field) => {
           const fieldName = field.getName();
-          return Object.assign(def, { [fieldName]: root => root[`$${fieldName}`] });
+          return Object.assign(def, { [fieldName]: (root) => {
+            return root[`$${fieldName}`];
+          } });
         }, {
           id: root => toGUID(modelName, root.id),
           countSelf: (root, args, context) => resolver.count(context, model, args.where),
@@ -162,9 +164,32 @@ exports.createGraphSchema = (schema) => {
       });
     }, {
       Node: {
-        __resolveType: async (root, args, context, info) => {
-          return fromGUID(root.$id)[0];
+        __resolveType: (root, args, context, info) => fromGUID(root.$id)[0],
+      },
+      Connection: {
+        edges: (root, args, context, info) => {
+          const nodes = root;
+          const edges = nodes.map(node => ({ cursor: 'cursor', node }));
+          return edges;
         },
+        pageInfo: () => {
+          return {
+            startCursor: 'startCursor',
+            endCursor: 'endCursor',
+            hasNextPage: false,
+            hasPreviousPage: false,
+          };
+        },
+      },
+      Edge: {
+        node: async (root, args, context, info) => {
+          const { node } = root;
+          const { store } = context;
+          const [modelName] = fromGUID(node.$id);
+          const model = schema.getModel(modelName);
+          return model.hydrate(store, node, { fields: GraphqlFields(info, {}, { processArguments: true }) });
+        },
+        cursor: () => 'cursor',
       },
       Query: schema.getVisibleModels().reduce((prev, model) => {
         const modelName = model.getName();
@@ -175,7 +200,7 @@ exports.createGraphSchema = (schema) => {
           [`count${modelName}`]: (root, args, context) => resolver.count(context, model, args.where),
         });
       }, {
-        System: (root, args) => ({}),
+        Schema: () => ({}),
         node: (root, args, context, info) => {
           const { id } = args;
           const [modelName] = fromGUID(id);
@@ -194,7 +219,7 @@ exports.createGraphSchema = (schema) => {
         });
       }, {}),
 
-      System: schema.getVisibleModels().reduce((prev, model) => {
+      Schema: schema.getVisibleModels().reduce((prev, model) => {
         const modelName = model.getName();
 
         return Object.assign(prev, {
