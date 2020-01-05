@@ -80,19 +80,13 @@ module.exports = class Model {
       ]);
 
       return fieldEntries.reduce((prev, [field], i) => {
-        prev[field] = doc[field]; // Retain original values
-
-        // $hydrated values
+        const $key = `$${field}`;
         const $value = fieldValues[i];
-        // const def = this.parser.getModelFieldDef(model, field);
-        // if (Array.isArray($value) && def) return Object.assign(prev, { [`$${field}`]: $value.map() });
-        return Object.assign(prev, { [`$${field}`]: $value });
+        if (!Object.prototype.hasOwnProperty.call(prev, $key)) Object.defineProperty(prev, $key, { value: $value });
+        return prev;
       }, countEntries.reduce((prev, [field], i) => {
         return Object.assign(prev, { [field]: countValues[i] });
-      }, {
-        id: doc.id,
-        $id: doc.$id,
-      }));
+      }, doc));
     }));
 
     return isArray ? data : data[0];

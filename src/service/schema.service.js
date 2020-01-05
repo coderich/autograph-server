@@ -170,17 +170,17 @@ exports.createGraphSchema = (schema) => {
         const modelName = model.getName();
 
         return Object.assign(prev, {
-          [`get${modelName}`]: (root, args, context) => resolver.get(context, model, args.id, true),
+          [`get${modelName}`]: (root, args, context, info) => resolver.get(context, model, args.id, true, { fields: GraphqlFields(info, {}, { processArguments: true }) }),
           [`find${modelName}`]: (root, args, context, info) => resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
           [`count${modelName}`]: (root, args, context) => resolver.count(context, model, args.where),
         });
       }, {
         System: (root, args) => ({}),
-        node: (root, args, context) => {
+        node: (root, args, context, info) => {
           const { id } = args;
           const [modelName] = fromGUID(id);
           const model = schema.getModel(modelName);
-          return resolver.get(context, model, id);
+          return resolver.get(context, model, id, false, { fields: GraphqlFields(info, {}, { processArguments: true }) });
         },
       }),
 
@@ -198,7 +198,7 @@ exports.createGraphSchema = (schema) => {
         const modelName = model.getName();
 
         return Object.assign(prev, {
-          [`get${modelName}`]: (root, args, context) => resolver.get(context, model, args.id, true),
+          [`get${modelName}`]: (root, args, context, info) => resolver.get(context, model, args.id, true, { fields: GraphqlFields(info, {}, { processArguments: true }) }),
           [`find${modelName}`]: (root, args, context, info) => resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
           [`count${modelName}`]: (root, args, context) => resolver.count(context, model, args.where),
         });

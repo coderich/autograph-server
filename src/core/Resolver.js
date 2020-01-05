@@ -18,8 +18,8 @@ const unrollGuid = (store, model, data) => {
 
 module.exports = class Resolver {
   constructor() {
-    this.get = ({ store }, model, guid, required = false) => {
-      return store.get(model, guidToId(guid)).then((doc) => {
+    this.get = ({ store }, model, guid, required = false, query = {}) => {
+      return store.get(model, guidToId(guid), query).then((doc) => {
         if (!doc && required) throw new NotFoundError(`${model} Not Found`);
         return doc;
       });

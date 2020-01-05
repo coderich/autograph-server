@@ -24,12 +24,14 @@ module.exports = class Store {
     return model;
   }
 
-  get(model, id) {
+  get(model, id, q) {
     model = this.toModel(model);
     const { loader = this } = this;
+    const query = new Query(model, q);
 
     return createSystemEvent('Query', { method: 'get', model, store: loader, id }, async () => {
-      return model.get(id);
+      const doc = await model.get(id);
+      return model.hydrate(loader, doc, { fields: query.getSelectFields() });
     });
   }
 

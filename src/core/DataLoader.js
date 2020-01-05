@@ -12,8 +12,8 @@ module.exports = class {
     });
   }
 
-  get(model, id) {
-    return this.loader.load({ op: 'get', model, args: [id] });
+  get(model, id, query = {}) {
+    return this.loader.load({ op: 'get', model, args: [id, query] });
   }
 
   query(model, query = {}) {
