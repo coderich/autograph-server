@@ -1,5 +1,6 @@
 const Field = require('./Field');
-const { lcFirst } = require('../service/app.service');
+const { lcFirst, map, toGUID } = require('../service/app.service');
+
 
 module.exports = class Model {
   constructor(schema, name, driver, options = {}) {
@@ -15,11 +16,11 @@ module.exports = class Model {
 
   // CRUD
   get(id) {
-    return this.driver.dao.get(this.getAlias(), this.idValue(id));
+    return this.driver.dao.get(this.getAlias(), this.idValue(id)).then(res => this.toObject(res));
   }
 
   find(where = {}) {
-    return this.driver.dao.find(this.getAlias(), where);
+    return this.driver.dao.find(this.getAlias(), where).then(res => this.toObject(res));
   }
 
   count(where = {}) {
@@ -27,15 +28,15 @@ module.exports = class Model {
   }
 
   create(data) {
-    return this.driver.dao.create(this.getAlias(), data);
+    return this.driver.dao.create(this.getAlias(), data).then(res => this.toObject(res));
   }
 
   update(id, data, doc) {
-    return this.driver.dao.replace(this.getAlias(), this.idValue(id), data, doc);
+    return this.driver.dao.replace(this.getAlias(), this.idValue(id), data, doc).then(res => this.toObject(res));
   }
 
   delete(id, doc) {
-    return this.driver.dao.delete(this.getAlias(), this.idValue(id), doc);
+    return this.driver.dao.delete(this.getAlias(), this.idValue(id), doc).then(res => this.toObject(res));
   }
 
   drop() {
@@ -48,6 +49,10 @@ module.exports = class Model {
 
   idField() {
     return this.driver.idField;
+  }
+
+  toObject(docs) {
+    return map(docs, doc => Object.defineProperty(doc, '$id', { value: toGUID(this.getName(), doc.id) }));
   }
 
   async hydrate(loader, results, query = {}) {
@@ -149,9 +154,5 @@ module.exports = class Model {
 
   isVisible() {
     return !this.isHidden();
-  }
-
-  toGUID(id) {
-    return Buffer.from(`${this.getName()},${id}`).toString('base64');
   }
 };

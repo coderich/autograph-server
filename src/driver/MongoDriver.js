@@ -3,7 +3,7 @@ const { globToRegex, proxyDeep, isScalarDataType } = require('../service/app.ser
 
 const toObject = (doc) => {
   if (!doc) return undefined;
-  return Object.defineProperty(doc, 'id', { enumerable: true, writable: true, value: doc._id }); // eslint-disable-line
+  return Object.defineProperty(doc, 'id', { value: doc._id }); // eslint-disable-line
 };
 
 module.exports = class MongoDriver {

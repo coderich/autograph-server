@@ -20,24 +20,14 @@ exports.hashObject = obj => ObjectHash(obj, { respectType: false, respectFunctio
 exports.globToRegex = (glob, options = {}) => PicoMatch.makeRe(glob, { maxLength: 100, ...options, expandRange: (a, b) => `(${FillRange(a, b, { toRegex: true })})` });
 exports.globToRegexp = (glob, options = {}) => PicoMatch.toRegex(exports.globToRegex(glob, options));
 exports.toGUID = (model, id) => Buffer.from(`${model},${id}`).toString('base64');
-exports.fromGUID = guid => Buffer.from(guid, 'base64').toString('ascii');
-exports.pullGUID = (model, id) => {
-  try {
-    const [m, i] = exports.fromGUID(id).split(',');
-    if (m !== model || !i) return false;
-    return id;
-  } catch (e) {
-    return false;
-  }
-};
-exports.pullID = (model, guid) => {
-  try {
-    const [m, id] = exports.fromGUID(guid).split(',');
-    if (m !== model || !id) return guid;
-    return id;
-  } catch (e) {
-    return guid;
-  }
+exports.fromGUID = guid => Buffer.from(`${guid}`, 'base64').toString('ascii').split(',');
+
+exports.map = (mixed, fn) => {
+  if (mixed == null) return mixed;
+  const isArray = Array.isArray(mixed);
+  const arr = isArray ? mixed : [mixed];
+  const results = arr.map(el => fn(el));
+  return isArray ? results : results[0];
 };
 
 exports.keyPaths = (obj, keys = [], path) => {

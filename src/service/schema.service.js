@@ -4,7 +4,7 @@ const { withFilter, PubSub } = require('graphql-subscriptions');
 const DataLoader = require('../core/DataLoader');
 const Resolver = require('../core/Resolver');
 const { internalEmitter: Emitter } = require('./event.service');
-const { ucFirst, hashObject, fromGUID } = require('./app.service');
+const { ucFirst, hashObject, toGUID, fromGUID } = require('./app.service');
 
 const pubsub = new PubSub();
 
@@ -156,14 +156,14 @@ exports.createGraphSchema = (schema) => {
           const fieldName = field.getName();
           return Object.assign(def, { [fieldName]: root => root[`$${fieldName}`] });
         }, {
-          // id: root => root.$id,
+          id: root => toGUID(modelName, root.id),
           countSelf: (root, args, context) => resolver.count(context, model, args.where),
         }),
       });
     }, {
       Node: {
         __resolveType: async (root, args, context, info) => {
-          return fromGUID(root.id).split(':')[0];
+          return fromGUID(root.$id)[0];
         },
       },
       Query: schema.getVisibleModels().reduce((prev, model) => {
@@ -178,7 +178,7 @@ exports.createGraphSchema = (schema) => {
         System: (root, args) => ({}),
         node: (root, args, context) => {
           const { id } = args;
-          const [modelName] = fromGUID(id).split(':');
+          const [modelName] = fromGUID(id);
           const model = schema.getModel(modelName);
           return resolver.get(context, model, id);
         },
