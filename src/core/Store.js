@@ -161,12 +161,4 @@ module.exports = class Store {
     this.loader = new DataLoader(this);
     return this.loader;
   }
-
-  // You may want to move these out of here?
-  resolve(model, doc, fieldName, query = {}) {
-    model = this.toModel(model);
-    const field = model.getField(fieldName);
-    const { loader = this } = this;
-    return field.resolve(loader, doc, query);
-  }
 };

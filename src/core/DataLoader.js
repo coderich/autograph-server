@@ -28,10 +28,6 @@ module.exports = class {
     return this.loader.load({ op: 'count', model, args: [where] });
   }
 
-  resolve(model, doc, field, query = {}) {
-    return this.loader.load({ op: 'resolve', model, args: [doc, field, query] });
-  }
-
   create(model, data) {
     return this.store.create(model, data);
   }

@@ -28,7 +28,6 @@ module.exports = class Resolver {
     this.query = ({ store }, model, query = {}) => store.query(model, query);
     this.find = ({ store }, model, query = {}) => store.find(model, query);
     this.count = ({ store }, model, where = {}) => store.count(model, where);
-    this.resolve = ({ store }, model, doc, field, query = {}) => store.resolve(model, unrollGuid(store, model, doc), field, query);
     this.create = ({ store }, model, data) => store.create(model, unrollGuid(store, model, data));
     this.update = ({ store }, model, guid, data) => store.update(model, guidToId(guid), unrollGuid(store, model, data));
     this.delete = ({ store }, model, guid) => store.delete(model, guidToId(guid));

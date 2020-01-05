@@ -69,7 +69,7 @@ module.exports = class Model {
         Promise.all(fieldEntries.map(async ([field, subFields]) => {
           const [arg = {}] = (fields[field].__arguments || []).filter(el => el.query).map(el => el.query.value); // eslint-disable-line
           const ref = this.getField(field).getDataRef();
-          const resolved = await loader.resolve(this, doc, field, { ...query, ...arg });
+          const resolved = await this.getField(field).resolve(loader, doc, { ...query, ...arg });
           if (Object.keys(subFields).length && ref) return this.schema.getModel(ref).hydrate(loader, resolved, { ...query, ...arg, fields: subFields });
           return resolved;
         })),
