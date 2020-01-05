@@ -39,6 +39,7 @@ module.exports = class Store {
     const { fields, where = {}, sortBy = {}, limit } = query;
     const modelFields = model.getScalarFields();
     const selectFields = fields || modelFields.reduce((prev, field) => Object.assign(prev, { [field.getName()]: {} }), {});
+    const finalSelectFields = { ...where, ...selectFields };
     const sortFields = keyPaths(sortBy).reduce((prev, path) => {
       if (path.indexOf('count') === 0 || path.indexOf('.count') === 0) return Object.assign(prev, { [path]: _.get(sortBy, path) });
       const $path = path.split('.').map(s => `$${s}`).join('.');
@@ -50,7 +51,7 @@ module.exports = class Store {
 
     return createSystemEvent('Query', { method: 'query', model, store: loader, query }, async () => {
       const results = await this.find(model, { ...query, sortBy: {}, limit: 0 });
-      const hydratedResults = await this.hydrate(model, results, { fields: selectFields });
+      const hydratedResults = await model.hydrate(loader, results, { fields: finalSelectFields });
       const filteredData = filterDataByCounts(loader, model, hydratedResults, countFields);
       const sortedResults = sortData(filteredData, sortFields);
       return sortedResults.slice(0, limit > 0 ? limit : undefined);
@@ -162,23 +163,10 @@ module.exports = class Store {
   }
 
   // You may want to move these out of here?
-  rollup(model, doc, fieldName, where = {}) {
-    model = this.toModel(model);
-    const { loader = this } = this;
-    const field = model.getField(fieldName);
-    return field.count(loader, doc, where);
-  }
-
   resolve(model, doc, fieldName, query = {}) {
     model = this.toModel(model);
     const field = model.getField(fieldName);
     const { loader = this } = this;
     return field.resolve(loader, doc, query);
-  }
-
-  async hydrate(model, results, query = {}) {
-    model = this.toModel(model);
-    const { loader = this } = this;
-    return model.hydrate(loader, results, query);
   }
 };

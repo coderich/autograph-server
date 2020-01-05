@@ -28,10 +28,6 @@ module.exports = class {
     return this.loader.load({ op: 'count', model, args: [where] });
   }
 
-  rollup(model, doc, field, where = {}) {
-    return this.loader.load({ op: 'rollup', model, args: [doc, field, where] });
-  }
-
   resolve(model, doc, field, query = {}) {
     return this.loader.load({ op: 'resolve', model, args: [doc, field, query] });
   }

@@ -521,6 +521,7 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.query('Person', { where: { authored: { chapters: { name: 'citizen', pages: { verbage: '*intro*' } } } } })).toMatchObject([]);
         expect(await dao.query('Person', { where: { authored: { chapters: { name: 'chapter*', pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
         expect(await dao.query('Person', { where: { authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dao.query('Person', { where: { authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
       });
 
       test('Book', async () => {
@@ -534,6 +535,14 @@ module.exports = (name, db = 'mongo') => {
         expect(await dao.query('Book', { where: { chapters: { name: '*' } } })).toMatchObject([{ id: healthBook.id }]);
         expect(await dao.query('Book', { where: { chapters: { pages: { number: 1 } } } })).toMatchObject([{ id: healthBook.id }]);
         expect(await dao.query('Book', { where: { chapters: [{ name: 'HongKong' }, chapter1.id] } })).toMatchObject([{ id: healthBook.id }]);
+      });
+    });
+
+
+    describe('Query (counts)', () => {
+      test('Person', async () => {
+        expect(await dao.query('Person', { where: { countAuthored: '2' } })).toMatchObject([]);
+        expect((await dao.query('Person', { where: { countAuthored: '1' } })).length).toBe(2);
       });
     });
   });

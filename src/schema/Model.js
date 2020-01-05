@@ -75,7 +75,7 @@ module.exports = class Model {
         })),
         Promise.all(countEntries.map(async ([field, subFields]) => {
           const [arg = {}] = (fields[field].__arguments || []).filter(el => el.where).map(el => el.where.value); // eslint-disable-line
-          return loader.rollup(this, doc, lcFirst(field.substr(5)), arg);
+          return this.getField(lcFirst(field.substr(5))).count(loader, doc, arg);
         })),
       ]);
 
