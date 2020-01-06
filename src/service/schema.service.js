@@ -181,16 +181,17 @@ exports.createGraphSchema = (schema) => {
           };
         },
       },
-      // Edge: {
-      //   node: async (root, args, context, info) => {
-      //     const { node } = root;
-      //     const { store } = context;
-      //     const [modelName] = fromGUID(node.$id);
-      //     const model = schema.getModel(modelName);
-      //     return model.hydrate(store, node, { fields: GraphqlFields(info, {}, { processArguments: true }) });
-      //   },
-      //   cursor: () => 'cursor',
-      // },
+      // Edge is needed for Trigger Subscription for some reason
+      Edge: {
+        node: async (root, args, context, info) => {
+          const { node } = root;
+          const { store } = context;
+          const [modelName] = fromGUID(node.$id);
+          const model = schema.getModel(modelName);
+          return model.hydrate(store, node, { fields: GraphqlFields(info, {}, { processArguments: true }) });
+        },
+        cursor: () => 'cursor',
+      },
       Query: schema.getVisibleModels().reduce((prev, model) => {
         const modelName = model.getName();
 
@@ -236,9 +237,8 @@ exports.createGraphSchema = (schema) => {
           [`${modelName}Trigger`]: {
             subscribe: () => pubsub.asyncIterator(`${modelName}Trigger`),
             resolve: (root, args, context, info) => {
-              // return resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query });
               const { store } = root;
-              // context.store = store;
+              context.store = store;
               return store.query(model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query });
             },
           },
