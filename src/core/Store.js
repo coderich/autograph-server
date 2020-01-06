@@ -39,11 +39,12 @@ module.exports = class Store {
     model = this.toModel(model);
     const { loader = this } = this;
     const query = new Query(model, q);
-    const [limit, fields, countFields, sortFields] = [query.getLimit(), query.getSelectFields(), query.getCountFields(), query.getSortFields()];
+    const [limit, selectFields, countFields, sortFields] = [query.getLimit(), query.getSelectFields(), query.getCountFields(), query.getSortFields()];
 
     return createSystemEvent('Query', { method: 'query', model, store: loader, query }, async () => {
-      const results = await this.find(model, { ...q, fields, sortBy: {}, limit: 0 });
-      const filteredData = filterDataByCounts(loader, model, results, countFields);
+      const results = await loader.find(model, { ...q, sortBy: {}, limit: 0 });
+      const hydratedResults = await model.hydrate(loader, results, { fields: selectFields });
+      const filteredData = filterDataByCounts(loader, model, hydratedResults, countFields);
       const sortedResults = sortData(filteredData, sortFields);
       return sortedResults.slice(0, limit > 0 ? limit : undefined);
     });
@@ -53,15 +54,14 @@ module.exports = class Store {
     model = this.toModel(model);
     const { loader = this } = this;
     const query = new Query(model, q);
-    const [where, limit, selectFields, countFields, sortFields] = [query.getWhere(), query.getLimit(), query.getSelectFields(), query.getCountFields(), query.getSortFields()];
+    const [where, limit, countFields, sortFields] = [query.getWhere(), query.getLimit(), query.getCountFields(), query.getSortFields()];
     ensureModelArrayTypes(this, model, where);
     normalizeModelWhere(this, model, where);
 
     return createSystemEvent('Query', { method: 'find', model, store: loader, query }, async () => {
       const resolvedWhere = await resolveModelWhereClause(loader, model, where);
       const results = await model.find(resolvedWhere);
-      const hydratedResults = await model.hydrate(loader, results, { fields: selectFields });
-      const filteredData = filterDataByCounts(loader, model, hydratedResults, countFields);
+      const filteredData = filterDataByCounts(loader, model, results, countFields);
       const sortedResults = sortData(filteredData, sortFields);
       return sortedResults.slice(0, limit > 0 ? limit : undefined);
     });
@@ -79,7 +79,7 @@ module.exports = class Store {
       const resolvedWhere = await resolveModelWhereClause(loader, model, where);
 
       if (countPaths.length) {
-        const results = await this.query(model, { where: resolvedWhere, fields: countFields });
+        const results = await loader.query(model, { where: resolvedWhere, fields: countFields });
         const filteredData = filterDataByCounts(loader, model, results, countFields);
         return filteredData.length;
       }

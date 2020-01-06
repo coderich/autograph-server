@@ -138,6 +138,10 @@ module.exports = class Model {
     return this.options.indexes || [];
   }
 
+  getDriver() {
+    return this.driver.dao;
+  }
+
   getDriverName() {
     return this.options.driver || 'default';
   }
