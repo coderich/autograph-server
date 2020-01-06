@@ -1,3 +1,4 @@
+const Model = require('../schema/Model');
 const Query = require('../query/Query');
 const DataLoader = require('./DataLoader');
 const { mergeDeep } = require('../service/app.service');
@@ -20,8 +21,7 @@ module.exports = class Store {
   }
 
   toModel(model) {
-    if (typeof model === 'string') return this.schema.getModel(model);
-    return model;
+    return model instanceof Model ? model : this.schema.getModel(model);
   }
 
   get(model, id, q) {
@@ -46,7 +46,8 @@ module.exports = class Store {
       const hydratedResults = await model.hydrate(loader, results, { fields: selectFields });
       const filteredData = filterDataByCounts(loader, model, hydratedResults, countFields);
       const sortedResults = sortData(filteredData, sortFields);
-      return sortedResults.slice(0, limit > 0 ? limit : undefined);
+      const limitedResults = sortedResults.slice(0, limit > 0 ? limit : undefined);
+      return limitedResults;
     });
   }
 
@@ -63,7 +64,8 @@ module.exports = class Store {
       const results = await model.find(resolvedWhere);
       const filteredData = filterDataByCounts(loader, model, results, countFields);
       const sortedResults = sortData(filteredData, sortFields);
-      return sortedResults.slice(0, limit > 0 ? limit : undefined);
+      const limitedResults = sortedResults.slice(0, limit > 0 ? limit : undefined);
+      return limitedResults;
     });
   }
 

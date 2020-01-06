@@ -298,3 +298,14 @@ exports.sortData = (data, sortBy) => {
 exports.filterDataByCounts = (store, model, data, countPaths) => {
   return data.filter(doc => Object.entries(countPaths).every(([path, value]) => String(_.get(doc, path, '')).match(globToRegexp(value))));
 };
+
+// exports.applyPageInfoToSortedResults = (results) => {
+//   return Object.defineProperty(results, '$$pageInfo', {
+//     value: {
+//       startCursor: String!
+//       endCursor: String!
+//       hasPreviousPage: Boolean!
+//       hasNextPage: Boolean!
+//     },
+//   });
+// };

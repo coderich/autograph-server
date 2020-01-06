@@ -52,7 +52,14 @@ module.exports = class Model {
   }
 
   toObject(docs) {
-    return map(docs, doc => Object.defineProperty(doc, '$id', { value: toGUID(this.getName(), doc.id) }));
+    return map(docs, (doc) => {
+      const guid = toGUID(this.getName(), doc.id);
+
+      return Object.defineProperties(doc, {
+        $id: { value: guid },
+        $$cursor: { value: guid },
+      });
+    });
   }
 
   async hydrate(loader, results, query = {}) {

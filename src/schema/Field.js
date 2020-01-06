@@ -85,7 +85,22 @@ module.exports = class Field {
     let type = this.getSimpleType();
     if (suffix && !isScalarDataType(type)) type = this.options.embedded ? `${type}${suffix}` : 'ID';
     if (this.options.enum) type = `${this.model.getName()}${ucFirst(this.getName())}Enum`;
-    return this.isArray() ? `[${type}]` : type;
+    type = this.isArray() ? `[${type}]` : type;
+    if (suffix !== 'InputUpdate' && this.isRequired()) type += '!';
+    return type;
+  }
+
+  getGQLDefinition() {
+    const fieldName = this.getName();
+    const type = this.getGQLType();
+    const ref = this.getDataRef();
+
+    if (ref) {
+      if (this.isArray()) return `${fieldName}(first: Int after: String last: Int before: String query: ${ref}InputQuery): Connection`;
+      return `${fieldName}(query: ${ref}InputQuery): ${type}`;
+    }
+
+    return `${fieldName}: ${type}`;
   }
 
   getDataRef() {

@@ -44,14 +44,9 @@ exports.createGraphSchema = (schema) => {
       return `
         type ${modelName} implements Node {
           id: ID!
-          ${model.getFields().map((field) => {
-            const fieldName = field.getName();
-            const ref = field.getDataRef();
-            if (ref) return `${fieldName}(query: ${ref}InputQuery): ${field.getGQLType().concat(field.isRequired() ? '!' : '')}`;
-            return `${fieldName}: ${field.getGQLType().concat(field.isRequired() ? '!' : '')}`;
-          })}
-          countSelf(where: ${modelName}InputWhere): Int!
+          ${model.getFields().map(field => field.getGQLDefinition())}
           ${model.getCountableFields().map(field => `count${ucFirst(field.getName())}(where: ${field.getDataRef()}InputWhere): Int!`)}
+          countSelf(where: ${modelName}InputWhere): Int!
         }
 
         type ${modelName}Subscription {
@@ -60,7 +55,7 @@ exports.createGraphSchema = (schema) => {
         }
 
         input ${modelName}InputCreate {
-          ${model.getCreateFields().map(field => `${field.getName()}: ${field.getGQLType('InputCreate').concat(field.isRequired() ? '!' : '')}`)}
+          ${model.getCreateFields().map(field => `${field.getName()}: ${field.getGQLType('InputCreate')}`)}
         }
 
         input ${modelName}InputUpdate {
@@ -136,14 +131,15 @@ exports.createGraphSchema = (schema) => {
         ${schema.getVisibleModels().map(model => `delete${model.getName()}(id: ID!): ${model.getName()}!`)}
         ${schema.getVisibleModels().map(model => `
           ${model.getEmbeddedArrayFields().map((field) => {
-            const modelName = model.getName();
-            const fieldName = field.getName();
-            const inputType = field.getGQLType('InputCreate');
+            return '';
+            // const modelName = model.getName();
+            // const fieldName = field.getName();
+            // const inputType = field.getGQLType('InputCreate');
 
-            return `
-              add${modelName}${ucFirst(fieldName)}(id: ID! ${fieldName}: ${inputType}!): ${modelName}!
-              rem${modelName}${ucFirst(fieldName)}(id: ID! query: ID!): ${modelName}!
-            `;
+            // return `
+            //   add${modelName}${ucFirst(fieldName)}(id: ID! ${fieldName}: ${inputType}!): ${modelName}!
+            //   rem${modelName}${ucFirst(fieldName)}(id: ID! query: ID!): ${modelName}!
+            // `;
           })}
         `)}
       }`,
@@ -154,9 +150,7 @@ exports.createGraphSchema = (schema) => {
       return Object.assign(prev, {
         [modelName]: model.getFields().reduce((def, field) => {
           const fieldName = field.getName();
-          return Object.assign(def, { [fieldName]: (root) => {
-            return root[`$${fieldName}`];
-          } });
+          return Object.assign(def, { [fieldName]: root => root[`$${fieldName}`] });
         }, {
           id: root => toGUID(modelName, root.id),
           countSelf: (root, args, context) => resolver.count(context, model, args.where),
@@ -167,11 +161,7 @@ exports.createGraphSchema = (schema) => {
         __resolveType: (root, args, context, info) => fromGUID(root.$id)[0],
       },
       Connection: {
-        edges: (root, args, context, info) => {
-          const nodes = root;
-          const edges = nodes.map(node => ({ cursor: 'cursor', node }));
-          return edges;
-        },
+        edges: root => root.map(node => ({ cursor: node.$$cursor, node })),
         pageInfo: () => {
           return {
             startCursor: 'startCursor',
@@ -190,7 +180,6 @@ exports.createGraphSchema = (schema) => {
           const model = schema.getModel(modelName);
           return model.hydrate(store, node, { fields: GraphqlFields(info, {}, { processArguments: true }) });
         },
-        cursor: () => 'cursor',
       },
       Query: schema.getVisibleModels().reduce((prev, model) => {
         const modelName = model.getName();
