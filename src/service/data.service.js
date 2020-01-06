@@ -299,7 +299,7 @@ exports.filterDataByCounts = (store, model, data, countPaths) => {
   return data.filter(doc => Object.entries(countPaths).every(([path, value]) => String(_.get(doc, path, '')).match(globToRegexp(value))));
 };
 
-exports.paginateResults = (results = [], pagination) => {
+exports.paginateResults = (results = [], pagination = {}) => {
   const { before, after, first = Infinity, last = 0 } = pagination;
   if (first < 0 || last < 0) throw new Error('Invalid first|last pagination');
 

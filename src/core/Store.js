@@ -40,15 +40,21 @@ module.exports = class Store {
     model = this.toModel(model);
     const { loader = this } = this;
     const query = new Query(model, q);
-    const [limit, selectFields, countFields, sortFields] = [query.getLimit(), query.getSelectFields(), query.getCountFields(), query.getSortFields()];
+    const [limit, fields, countFields, sortFields, pagination] = [query.getLimit(), query.getSelectFields(), query.getCountFields(), query.getSortFields(), query.getPagination()];
 
     return createSystemEvent('Query', { method: 'query', model, store: loader, query }, async () => {
-      const results = await loader.find(model, { ...q, sortBy: {}, limit: 0 });
-      const hydratedResults = await model.hydrate(loader, results, { fields: selectFields });
+      // const results = await loader.find(model, { ...q, fields, sortBy: {}, limit: 0, pagination: {} });
+      // const filteredData = filterDataByCounts(loader, model, results, countFields);
+      // const sortedResults = sortData(filteredData, sortFields);
+      // const limitedResults = sortedResults.slice(0, limit > 0 ? limit : undefined);
+      // return paginateResults(limitedResults, pagination);
+
+      const results = await loader.find(model, { ...q, sortBy: {}, limit: 0, pagination: {} });
+      const hydratedResults = await model.hydrate(loader, results, { fields });
       const filteredData = filterDataByCounts(loader, model, hydratedResults, countFields);
       const sortedResults = sortData(filteredData, sortFields);
       const limitedResults = sortedResults.slice(0, limit > 0 ? limit : undefined);
-      return paginateResults(limitedResults, query.getPagination());
+      return paginateResults(limitedResults, pagination);
     });
   }
 
@@ -56,11 +62,19 @@ module.exports = class Store {
     model = this.toModel(model);
     const { loader = this } = this;
     const query = new Query(model, q);
-    const [where, limit, countFields, sortFields] = [query.getWhere(), query.getLimit(), query.getCountFields(), query.getSortFields()];
+    const [where, limit, selectFields, countFields, sortFields] = [query.getWhere(), query.getLimit(), query.getSelectFields(), query.getCountFields(), query.getSortFields()];
     ensureModelArrayTypes(this, model, where);
     normalizeModelWhere(this, model, where);
 
     return createSystemEvent('Query', { method: 'find', model, store: loader, query }, async () => {
+      // const resolvedWhere = await resolveModelWhereClause(loader, model, where);
+      // const results = await model.find(resolvedWhere);
+      // const hydratedResults = await model.hydrate(loader, results, { fields: selectFields });
+      // const filteredData = filterDataByCounts(loader, model, hydratedResults, countFields);
+      // const sortedResults = sortData(filteredData, sortFields);
+      // const limitedResults = sortedResults.slice(0, limit > 0 ? limit : undefined);
+      // return paginateResults(limitedResults, query.getPagination());
+
       const resolvedWhere = await resolveModelWhereClause(loader, model, where);
       const results = await model.find(resolvedWhere);
       const filteredData = filterDataByCounts(loader, model, results, countFields);
