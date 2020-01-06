@@ -296,6 +296,5 @@ exports.sortData = (data, sortBy) => {
 };
 
 exports.filterDataByCounts = (store, model, data, countPaths) => {
-  // console.log('model', data, countPaths);
   return data.filter(doc => Object.entries(countPaths).every(([path, value]) => String(_.get(doc, path, '')).match(globToRegexp(value))));
 };

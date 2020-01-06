@@ -88,21 +88,24 @@ module.exports = class Store {
     });
   }
 
-  async create(model, data) {
+  async create(model, data, q) {
     model = this.toModel(model);
     const { loader = this } = this;
+    const query = new Query(model, q);
     ensureModelArrayTypes(this, model, data);
     normalizeModelData(this, model, data);
     await validateModelData(this, model, data, {}, 'create');
 
     return createSystemEvent('Mutation', { method: 'create', model, store: loader, data }, async () => {
-      return model.create(data);
+      const doc = await model.create(data);
+      return model.hydrate(loader, doc, { fields: query.getSelectFields() });
     });
   }
 
-  async update(model, id, data) {
+  async update(model, id, data, q) {
     model = this.toModel(model);
     const { loader = this } = this;
+    const query = new Query(model, q);
     const doc = await ensureModel(this, model, id);
     ensureModelArrayTypes(this, model, data);
     normalizeModelData(this, model, data);
@@ -110,18 +113,21 @@ module.exports = class Store {
 
     return createSystemEvent('Mutation', { method: 'update', model, store: loader, id, data }, async () => {
       const merged = normalizeModelData(loader, model, mergeDeep(doc, data));
-      return model.update(id, data, merged);
+      const result = await model.update(id, data, merged);
+      return model.hydrate(loader, result, { fields: query.getSelectFields() });
     });
   }
 
-  async delete(model, id) {
+  async delete(model, id, q) {
     model = this.toModel(model);
     const { loader = this } = this;
+    const query = new Query(model, q);
     const doc = await ensureModel(this, model, id);
 
     return createSystemEvent('Mutation', { method: 'delete', model, store: loader, id }, () => {
-      return resolveReferentialIntegrity(loader, model, id).then(() => {
-        return model.delete(id, doc);
+      return resolveReferentialIntegrity(loader, model, id).then(async () => {
+        const result = await model.delete(id, doc);
+        return model.hydrate(loader, result, { fields: query.getSelectFields() });
       });
     });
   }

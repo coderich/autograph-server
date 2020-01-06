@@ -11,9 +11,10 @@ module.exports = class Query {
     // Fields
     const modelFields = model.getScalarFields();
     const selectFields = fields || modelFields.reduce((prev, field) => Object.assign(prev, { [field.getName()]: {} }), {});
-    const finalSelectFields = { ...where, ...selectFields };
+    const finalSelectFields = { ...where, ...sortBy, ...selectFields };
 
     // Sorting
+    sortBy.id = 'DESC';
     const sortFields = keyPaths(sortBy).reduce((prev, path) => {
       if (path.indexOf('count') === 0 || path.indexOf('.count') === 0) return Object.assign(prev, { [path]: _.get(sortBy, path) });
       const $path = path.split('.').map(s => `$${s}`).join('.');

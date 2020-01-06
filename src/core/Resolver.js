@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const { NotFoundError } = require('../service/error.service');
 const { fromGUID, map } = require('../service/app.service');
 
@@ -16,6 +17,12 @@ const unrollGuid = (store, model, data) => {
   });
 };
 
+const normalizeQuery = (query = {}) => {
+  const { fields = {} } = query;
+  query.fields = _.get(fields, 'edges.node');
+  return query;
+};
+
 module.exports = class Resolver {
   constructor() {
     this.get = ({ store }, model, guid, required = false, query = {}) => {
@@ -25,11 +32,11 @@ module.exports = class Resolver {
       });
     };
 
-    this.query = ({ store }, model, query = {}) => store.query(model, query);
-    this.find = ({ store }, model, query = {}) => store.find(model, query);
+    this.query = ({ store }, model, query = {}) => store.query(model, normalizeQuery(query));
+    this.find = ({ store }, model, query = {}) => store.find(model, normalizeQuery(query));
     this.count = ({ store }, model, where = {}) => store.count(model, where);
-    this.create = ({ store }, model, data) => store.create(model, unrollGuid(store, model, data));
-    this.update = ({ store }, model, guid, data) => store.update(model, guidToId(guid), unrollGuid(store, model, data));
-    this.delete = ({ store }, model, guid) => store.delete(model, guidToId(guid));
+    this.create = ({ store }, model, data, query) => store.create(model, unrollGuid(store, model, data), query);
+    this.update = ({ store }, model, guid, data, query) => store.update(model, guidToId(guid), unrollGuid(store, model, data), query);
+    this.delete = ({ store }, model, guid, query) => store.delete(model, guidToId(guid), query);
   }
 };

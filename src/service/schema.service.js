@@ -115,18 +115,18 @@ exports.createGraphSchema = (schema) => {
         Schema: Schema!
         node(id: ID!): Node
         ${schema.getVisibleModels().map(model => `get${model.getName()}(id: ID!): ${model.getName()}`)}
-        ${schema.getVisibleModels().map(model => `find${model.getName()}(query: ${ucFirst(model.getName())}InputQuery): Connection!`)}
+        ${schema.getVisibleModels().map(model => `find${model.getName()}(first: Int after: String last: Int before: String query: ${ucFirst(model.getName())}InputQuery): Connection!`)}
         ${schema.getVisibleModels().map(model => `count${model.getName()}(where: ${ucFirst(model.getName())}InputWhere): Int!`)}
       }`,
 
       `type Schema {
         ${schema.getVisibleModels().map(model => `get${model.getName()}(id: ID!): ${model.getName()}`)}
-        ${schema.getVisibleModels().map(model => `find${model.getName()}(query: ${ucFirst(model.getName())}InputQuery): Connection!`)}
+        ${schema.getVisibleModels().map(model => `find${model.getName()}(first: Int after: String last: Int before: String query: ${ucFirst(model.getName())}InputQuery): Connection!`)}
         ${schema.getVisibleModels().map(model => `count${model.getName()}(where: ${ucFirst(model.getName())}InputWhere): Int!`)}
       }`,
 
       `type Subscription {
-        ${schema.getVisibleModels().map(model => `${model.getName()}Trigger(query: ${ucFirst(model.getName())}InputQuery): Connection!`)}
+        ${schema.getVisibleModels().map(model => `${model.getName()}Trigger(first: Int after: String last: Int before: String query: ${ucFirst(model.getName())}InputQuery): Connection!`)}
         ${schema.getVisibleModels().map(model => `${model.getName()}Changed(query: ${ucFirst(model.getName())}InputQuery): [${model.getName()}Subscription]!`)}
       }`,
 
@@ -181,16 +181,16 @@ exports.createGraphSchema = (schema) => {
           };
         },
       },
-      Edge: {
-        node: async (root, args, context, info) => {
-          const { node } = root;
-          const { store } = context;
-          const [modelName] = fromGUID(node.$id);
-          const model = schema.getModel(modelName);
-          return model.hydrate(store, node, { fields: GraphqlFields(info, {}, { processArguments: true }) });
-        },
-        cursor: () => 'cursor',
-      },
+      // Edge: {
+      //   node: async (root, args, context, info) => {
+      //     const { node } = root;
+      //     const { store } = context;
+      //     const [modelName] = fromGUID(node.$id);
+      //     const model = schema.getModel(modelName);
+      //     return model.hydrate(store, node, { fields: GraphqlFields(info, {}, { processArguments: true }) });
+      //   },
+      //   cursor: () => 'cursor',
+      // },
       Query: schema.getVisibleModels().reduce((prev, model) => {
         const modelName = model.getName();
 
@@ -213,9 +213,9 @@ exports.createGraphSchema = (schema) => {
         const modelName = model.getName();
 
         return Object.assign(prev, {
-          [`create${modelName}`]: (root, args, context) => resolver.create(context, model, args.data),
-          [`update${modelName}`]: (root, args, context) => resolver.update(context, model, args.id, args.data),
-          [`delete${modelName}`]: (root, args, context) => resolver.delete(context, model, args.id),
+          [`create${modelName}`]: (root, args, context, info) => resolver.create(context, model, args.data, { fields: GraphqlFields(info, {}, { processArguments: true }) }),
+          [`update${modelName}`]: (root, args, context, info) => resolver.update(context, model, args.id, args.data, { fields: GraphqlFields(info, {}, { processArguments: true }) }),
+          [`delete${modelName}`]: (root, args, context, info) => resolver.delete(context, model, args.id, { fields: GraphqlFields(info, {}, { processArguments: true }) }),
         });
       }, {}),
 
@@ -236,8 +236,9 @@ exports.createGraphSchema = (schema) => {
           [`${modelName}Trigger`]: {
             subscribe: () => pubsub.asyncIterator(`${modelName}Trigger`),
             resolve: (root, args, context, info) => {
+              // return resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query });
               const { store } = root;
-              context.store = store;
+              // context.store = store;
               return store.query(model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query });
             },
           },

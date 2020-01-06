@@ -28,16 +28,16 @@ module.exports = class {
     return this.loader.load({ op: 'count', model, args: [where] });
   }
 
-  create(model, data) {
-    return this.store.create(model, data);
+  create(model, data, query) {
+    return this.store.create(model, data, query);
   }
 
-  update(model, id, data) {
-    return this.store.update(model, id, data);
+  update(model, id, data, query) {
+    return this.store.update(model, id, data, query);
   }
 
-  delete(model, id) {
-    return this.store.delete(model, id);
+  delete(model, id, query) {
+    return this.store.delete(model, id, query);
   }
 
   dropModel(model) {
