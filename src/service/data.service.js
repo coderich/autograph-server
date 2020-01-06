@@ -299,16 +299,27 @@ exports.filterDataByCounts = (store, model, data, countPaths) => {
   return data.filter(doc => Object.entries(countPaths).every(([path, value]) => String(_.get(doc, path, '')).match(globToRegexp(value))));
 };
 
-exports.paginateResults = (results, pagination) => {
-  const start = 0;
-  const end = results.length - 1;
+exports.paginateResults = (results = [], pagination) => {
+  const { before, after, first = Infinity, last = 0 } = pagination;
+  if (first < 0 || last < 0) throw new Error('Invalid first|last pagination');
 
-  return Object.defineProperty(results, '$$pageInfo', {
+  const totalCount = results.length;
+  const cursors = results.map(result => result.$$cursor);
+  const afterIndex = cursors.findIndex(cursor => cursor >= after); // Want edges after this index
+  let beforeIndex = cursors.reverse().findIndex(cursor => cursor <= before);
+  if (beforeIndex === -1) beforeIndex = Infinity; // Want edges before this index
+  const edges = results.slice(afterIndex + 1, beforeIndex - 1);
+  const hasPreviousPage = Boolean(last ? (edges.length > last) : (after && afterIndex));
+  const hasNextPage = Boolean(first !== Infinity ? (edges.length > first) : (before && beforeIndex < results.length));
+  const slice = edges.slice(0, first).slice(-last);
+
+  return Object.defineProperty(slice, '$$pageInfo', {
     value: {
-      startCursor: _.get(results, `${start}.$$cursor`, ''),
-      endCursor: _.get(results, `${end}.$$cursor`, ''),
-      hasPreviousPage: false,
-      hasNextPage: true,
+      startCursor: _.get(slice, '0.$$cursor', ''),
+      endCursor: _.get(slice, `${slice.length - 1}.$$cursor`, ''),
+      hasPreviousPage,
+      hasNextPage,
+      totalCount,
     },
   });
 };

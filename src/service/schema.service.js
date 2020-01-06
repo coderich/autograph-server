@@ -97,6 +97,7 @@ exports.createGraphSchema = (schema) => {
         endCursor: String!
         hasPreviousPage: Boolean!
         hasNextPage: Boolean!
+        totalCount: Int!
       }
 
       interface Node {
