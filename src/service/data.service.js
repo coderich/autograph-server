@@ -299,13 +299,16 @@ exports.filterDataByCounts = (store, model, data, countPaths) => {
   return data.filter(doc => Object.entries(countPaths).every(([path, value]) => String(_.get(doc, path, '')).match(globToRegexp(value))));
 };
 
-// exports.applyPageInfoToSortedResults = (results) => {
-//   return Object.defineProperty(results, '$$pageInfo', {
-//     value: {
-//       startCursor: String!
-//       endCursor: String!
-//       hasPreviousPage: Boolean!
-//       hasNextPage: Boolean!
-//     },
-//   });
-// };
+exports.paginateResults = (results, pagination) => {
+  const start = 0;
+  const end = results.length - 1;
+
+  return Object.defineProperty(results, '$$pageInfo', {
+    value: {
+      startCursor: _.get(results, `${start}.$$cursor`, ''),
+      endCursor: _.get(results, `${end}.$$cursor`, ''),
+      hasPreviousPage: false,
+      hasNextPage: true,
+    },
+  });
+};

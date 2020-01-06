@@ -1,5 +1,5 @@
 const _ = require('lodash');
-// const GraphqlFields = require('graphql-fields');
+const GraphqlFields = require('graphql-fields');
 const { NotFoundError } = require('../service/error.service');
 const { fromGUID, map } = require('../service/app.service');
 
@@ -18,24 +18,30 @@ const unrollGuid = (store, model, data) => {
   });
 };
 
-const normalizeQuery = (query = {}) => {
+const normalizeQuery = (args = {}, info) => {
+  const query = { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query };
   const { fields = {} } = query;
-  query.fields = _.get(fields, 'edges.node');
-  return query;
+  const { first, last, before, after } = args;
+  return Object.assign(query, { pagination: { first, last, before, after }, fields: _.get(fields, 'edges.node') });
 };
 
 module.exports = class Resolver {
   constructor() {
-    this.get = ({ store }, model, guid, required = false, query = {}) => {
+    // Getter
+    this.get = ({ store }, model, guid, required = false, info) => {
+      const query = { fields: GraphqlFields(info, {}, { processArguments: true }) };
+
       return store.get(model, guidToId(guid), query).then((doc) => {
         if (!doc && required) throw new NotFoundError(`${model} Not Found`);
         return doc;
       });
     };
 
-    this.query = ({ store }, model, query = {}) => store.query(model, normalizeQuery(query));
-    this.find = ({ store }, model, query = {}) => store.find(model, normalizeQuery(query));
-    this.count = ({ store }, model, where = {}) => store.count(model, where);
+    // Query
+    this.query = ({ store }, model, args, info) => store.query(model, normalizeQuery(args, info));
+    this.count = ({ store }, model, args, info) => store.count(model, args.where);
+
+    // Mutations
     this.create = ({ store }, model, data, query) => store.create(model, unrollGuid(store, model, data), query);
     this.update = ({ store }, model, guid, data, query) => store.update(model, guidToId(guid), unrollGuid(store, model, data), query);
     this.delete = ({ store }, model, guid, query) => store.delete(model, guidToId(guid), query);

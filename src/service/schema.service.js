@@ -153,7 +153,7 @@ exports.createGraphSchema = (schema) => {
           return Object.assign(def, { [fieldName]: root => root[`$${fieldName}`] });
         }, {
           id: root => toGUID(modelName, root.id),
-          countSelf: (root, args, context) => resolver.count(context, model, args.where),
+          countSelf: (root, args, context, info) => resolver.count(context, model, args, info),
         }),
       });
     }, {
@@ -162,14 +162,7 @@ exports.createGraphSchema = (schema) => {
       },
       Connection: {
         edges: root => root.map(node => ({ cursor: node.$$cursor, node })),
-        pageInfo: () => {
-          return {
-            startCursor: 'startCursor',
-            endCursor: 'endCursor',
-            hasNextPage: false,
-            hasPreviousPage: false,
-          };
-        },
+        pageInfo: root => root.$$pageInfo,
       },
       // Edge is needed for Trigger Subscription for some reason
       Edge: {
@@ -185,9 +178,9 @@ exports.createGraphSchema = (schema) => {
         const modelName = model.getName();
 
         return Object.assign(prev, {
-          [`get${modelName}`]: (root, args, context, info) => resolver.get(context, model, args.id, true, { fields: GraphqlFields(info, {}, { processArguments: true }) }),
-          [`find${modelName}`]: (root, args, context, info) => resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
-          [`count${modelName}`]: (root, args, context) => resolver.count(context, model, args.where),
+          [`get${modelName}`]: (root, args, context, info) => resolver.get(context, model, args.id, true, info),
+          [`find${modelName}`]: (root, args, context, info) => resolver.query(context, model, args, info),
+          [`count${modelName}`]: (root, args, context, info) => resolver.count(context, model, args, info),
         });
       }, {
         Schema: () => ({}),
@@ -195,7 +188,7 @@ exports.createGraphSchema = (schema) => {
           const { id } = args;
           const [modelName] = fromGUID(id);
           const model = schema.getModel(modelName);
-          return resolver.get(context, model, id, false, { fields: GraphqlFields(info, {}, { processArguments: true }) });
+          return resolver.get(context, model, id, false, info);
         },
       }),
 
@@ -213,9 +206,9 @@ exports.createGraphSchema = (schema) => {
         const modelName = model.getName();
 
         return Object.assign(prev, {
-          [`get${modelName}`]: (root, args, context, info) => resolver.get(context, model, args.id, true, { fields: GraphqlFields(info, {}, { processArguments: true }) }),
-          [`find${modelName}`]: (root, args, context, info) => resolver.query(context, model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query }),
-          [`count${modelName}`]: (root, args, context) => resolver.count(context, model, args.where),
+          [`get${modelName}`]: (root, args, context, info) => resolver.get(context, model, args.id, true, info),
+          [`find${modelName}`]: (root, args, context, info) => resolver.query(context, model, args, info),
+          [`count${modelName}`]: (root, args, context, info) => resolver.count(context, model, args, info),
         });
       }, {}),
 
@@ -226,9 +219,10 @@ exports.createGraphSchema = (schema) => {
           [`${modelName}Trigger`]: {
             subscribe: () => pubsub.asyncIterator(`${modelName}Trigger`),
             resolve: (root, args, context, info) => {
-              const { store } = root;
-              context.store = store;
-              return store.query(model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query });
+              return resolver.query(context, model, args, info);
+              // const { store } = root;
+              // context.store = store;
+              // return store.query(model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query });
             },
           },
           [`${modelName}Changed`]: {

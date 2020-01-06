@@ -13,6 +13,7 @@ const {
   resolveReferentialIntegrity,
   sortData,
   filterDataByCounts,
+  paginateResults,
 } = require('../service/data.service');
 
 module.exports = class Store {
@@ -47,7 +48,7 @@ module.exports = class Store {
       const filteredData = filterDataByCounts(loader, model, hydratedResults, countFields);
       const sortedResults = sortData(filteredData, sortFields);
       const limitedResults = sortedResults.slice(0, limit > 0 ? limit : undefined);
-      return limitedResults;
+      return paginateResults(limitedResults, query.getPagination());
     });
   }
 
@@ -65,7 +66,7 @@ module.exports = class Store {
       const filteredData = filterDataByCounts(loader, model, results, countFields);
       const sortedResults = sortData(filteredData, sortFields);
       const limitedResults = sortedResults.slice(0, limit > 0 ? limit : undefined);
-      return limitedResults;
+      return paginateResults(limitedResults, query.getPagination());
     });
   }
 

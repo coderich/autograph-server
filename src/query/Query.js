@@ -6,7 +6,7 @@ const { keyPaths } = require('../service/app.service');
 
 module.exports = class Query {
   constructor(model, query = {}) {
-    const { fields, where = {}, sortBy = {}, limit } = query;
+    const { fields, where = {}, sortBy = {}, pagination = {}, limit } = query;
 
     // Fields
     const modelFields = model.getScalarFields();
@@ -34,6 +34,7 @@ module.exports = class Query {
     this.sortFields = sortFields;
     this.where = where;
     this.sortBy = sortBy;
+    this.pagination = pagination;
     this.limit = limit;
   }
 
@@ -59,6 +60,10 @@ module.exports = class Query {
 
   getSortBy() {
     return this.sortBy;
+  }
+
+  getPagination() {
+    return this.pagination;
   }
 
   getLimit() {
