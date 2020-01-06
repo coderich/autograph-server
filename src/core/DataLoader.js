@@ -16,12 +16,28 @@ module.exports = class {
     return this.loader.load({ op: 'get', model, args: [id, query] });
   }
 
-  query(model, query = {}) {
-    return this.loader.load({ op: 'query', model, args: [query] });
+  async query(model, query = {}) {
+    // return this.loader.load({ op: 'query', model, args: [query] });
+    const results = await this.loader.load({ op: 'query', model, args: [query] });
+
+    results.forEach((doc) => {
+      const getKey = { op: 'get', model, args: [doc.id, {}] };
+      // console.log('prime', getKey);
+      this.loader.clear(getKey).prime(getKey, doc);
+    });
+
+    return results;
   }
 
-  find(model, query = {}) {
-    return this.loader.load({ op: 'find', model, args: [query] });
+  async find(model, query = {}) {
+    const results = await this.loader.load({ op: 'find', model, args: [query] });
+
+    results.forEach((doc) => {
+      const getKey = { op: 'get', model, args: [doc.id, {}] };
+      this.loader.clear(getKey).prime(getKey, doc);
+    });
+
+    return results;
   }
 
   count(model, where = {}) {
