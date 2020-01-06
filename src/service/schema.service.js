@@ -221,9 +221,6 @@ exports.createGraphSchema = (schema) => {
             subscribe: () => pubsub.asyncIterator(`${modelName}Trigger`),
             resolve: (root, args, context, info) => {
               return resolver.query(context, model, args, info);
-              // const { store } = root;
-              // context.store = store;
-              // return store.query(model, { fields: GraphqlFields(info, {}, { processArguments: true }), ...args.query });
             },
           },
           [`${modelName}Changed`]: {
