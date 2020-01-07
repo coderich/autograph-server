@@ -1,9 +1,8 @@
 const _ = require('lodash');
 const GraphqlFields = require('graphql-fields');
 const { withFilter, PubSub } = require('graphql-subscriptions');
-const DataLoader = require('../core/DataLoader');
+const { DataLoader, Emitter } = require('@coderich/dataloader');
 const Resolver = require('../core/Resolver');
-const { internalEmitter: Emitter } = require('./event.service');
 const { ucFirst, hashObject, toGUID, fromGUID } = require('./app.service');
 
 const pubsub = new PubSub();

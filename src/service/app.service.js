@@ -1,24 +1,7 @@
-const UUID = require('uuid/v4');
-const PicoMatch = require('picomatch');
-const FillRange = require('fill-range');
-const DeepMerge = require('deepmerge');
-const { ObjectID } = require('mongodb');
-const ObjectHash = require('object-hash');
-
-exports.id = '3d896496-02a3-4ee5-8e42-2115eb215f7e';
-exports.generateId = () => UUID();
 exports.ucFirst = string => string.charAt(0).toUpperCase() + string.slice(1);
 exports.lcFirst = string => string.charAt(0).toLowerCase() + string.slice(1);
-exports.isPlainObject = obj => typeof obj === 'object' && !Array.isArray(obj) && !(obj instanceof ObjectID);
-exports.isScalarValue = value => typeof value !== 'object' && typeof value !== 'function';
-exports.isScalarDataType = value => ['String', 'Float', 'Boolean'].indexOf(value) > -1;
-exports.isIdValue = value => exports.isScalarValue(value) || value instanceof ObjectID;
-exports.mergeDeep = (...args) => DeepMerge.all(args, { isMergeableObject: obj => exports.isPlainObject(obj) || Array.isArray(obj) });
 exports.uniq = arr => [...new Set(arr.map(a => `${a}`))];
 exports.timeout = ms => new Promise(res => setTimeout(res, ms));
-exports.hashObject = obj => ObjectHash(obj, { respectType: false, respectFunctionNames: false, respectFunctionProperties: false, unorderedArrays: true });
-exports.globToRegex = (glob, options = {}) => PicoMatch.makeRe(glob, { maxLength: 100, ...options, expandRange: (a, b) => `(${FillRange(a, b, { toRegex: true })})` });
-exports.globToRegexp = (glob, options = {}) => PicoMatch.toRegex(exports.globToRegex(glob, options));
 exports.toGUID = (model, id) => Buffer.from(`${model},${id}`).toString('base64');
 exports.fromGUID = guid => Buffer.from(`${guid}`, 'base64').toString('ascii').split(',');
 

@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const GraphqlFields = require('graphql-fields');
-const { NotFoundError } = require('../service/error.service');
+const { NotFoundError } = require('@coderich/dataloader/errors');
 const { fromGUID, map } = require('../service/app.service');
 
 const guidToId = guid => fromGUID(guid)[1];

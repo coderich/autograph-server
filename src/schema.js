@@ -1,6 +1,6 @@
-const { required, immutable, range, allow, reject, email, selfless } = require('./src/service/rule.service');
-const { titleCase } = require('./src/service/transform.service');
-const { Array, Set } = require('./src/service/type.service');
+const { required, immutable, range, allow, reject, email, selfless } = require('@coderich/dataloader/rules');
+const { titleCase } = require('@coderich/dataloader/transforms');
+const { Array, Set } = require('@coderich/dataloader/types');
 
 exports.schema = {
   Person: {
