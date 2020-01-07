@@ -11,7 +11,7 @@ const {
   sortData,
   filterDataByCounts,
   paginateResults,
-} = require('../service/data.service');
+} = require('./service');
 
 module.exports = class QueryFetcher {
   constructor(loader) {
@@ -22,7 +22,7 @@ module.exports = class QueryFetcher {
     const { loader } = this;
     const model = query.getModel();
 
-    return createSystemEvent('Query', { method: 'get', model, store: loader, id }, async () => {
+    return createSystemEvent('Query', { method: 'get', model, loader, query }, async () => {
       const doc = await model.get(id);
       return model.hydrate(loader, doc, { fields: query.getSelectFields() });
     });
@@ -33,8 +33,9 @@ module.exports = class QueryFetcher {
     const model = query.getModel();
     const [limit, fields, countFields, sortFields, pagination] = [query.getLimit(), query.getSelectFields(), query.getCountFields(), query.getSortFields(), query.getPagination()];
 
-    return createSystemEvent('Query', { method: 'query', model, store: loader, query }, async () => {
-      const results = await loader.find(model, { ...query.toObject(), fields, sortBy: {}, limit: 0, pagination: {} });
+    return createSystemEvent('Query', { method: 'query', model, loader, query }, async () => {
+      // const results = await loader.find(model, { ...query.toObject(), fields, sortBy: {}, limit: 0, pagination: {} });
+      const results = await loader.find(`${model}`).select(fields).where(query.getWhere()).exec();
       const filteredData = filterDataByCounts(loader, model, results, countFields);
       const sortedResults = sortData(filteredData, sortFields);
       const limitedResults = sortedResults.slice(0, limit > 0 ? limit : undefined);
@@ -46,10 +47,10 @@ module.exports = class QueryFetcher {
     const { loader } = this;
     const model = query.getModel();
     const [where, limit, selectFields, countFields, sortFields] = [query.getWhere(), query.getLimit(), query.getSelectFields(), query.getCountFields(), query.getSortFields()];
-    ensureModelArrayTypes(this, model, where);
-    normalizeModelWhere(this, model, where);
+    ensureModelArrayTypes(loader, model, where);
+    normalizeModelWhere(loader, model, where);
 
-    return createSystemEvent('Query', { method: 'find', model, store: loader, query }, async () => {
+    return createSystemEvent('Query', { method: 'find', model, loader, query }, async () => {
       const resolvedWhere = await resolveModelWhereClause(loader, model, where);
       const results = await model.find(resolvedWhere);
       const hydratedResults = await model.hydrate(loader, results, { fields: selectFields });
@@ -64,14 +65,14 @@ module.exports = class QueryFetcher {
     const { loader } = this;
     const model = query.getModel();
     const [where, countFields, countPaths] = [query.getWhere(), query.getCountFields(), query.getCountPaths()];
-    ensureModelArrayTypes(this, model, where);
-    normalizeModelWhere(this, model, where);
+    ensureModelArrayTypes(loader, model, where);
+    normalizeModelWhere(loader, model, where);
 
-    return createSystemEvent('Query', { method: 'count', model, store: loader, where }, async () => {
+    return createSystemEvent('Query', { method: 'count', model, loader, query }, async () => {
       const resolvedWhere = await resolveModelWhereClause(loader, model, where);
 
       if (countPaths.length) {
-        const results = await loader.query(model, { where: resolvedWhere, fields: countFields });
+        const results = await loader.query(`${model}`).where(resolvedWhere).select(countFields).exec();
         const filteredData = filterDataByCounts(loader, model, results, countFields);
         return filteredData.length;
       }
@@ -83,11 +84,11 @@ module.exports = class QueryFetcher {
   async create(query, data) {
     const { loader } = this;
     const model = query.getModel();
-    ensureModelArrayTypes(this, model, data);
-    normalizeModelData(this, model, data);
-    await validateModelData(this, model, data, {}, 'create');
+    ensureModelArrayTypes(loader, model, data);
+    normalizeModelData(loader, model, data);
+    await validateModelData(loader, model, data, {}, 'create');
 
-    return createSystemEvent('Mutation', { method: 'create', model, store: loader, data }, async () => {
+    return createSystemEvent('Mutation', { method: 'create', model, loader, data }, async () => {
       const doc = await model.create(data);
       return model.hydrate(loader, doc, { fields: query.getSelectFields() });
     });
@@ -96,12 +97,12 @@ module.exports = class QueryFetcher {
   async update(query, id, data) {
     const { loader } = this;
     const model = query.getModel();
-    const doc = await ensureModel(this, model, id);
-    ensureModelArrayTypes(this, model, data);
-    normalizeModelData(this, model, data);
-    await validateModelData(this, model, data, doc, 'update');
+    const doc = await ensureModel(loader, model, id);
+    ensureModelArrayTypes(loader, model, data);
+    normalizeModelData(loader, model, data);
+    await validateModelData(loader, model, data, doc, 'update');
 
-    return createSystemEvent('Mutation', { method: 'update', model, store: loader, id, data }, async () => {
+    return createSystemEvent('Mutation', { method: 'update', model, loader, id, data }, async () => {
       const merged = normalizeModelData(loader, model, mergeDeep(doc, data));
       const result = await model.update(id, data, merged);
       return model.hydrate(loader, result, { fields: query.getSelectFields() });
@@ -111,9 +112,9 @@ module.exports = class QueryFetcher {
   async delete(query, id) {
     const { loader } = this;
     const model = query.getModel();
-    const doc = await ensureModel(this, model, id);
+    const doc = await ensureModel(loader, model, id);
 
-    return createSystemEvent('Mutation', { method: 'delete', model, store: loader, id }, () => {
+    return createSystemEvent('Mutation', { method: 'delete', model, loader, id }, () => {
       return resolveReferentialIntegrity(loader, model, id).then(async () => {
         const result = await model.delete(id, doc);
         return model.hydrate(loader, result, { fields: query.getSelectFields() });

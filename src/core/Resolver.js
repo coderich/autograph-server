@@ -5,8 +5,8 @@ const { fromGUID, map } = require('../service/app.service');
 
 const guidToId = guid => fromGUID(guid)[1];
 
-const unrollGuid = (store, model, data) => {
-  model = store.toModel(model);
+const unrollGuid = (loader, model, data) => {
+  model = loader.toModel(model);
   const fields = model.getDataRefFields().map(field => field.getName());
 
   return map(data, (doc) => {
@@ -28,22 +28,22 @@ const normalizeQuery = (args = {}, info) => {
 module.exports = class Resolver {
   constructor() {
     // Getter
-    this.get = ({ store }, model, guid, required = false, info) => {
+    this.get = ({ loader }, model, guid, required = false, info) => {
       const query = { fields: GraphqlFields(info, {}, { processArguments: true }) };
 
-      return store.get(model, guidToId(guid), query).then((doc) => {
+      return loader.get(model, guidToId(guid)).query(query).exec().then((doc) => {
         if (!doc && required) throw new NotFoundError(`${model} Not Found`);
         return doc;
       });
     };
 
     // Query
-    this.query = ({ store }, model, args, info) => store.query(model, normalizeQuery(args, info));
-    this.count = ({ store }, model, args, info) => store.count(model, args.where);
+    this.query = ({ loader }, model, args, info) => loader.query(model).query(normalizeQuery(args, info)).exec();
+    this.count = ({ loader }, model, args, info) => loader.count(model).where(args.where).exec();
 
     // Mutations
-    this.create = ({ store }, model, data, query) => store.create(model, unrollGuid(store, model, data), query);
-    this.update = ({ store }, model, guid, data, query) => store.update(model, guidToId(guid), unrollGuid(store, model, data), query);
-    this.delete = ({ store }, model, guid, query) => store.delete(model, guidToId(guid), query);
+    this.create = ({ loader }, model, data, query) => loader.create(model, unrollGuid(loader, model, data), query);
+    this.update = ({ loader }, model, guid, data, query) => loader.update(model, guidToId(guid), unrollGuid(loader, model, data), query);
+    this.delete = ({ loader }, model, guid, query) => loader.delete(model, guidToId(guid), query);
   }
 };

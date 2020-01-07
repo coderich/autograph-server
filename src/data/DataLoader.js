@@ -2,19 +2,20 @@ const DataLoader = require('dataloader');
 const { FullQueryBuilder, QueryBuilder } = require('./QueryBuilder');
 const QueryFetcher = require('./QueryFetcher');
 const Query = require('./Query');
+const Model = require('./Model');
 const { hashObject } = require('../service/app.service');
 
 module.exports = class {
   constructor(schema) {
-    let fetch;
+    this.schema = schema;
+
+    this.fetch = new QueryFetcher(this);
 
     this.loader = new DataLoader((keys) => {
-      return Promise.all(keys.map(({ method, model, query, args }) => fetch[method](new Query(schema.getModel(model), query), ...args)));
+      return Promise.all(keys.map(({ method, model, query, args }) => this.fetch[method](new Query(this.toModel(model), query), ...args)));
     }, {
-      cacheKeyFn: key => hashObject(key),
+      cacheKeyFn: ({ method, model, query, args }) => hashObject({ method, model: `${model}`, query, args }),
     });
-
-    fetch = new QueryFetcher(this.loader);
   }
 
   get(model, id) {
@@ -34,18 +35,37 @@ module.exports = class {
   }
 
   create(model, data) {
-    return new QueryBuilder(this.loader, 'create', model, data);
+    return this.fetch.create(new Query(this.toModel(model)), data);
   }
 
   update(model, id, data) {
-    return new QueryBuilder(this.loader, 'update', model, id, data);
+    return this.fetch.update(new Query(this.toModel(model)), id, data);
   }
 
   delete(model, id) {
-    return new QueryBuilder(this.loader, 'delete', model, id);
+    return this.fetch.delete(new Query(this.toModel(model)), id);
   }
 
   drop(model) {
-    return new QueryBuilder(this.loader, 'drop', model);
+    return this.fetch.drop(new Query(this.toModel(model)));
+  }
+
+  clearAll() {
+    this.loader.clearAll();
+    return this;
+  }
+
+  idValue(model, id) {
+    model = this.toModel(model);
+    return model.idValue(id);
+  }
+
+  idField(model) {
+    model = this.toModel(model);
+    return model.idField();
+  }
+
+  toModel(model) {
+    return model instanceof Model ? model : this.schema.getModel(model);
   }
 };

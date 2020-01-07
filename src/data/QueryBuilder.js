@@ -6,12 +6,20 @@ class QueryBuilder {
     this.args = args;
   }
 
+  query(query) {
+    return Object.assign(this, query);
+  }
+
   select(f) {
     this.f = f; return this;
   }
 
   where(w) {
     this.w = w; return this;
+  }
+
+  limit(l) {
+    this.l = l; return this;
   }
 
   exec() {
@@ -43,10 +51,6 @@ class FullQueryBuilder extends QueryBuilder {
 
   page(p) {
     this.p = p; return this;
-  }
-
-  limit(l) {
-    this.l = l; return this;
   }
 }
 

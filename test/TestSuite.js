@@ -1,15 +1,11 @@
-const { ApolloServer, makeExecutableSchema } = require('apollo-server');
 // const Neo4j = require('neodb');
 // const Redis = require('redis-mock');
 const { MongoMemoryServer } = require('mongodb-memory-server');
-const { createGraphSchema } = require('../src/service/schema.service');
 const { timeout } = require('../src/service/app.service');
-const Schema = require('../src/schema/Schema');
-const Store = require('../src/core/Store');
+const Schema = require('../src/data/Schema');
 const { schema, stores } = require('../schema');
 const DataLoader = require('../src/data/DataLoader');
 
-let dao;
 let dataLoader;
 let richard;
 let christie;
@@ -34,13 +30,6 @@ const sorter = (a, b) => {
   if (idA < idB) return -1;
   if (idA > idB) return 1;
   return 0;
-};
-
-const makeApolloServer = (executableSchema, store, useDataLoader = false) => {
-  return new ApolloServer({
-    schema: executableSchema,
-    context: async ({ request, h }) => ({ store: useDataLoader ? store.dataLoader() : store }),
-  });
 };
 
 module.exports = (name, db = 'mongo') => {
@@ -76,60 +65,35 @@ module.exports = (name, db = 'mongo') => {
       }
 
       // Create core classes
-      const schma = new Schema(schema, stores, driverArgs);
-      const store = new Store(schma);
-      const graphSchema = createGraphSchema(schma);
-      const executableSchema = makeExecutableSchema(graphSchema);
-      dataLoader = new DataLoader(schma);
-
-      //
-      switch (name) {
-        case 'Store': {
-          dao = store;
-          break;
-        }
-        case 'DataLoader': {
-          dao = store.dataLoader();
-          break;
-        }
-        case 'Resolver': {
-          dao = new Client('http://localhost:3000/graphql');
-          const apolloServer = makeApolloServer(executableSchema, store, Boolean(name === 'DataLoader'));
-          await apolloServer.start(3000);
-          break;
-        }
-        default: {
-          dao = store;
-          break;
-        }
-      }
+      const schema2 = new Schema(schema, stores, driverArgs);
+      dataLoader = new DataLoader(schema2);
 
       //
       await timeout(2000);
-      await Promise.all(schma.getModels().map(model => store.dropModel(model)));
+      await Promise.all(schema2.getModels().map(model => model.drop()));
       await timeout(500);
     });
 
 
     describe('Create', () => {
       test('Person', async () => {
-        richard = await dao.create('Person', { name: 'Richard', emailAddress: 'rich@coderich.com' });
+        richard = await dataLoader.create('Person', { name: 'Richard', emailAddress: 'rich@coderich.com' });
         expect(richard.id).toBeDefined();
         expect(richard.name).toBe('Richard');
 
-        christie = await dao.create('Person', { name: 'Christie', emailAddress: 'christie@gmail.com', friends: [richard.id] });
+        christie = await dataLoader.create('Person', { name: 'Christie', emailAddress: 'christie@gmail.com', friends: [richard.id] });
         expect(christie.id).toBeDefined();
         expect(christie.friends).toEqual([richard.id]);
       });
 
       test('Book', async () => {
-        mobyDick = await dao.create('Book', { name: 'moby dick', price: 9.99, bids: [1.99, 1.20, 5.00], bestSeller: true, author: richard.id });
+        mobyDick = await dataLoader.create('Book', { name: 'moby dick', price: 9.99, bids: [1.99, 1.20, 5.00], bestSeller: true, author: richard.id });
         expect(mobyDick.id).toBeDefined();
         expect(mobyDick.name).toBe('Moby Dick');
         expect(mobyDick.price).toBe(9.99);
         expect(mobyDick.author).toBe(richard.id);
 
-        healthBook = await dao.create('Book', { name: 'Health and Wellness', bids: [5.00, 9.00, 12.50], price: '29.99', author: christie.id });
+        healthBook = await dataLoader.create('Book', { name: 'Health and Wellness', bids: [5.00, 9.00, 12.50], price: '29.99', author: christie.id });
         expect(healthBook.id).toBeDefined();
         expect(healthBook.name).toEqual('Health And Wellness');
         expect(healthBook.price).toEqual(29.99);
@@ -137,8 +101,8 @@ module.exports = (name, db = 'mongo') => {
       });
 
       test('Chapter', async () => {
-        chapter1 = await dao.create('Chapter', { name: 'chapter1', book: healthBook.id });
-        chapter2 = await dao.create('Chapter', { name: 'chapter2', book: healthBook.id });
+        chapter1 = await dataLoader.create('Chapter', { name: 'chapter1', book: healthBook.id });
+        chapter2 = await dataLoader.create('Chapter', { name: 'chapter2', book: healthBook.id });
         expect(chapter1.id).toBeDefined();
         expect(chapter1.name).toEqual('Chapter1');
         expect(chapter2.id).toBeDefined();
@@ -146,10 +110,10 @@ module.exports = (name, db = 'mongo') => {
       });
 
       test('Page', async () => {
-        page1 = await dao.create('Page', { number: 1, chapter: chapter1.id, verbage: 'This is the introduction, of sorts.' });
-        page2 = await dao.create('Page', { number: 2, chapter: chapter1.id, verbage: 'Now you know.' });
-        page3 = await dao.create('Page', { number: 1, chapter: chapter2.id, verbage: 'Ready for more?' });
-        page4 = await dao.create('Page', { number: 2, chapter: chapter2.id, verbage: 'The end.' });
+        page1 = await dataLoader.create('Page', { number: 1, chapter: chapter1.id, verbage: 'This is the introduction, of sorts.' });
+        page2 = await dataLoader.create('Page', { number: 2, chapter: chapter1.id, verbage: 'Now you know.' });
+        page3 = await dataLoader.create('Page', { number: 1, chapter: chapter2.id, verbage: 'Ready for more?' });
+        page4 = await dataLoader.create('Page', { number: 2, chapter: chapter2.id, verbage: 'The end.' });
         expect(page1.id).toBeDefined();
         expect(page2.id).toBeDefined();
         expect(page3.id).toBeDefined();
@@ -157,9 +121,9 @@ module.exports = (name, db = 'mongo') => {
       });
 
       test('Building', async () => {
-        bookBuilding = await dao.create('Building', { year: 1990, type: 'business', tenants: christie.id });
-        libraryBuilding = await dao.create('Building', { type: 'business', tenants: christie.id });
-        apartmentBuilding = await dao.create('Building', { type: 'home', tenants: [richard.id, christie.id], landlord: richard.id });
+        bookBuilding = await dataLoader.create('Building', { year: 1990, type: 'business', tenants: christie.id });
+        libraryBuilding = await dataLoader.create('Building', { type: 'business', tenants: christie.id });
+        apartmentBuilding = await dataLoader.create('Building', { type: 'home', tenants: [richard.id, christie.id], landlord: richard.id });
         expect(bookBuilding.id).toBeDefined();
         expect(bookBuilding.year).toEqual(1990);
         expect(libraryBuilding.id).toBeDefined();
@@ -170,8 +134,8 @@ module.exports = (name, db = 'mongo') => {
       });
 
       test('BookStore', async () => {
-        bookstore1 = await dao.create('BookStore', { name: 'Best Books Ever', books: [mobyDick.id, mobyDick.id, healthBook.id], building: bookBuilding });
-        bookstore2 = await dao.create('BookStore', { name: 'New Books', books: [mobyDick.id], building: bookBuilding });
+        bookstore1 = await dataLoader.create('BookStore', { name: 'Best Books Ever', books: [mobyDick.id, mobyDick.id, healthBook.id], building: bookBuilding });
+        bookstore2 = await dataLoader.create('BookStore', { name: 'New Books', books: [mobyDick.id], building: bookBuilding });
         expect(bookstore1.id).toBeDefined();
         expect(bookstore1.books.length).toEqual(3);
         expect(bookstore1.building.type).toEqual('business');
@@ -181,7 +145,7 @@ module.exports = (name, db = 'mongo') => {
       });
 
       test('Library', async () => {
-        library = await dao.create('Library', { name: 'Public Library', books: [mobyDick.id, healthBook.id, healthBook.id], building: libraryBuilding });
+        library = await dataLoader.create('Library', { name: 'Public Library', books: [mobyDick.id, healthBook.id, healthBook.id], building: libraryBuilding });
         expect(library.id).toBeDefined();
         expect(library.books.length).toEqual(3);
         expect(library.building.type).toEqual('business');
@@ -191,40 +155,40 @@ module.exports = (name, db = 'mongo') => {
 
     describe('Get', () => {
       test('Person', async () => {
-        expect(await dao.get('Person', richard.id)).toMatchObject({ id: richard.id, name: richard.name });
-        expect(await dao.get('Person', christie.id)).toMatchObject({ id: christie.id, name: christie.name, friends: [richard.id] });
+        expect(await dataLoader.get('Person', richard.id).exec()).toMatchObject({ id: richard.id, name: richard.name });
+        expect(await dataLoader.get('Person', christie.id).exec()).toMatchObject({ id: christie.id, name: christie.name, friends: [richard.id] });
       });
 
       test('Book', async () => {
-        expect(await dao.get('Book', mobyDick.id)).toMatchObject({ id: mobyDick.id, name: 'Moby Dick', author: richard.id });
-        expect(await dao.get('Book', healthBook.id)).toMatchObject({ id: healthBook.id, name: 'Health And Wellness', author: christie.id });
+        expect(await dataLoader.get('Book', mobyDick.id).exec()).toMatchObject({ id: mobyDick.id, name: 'Moby Dick', author: richard.id });
+        expect(await dataLoader.get('Book', healthBook.id).exec()).toMatchObject({ id: healthBook.id, name: 'Health And Wellness', author: christie.id });
       });
 
       test('Chapter', async () => {
-        expect(await dao.get('Chapter', chapter1.id)).toMatchObject({ id: chapter1.id, name: 'Chapter1', book: healthBook.id });
-        expect(await dao.get('Chapter', chapter2.id)).toMatchObject({ id: chapter2.id, name: 'Chapter2', book: healthBook.id });
+        expect(await dataLoader.get('Chapter', chapter1.id).exec()).toMatchObject({ id: chapter1.id, name: 'Chapter1', book: healthBook.id });
+        expect(await dataLoader.get('Chapter', chapter2.id).exec()).toMatchObject({ id: chapter2.id, name: 'Chapter2', book: healthBook.id });
       });
 
       test('Page', async () => {
-        expect(await dao.get('Page', page1.id)).toMatchObject({ id: page1.id, number: 1, chapter: chapter1.id });
-        expect(await dao.get('Page', page2.id)).toMatchObject({ id: page2.id, number: 2, chapter: chapter1.id });
-        expect(await dao.get('Page', page3.id)).toMatchObject({ id: page3.id, number: 1, chapter: chapter2.id });
-        expect(await dao.get('Page', page4.id)).toMatchObject({ id: page4.id, number: 2, chapter: chapter2.id });
+        expect(await dataLoader.get('Page', page1.id).exec()).toMatchObject({ id: page1.id, number: 1, chapter: chapter1.id });
+        expect(await dataLoader.get('Page', page2.id).exec()).toMatchObject({ id: page2.id, number: 2, chapter: chapter1.id });
+        expect(await dataLoader.get('Page', page3.id).exec()).toMatchObject({ id: page3.id, number: 1, chapter: chapter2.id });
+        expect(await dataLoader.get('Page', page4.id).exec()).toMatchObject({ id: page4.id, number: 2, chapter: chapter2.id });
       });
 
       test('Building', async () => {
-        expect(await dao.get('Building', bookBuilding.id)).toMatchObject({ id: bookBuilding.id, year: 1990, type: 'business' });
-        expect(await dao.get('Building', libraryBuilding.id)).toMatchObject({ id: libraryBuilding.id, type: 'business' });
-        expect(await dao.get('Building', apartmentBuilding.id)).toMatchObject({ id: apartmentBuilding.id, type: 'home', tenants: [richard.id, christie.id], landlord: richard.id });
+        expect(await dataLoader.get('Building', bookBuilding.id).exec()).toMatchObject({ id: bookBuilding.id, year: 1990, type: 'business' });
+        expect(await dataLoader.get('Building', libraryBuilding.id).exec()).toMatchObject({ id: libraryBuilding.id, type: 'business' });
+        expect(await dataLoader.get('Building', apartmentBuilding.id).exec()).toMatchObject({ id: apartmentBuilding.id, type: 'home', tenants: [richard.id, christie.id], landlord: richard.id });
       });
 
       test('BookStore', async () => {
-        expect(await dao.get('BookStore', bookstore1.id)).toMatchObject({ id: bookstore1.id, name: 'Best Books Ever', books: [mobyDick.id, mobyDick.id, healthBook.id], building: expect.objectContaining(bookBuilding) });
-        expect(await dao.get('BookStore', bookstore2.id)).toMatchObject({ id: bookstore2.id, name: 'New Books', books: [mobyDick.id], building: expect.objectContaining(bookBuilding) });
+        expect(await dataLoader.get('BookStore', bookstore1.id).exec()).toMatchObject({ id: bookstore1.id, name: 'Best Books Ever', books: [mobyDick.id, mobyDick.id, healthBook.id], building: expect.objectContaining(bookBuilding) });
+        expect(await dataLoader.get('BookStore', bookstore2.id).exec()).toMatchObject({ id: bookstore2.id, name: 'New Books', books: [mobyDick.id], building: expect.objectContaining(bookBuilding) });
       });
 
       test('Library', async () => {
-        expect(await dao.get('Library', library.id)).toMatchObject({ id: library.id, name: 'Public Library', books: [mobyDick.id, healthBook.id, healthBook.id], building: expect.objectContaining(libraryBuilding) });
+        expect(await dataLoader.get('Library', library.id).exec()).toMatchObject({ id: library.id, name: 'Public Library', books: [mobyDick.id, healthBook.id, healthBook.id], building: expect.objectContaining(libraryBuilding) });
       });
     });
 
@@ -237,163 +201,162 @@ module.exports = (name, db = 'mongo') => {
         expect(await dataLoader.find('Person').where({ emailAddress: 'rich@coderich.com' }).exec()).toMatchObject([{ id: richard.id, name: 'Richard' }]);
         expect((await dataLoader.find('Person').where({ name: ['Richard', 'Christie'] }).exec()).sort(sorter)).toMatchObject([{ id: christie.id, name: 'Christie' }, { id: richard.id, name: 'Richard' }].sort(sorter));
         expect((await dataLoader.find('Person').where({ name: '*' }).exec()).sort(sorter)).toMatchObject([{ id: christie.id, name: 'Christie' }, { id: richard.id, name: 'Richard' }].sort(sorter));
-        // expect(await dataLoader.find('Person').where({ authored: mobyDick.id }).exec()).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dataLoader.find('Person').where({ authored: mobyDick.id }).exec()).toMatchObject([{ id: richard.id, name: 'Richard' }]);
       });
 
       test('Book', async () => {
-        expect((await dao.find('Book')).length).toBe(2);
-        expect(await dao.find('Book', { where: { author: richard.id } })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
-        expect(await dao.find('Book', { where: { price: 9.99 } })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
-        expect(await dao.find('Book', { where: { price: '9.99' } })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
-        expect(await dao.find('Book', { where: { author: christie.id } })).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
-        expect(await dao.find('Book', { where: { bestSeller: true } })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
-        expect(await dao.find('Book', { where: { bestSeller: 'TRu?' } })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
-        expect(await dao.find('Book', { where: { bestSeller: 'tru' } })).toMatchObject([]);
-        expect(await dao.find('Book', { where: { price: '?.??' } })).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
-        expect(await dao.find('Book', { where: { price: '??.*' } })).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
-        expect(await dao.find('Book', { where: { bids: [1.99] } })).toMatchObject([{ id: mobyDick.id }]);
-        expect(await dao.find('Book', { where: { bids: 1.99 } })).toMatchObject([{ id: mobyDick.id }]);
-        expect((await dao.find('Book', { where: { bids: 5.00 } })).sort(sorter)).toMatchObject([{ id: mobyDick.id }, { id: healthBook.id }].sort(sorter));
-        expect(await dao.find('Book', { where: { bids: [19.99, '1.99'] } })).toMatchObject([{ id: mobyDick.id }]);
-        expect(await dao.find('Book', { where: { chapters: chapter1.id } })).toMatchObject([{ id: healthBook.id }]);
+        expect((await dataLoader.find('Book').exec()).length).toBe(2);
+        expect(await dataLoader.find('Book').where({ author: richard.id }).exec()).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dataLoader.find('Book').where({ price: 9.99 }).exec()).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dataLoader.find('Book').where({ price: '9.99' }).exec()).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dataLoader.find('Book').where({ author: christie.id }).exec()).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
+        expect(await dataLoader.find('Book').where({ bestSeller: true }).exec()).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dataLoader.find('Book').where({ bestSeller: 'TRu?' }).exec()).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dataLoader.find('Book').where({ bestSeller: 'tru' }).exec()).toMatchObject([]);
+        expect(await dataLoader.find('Book').where({ price: '?.??' }).exec()).toMatchObject([{ id: mobyDick.id, name: 'Moby Dick', author: richard.id }]);
+        expect(await dataLoader.find('Book').where({ price: '??.*' }).exec()).toMatchObject([{ id: healthBook.id, name: 'Health And Wellness', author: christie.id }]);
+        expect(await dataLoader.find('Book').where({ bids: [1.99] }).exec()).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dataLoader.find('Book').where({ bids: 1.99 }).exec()).toMatchObject([{ id: mobyDick.id }]);
+        expect((await dataLoader.find('Book').where({ bids: 5.00 }).exec()).sort(sorter)).toMatchObject([{ id: mobyDick.id }, { id: healthBook.id }].sort(sorter));
+        expect(await dataLoader.find('Book').where({ bids: [19.99, '1.99'] }).exec()).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dataLoader.find('Book').where({ chapters: chapter1.id }).exec()).toMatchObject([{ id: healthBook.id }]);
       });
 
       test('Chapter', async () => {
-        expect((await dao.find('Chapter')).length).toBe(2);
-        expect(await dao.find('Chapter', { where: { name: 'cHAPter1' } })).toMatchObject([{ id: chapter1.id, name: 'Chapter1', book: healthBook.id }]);
-        expect(await dao.find('Chapter', { where: { name: 'cHAPteR2' } })).toMatchObject([{ id: chapter2.id, name: 'Chapter2', book: healthBook.id }]);
-        expect(await dao.find('Chapter', { where: { name: 'cHAPteR3' } })).toEqual([]);
-        expect(await dao.find('Chapter', { where: { book: mobyDick.id } })).toEqual([]);
-        expect(await dao.find('Chapter', { where: { book: 'some-odd-id' } })).toEqual([]);
-        expect((await dao.find('Chapter', { where: { book: healthBook.id } })).sort(sorter)).toMatchObject([
+        expect((await dataLoader.find('Chapter').exec()).length).toBe(2);
+        expect(await dataLoader.find('Chapter').where({ name: 'cHAPter1' }).exec()).toMatchObject([{ id: chapter1.id, name: 'Chapter1', book: healthBook.id }]);
+        expect(await dataLoader.find('Chapter').where({ name: 'cHAPteR2' }).exec()).toMatchObject([{ id: chapter2.id, name: 'Chapter2', book: healthBook.id }]);
+        expect(await dataLoader.find('Chapter').where({ name: 'cHAPteR3' }).exec()).toEqual([]);
+        expect(await dataLoader.find('Chapter').where({ book: mobyDick.id }).exec()).toEqual([]);
+        expect(await dataLoader.find('Chapter').where({ book: 'some-odd-id' }).exec()).toEqual([]);
+        expect((await dataLoader.find('Chapter').where({ book: healthBook.id }).exec()).sort(sorter)).toMatchObject([
           { id: chapter1.id, name: 'Chapter1', book: healthBook.id },
           { id: chapter2.id, name: 'Chapter2', book: healthBook.id },
         ].sort(sorter));
       });
 
       test('Page', async () => {
-        expect((await dao.find('Page')).length).toBe(4);
-        expect((await dao.find('Page', { where: { chapter: chapter1.id } })).length).toBe(2);
-        expect((await dao.find('Page', { where: { chapter: chapter2.id } })).length).toBe(2);
-        expect((await dao.find('Page', { where: { number: 1 } })).sort(sorter)).toMatchObject([
+        expect((await dataLoader.find('Page').exec()).length).toBe(4);
+        expect((await dataLoader.find('Page').where({ chapter: chapter1.id }).exec()).length).toBe(2);
+        expect((await dataLoader.find('Page').where({ chapter: chapter2.id }).exec()).length).toBe(2);
+        expect((await dataLoader.find('Page').where({ number: 1 }).exec()).sort(sorter)).toMatchObject([
           { id: page1.id, chapter: chapter1.id },
           { id: page3.id, chapter: chapter2.id },
         ].sort(sorter));
-        expect((await dao.find('Page', { where: { number: '2' } })).sort(sorter)).toMatchObject([
+        expect((await dataLoader.find('Page').where({ number: '2' }).exec()).sort(sorter)).toMatchObject([
           { id: page2.id, chapter: chapter1.id },
           { id: page4.id, chapter: chapter2.id },
         ].sort(sorter));
       });
 
       test('Building', async () => {
-        expect((await dao.find('Building')).length).toBe(3);
-        expect((await dao.find('Building', { where: { tenants: [richard.id] } })).length).toBe(1);
-        expect((await dao.find('Building', { where: { tenants: [christie.id] } })).length).toBe(3);
-        expect((await dao.find('Building', { where: { tenants: [richard.id, christie.id] } })).length).toBe(3);
-        // expect((await dao.find('Building', { tenants: `@(@(${richard.id})@(${christie.id}))` })).length).toBe(1);
-        expect((await dao.find('Building', { where: { tenants: [richard.id, christie.id], landlord: richard.id } })).length).toBe(1);
-        expect((await dao.find('Building', { where: { tenants: [richard.id, christie.id], landlord: christie.id } })).length).toBe(0);
+        expect((await dataLoader.find('Building').exec()).length).toBe(3);
+        expect((await dataLoader.find('Building').where({ tenants: [richard.id] }).exec()).length).toBe(1);
+        expect((await dataLoader.find('Building').where({ tenants: [christie.id] }).exec()).length).toBe(3);
+        expect((await dataLoader.find('Building').where({ tenants: [richard.id, christie.id] }).exec()).length).toBe(3);
+        expect((await dataLoader.find('Building').where({ tenants: [richard.id, christie.id], landlord: richard.id }).exec()).length).toBe(1);
+        expect((await dataLoader.find('Building').where({ tenants: [richard.id, christie.id], landlord: christie.id }).exec()).length).toBe(0);
       });
 
       test('BookStore', async () => {
-        expect((await dao.find('BookStore')).length).toBe(2);
-        expect((await dao.find('BookStore', { where: { books: [mobyDick.id] } })).length).toBe(2);
-        expect((await dao.find('BookStore', { where: { name: 'new books' } })).sort(sorter)).toMatchObject([
+        expect((await dataLoader.find('BookStore').exec()).length).toBe(2);
+        expect((await dataLoader.find('BookStore').where({ books: [mobyDick.id] }).exec()).length).toBe(2);
+        expect((await dataLoader.find('BookStore').where({ name: 'new books' }).exec()).sort(sorter)).toMatchObject([
           { id: bookstore2.id, name: 'New Books', building: expect.objectContaining(bookBuilding) },
         ].sort(sorter));
       });
 
       test('Library', async () => {
-        expect((await dao.find('Library')).length).toBe(1);
+        expect((await dataLoader.find('Library').exec()).length).toBe(1);
       });
     });
 
 
     describe('Count (find)', () => {
       test('Person', async () => {
-        expect(await dao.count('Person')).toBe(2);
-        expect(await dao.count('Person', { name: 'richard' })).toBe(1);
-        expect(await dao.count('Person', { name: 'Christie' })).toBe(1);
+        expect(await dataLoader.count('Person').exec()).toBe(2);
+        expect(await dataLoader.count('Person').where({ name: 'richard' }).exec()).toBe(1);
+        expect(await dataLoader.count('Person').where({ name: 'Christie' }).exec()).toBe(1);
       });
 
       test('Book', async () => {
-        expect(await dao.count('Book')).toBe(2);
-        expect(await dao.count('Book', { author: richard.id })).toBe(1);
-        expect(await dao.count('Book', { price: 9.99 })).toBe(1);
-        expect(await dao.count('Book', { price: '9.99' })).toBe(1);
-        expect(await dao.count('Book', { author: christie.id })).toBe(1);
+        expect(await dataLoader.count('Book').exec()).toBe(2);
+        expect(await dataLoader.count('Book').where({ author: richard.id }).exec()).toBe(1);
+        expect(await dataLoader.count('Book').where({ price: 9.99 }).exec()).toBe(1);
+        expect(await dataLoader.count('Book').where({ price: '9.99' }).exec()).toBe(1);
+        expect(await dataLoader.count('Book').where({ author: christie.id }).exec()).toBe(1);
       });
 
       test('Chapter', async () => {
-        expect(await dao.count('Chapter')).toBe(2);
-        expect(await dao.count('Chapter', { name: 'cHAPter1' })).toBe(1);
-        expect(await dao.count('Chapter', { name: 'cHAPteR2' })).toBe(1);
-        expect(await dao.count('Chapter', { name: 'cHAPteR3' })).toBe(0);
-        expect(await dao.count('Chapter', { book: mobyDick.id })).toBe(0);
-        expect(await dao.count('Chapter', { book: 'some-odd-id' })).toEqual(0);
-        expect(await dao.count('Chapter', { book: healthBook.id })).toBe(2);
+        expect(await dataLoader.count('Chapter').exec()).toBe(2);
+        expect(await dataLoader.count('Chapter').where({ name: 'cHAPter1' }).exec()).toBe(1);
+        expect(await dataLoader.count('Chapter').where({ name: 'cHAPteR2' }).exec()).toBe(1);
+        expect(await dataLoader.count('Chapter').where({ name: 'cHAPteR3' }).exec()).toBe(0);
+        expect(await dataLoader.count('Chapter').where({ book: mobyDick.id }).exec()).toBe(0);
+        expect(await dataLoader.count('Chapter').where({ book: 'some-odd-id' }).exec()).toEqual(0);
+        expect(await dataLoader.count('Chapter').where({ book: healthBook.id }).exec()).toBe(2);
       });
 
       test('Page', async () => {
-        expect(await dao.count('Page')).toBe(4);
-        expect(await dao.count('Page', { chapter: chapter1.id })).toBe(2);
-        expect(await dao.count('Page', { chapter: chapter2.id })).toBe(2);
-        expect(await dao.count('Page', { number: 1 })).toBe(2);
-        expect(await dao.count('Page', { number: '2' })).toBe(2);
+        expect(await dataLoader.count('Page').exec()).toBe(4);
+        expect(await dataLoader.count('Page').where({ chapter: chapter1.id }).exec()).toBe(2);
+        expect(await dataLoader.count('Page').where({ chapter: chapter2.id }).exec()).toBe(2);
+        expect(await dataLoader.count('Page').where({ number: 1 }).exec()).toBe(2);
+        expect(await dataLoader.count('Page').where({ number: '2' }).exec()).toBe(2);
       });
 
       test('Building', async () => {
-        expect(await dao.count('Building')).toBe(3);
-        expect(await dao.count('Building', { tenants: [richard.id] })).toBe(1);
-        expect(await dao.count('Building', { tenants: [christie.id] })).toBe(3);
-        expect(await dao.count('Building', { tenants: [richard.id, christie.id] })).toBe(3);
-        expect(await dao.count('Building', { tenants: [richard.id, christie.id], landlord: richard.id })).toBe(1);
-        expect(await dao.count('Building', { tenants: [richard.id, christie.id], landlord: christie.id })).toBe(0);
+        expect(await dataLoader.count('Building').exec()).toBe(3);
+        expect(await dataLoader.count('Building').where({ tenants: [richard.id] }).exec()).toBe(1);
+        expect(await dataLoader.count('Building').where({ tenants: [christie.id] }).exec()).toBe(3);
+        expect(await dataLoader.count('Building').where({ tenants: [richard.id, christie.id] }).exec()).toBe(3);
+        expect(await dataLoader.count('Building').where({ tenants: [richard.id, christie.id], landlord: richard.id }).exec()).toBe(1);
+        expect(await dataLoader.count('Building').where({ tenants: [richard.id, christie.id], landlord: christie.id }).exec()).toBe(0);
       });
 
       test('BookStore', async () => {
-        expect(await dao.count('BookStore')).toBe(2);
-        expect(await dao.count('BookStore', { books: [mobyDick.id] })).toBe(2);
-        expect(await dao.count('BookStore', { name: 'new books' })).toBe(1);
+        expect(await dataLoader.count('BookStore').exec()).toBe(2);
+        expect(await dataLoader.count('BookStore').where({ books: [mobyDick.id] }).exec()).toBe(2);
+        expect(await dataLoader.count('BookStore').where({ name: 'new books' }).exec()).toBe(1);
       });
 
       test('Library', async () => {
-        expect(await dao.count('Library')).toBe(1);
+        expect(await dataLoader.count('Library').exec()).toBe(1);
       });
     });
 
 
     describe('Data Validation', () => {
       test('Person', async () => {
-        await expect(dao.create('Person')).rejects.toThrow();
-        await expect(dao.create('Person', { name: 'Richard' })).rejects.toThrow();
-        await expect(dao.create('Person', { name: 'NewGuy', emailAddress: 'newguy@gmail.com', friends: ['nobody'] })).rejects.toThrow();
-        await expect(dao.create('Person', { name: 'NewGuy', emailAddress: 'newguy@gmail.com', friends: [richard.id, 'nobody'] })).rejects.toThrow();
-        await expect(dao.create('Person', { name: 'NewGuy', emailAddress: 'newguygmail.com' })).rejects.toThrow();
-        await expect(dao.update('Person', richard.id, { name: 'Christie' })).rejects.toThrow();
-        await expect(dao.update('Person', richard.id, { name: 'christie' })).rejects.toThrow();
-        await expect(dao.update('Person', richard.id, { name: null })).rejects.toThrow();
-        await expect(dao.update('Person', 'nobody', { name: 'NewGuy' })).rejects.toThrow();
-        await expect(dao.update('Person', richard.id, { friends: [richard.id] })).rejects.toThrow();
+        await expect(dataLoader.create('Person')).rejects.toThrow();
+        await expect(dataLoader.create('Person', { name: 'Richard' })).rejects.toThrow();
+        await expect(dataLoader.create('Person', { name: 'NewGuy', emailAddress: 'newguy@gmail.com', friends: ['nobody'] })).rejects.toThrow();
+        await expect(dataLoader.create('Person', { name: 'NewGuy', emailAddress: 'newguy@gmail.com', friends: [richard.id, 'nobody'] })).rejects.toThrow();
+        await expect(dataLoader.create('Person', { name: 'NewGuy', emailAddress: 'newguygmail.com' })).rejects.toThrow();
+        await expect(dataLoader.update('Person', richard.id, { name: 'Christie' })).rejects.toThrow();
+        await expect(dataLoader.update('Person', richard.id, { name: 'christie' })).rejects.toThrow();
+        await expect(dataLoader.update('Person', richard.id, { name: null })).rejects.toThrow();
+        await expect(dataLoader.update('Person', 'nobody', { name: 'NewGuy' })).rejects.toThrow();
+        await expect(dataLoader.update('Person', richard.id, { friends: [richard.id] })).rejects.toThrow();
       });
 
       test('Book', async () => {
-        await expect(dao.create('Book')).rejects.toThrow();
-        await expect(dao.create('Book', { name: 'The Bible' })).rejects.toThrow();
-        await expect(dao.create('Book', { name: 'The Bible', author: 'Moses' })).rejects.toThrow();
-        await expect(dao.create('Book', { name: 'The Bible', author: richard.id })).rejects.toThrow();
-        await expect(dao.create('Book', { name: 'The Bible', price: 1.99 })).rejects.toThrow();
-        await expect(dao.create('Book', { name: 'The Bible', price: 1.99, author: mobyDick.id })).rejects.toThrow();
-        await expect(dao.create('Book', { name: 'The Bible', price: 1.99, author: [christie.id] })).rejects.toThrow();
-        await expect(dao.create('Book', { name: 'the bible', price: 1.99, author: christie.id })).rejects.toThrow();
-        await expect(dao.create('Book', { name: 'Great Book', price: -1, author: christie.id })).rejects.toThrow();
-        await expect(dao.create('Book', { name: 'Best Book', price: 101, author: christie.id })).rejects.toThrow();
-        await expect(dao.update('Book', mobyDick.id, { author: christie.id })).rejects.toThrow();
-        await expect(dao.update('Book', mobyDick.id, { author: richard.id })).resolves;
+        await expect(dataLoader.create('Book')).rejects.toThrow();
+        await expect(dataLoader.create('Book', { name: 'The Bible' })).rejects.toThrow();
+        await expect(dataLoader.create('Book', { name: 'The Bible', author: 'Moses' })).rejects.toThrow();
+        await expect(dataLoader.create('Book', { name: 'The Bible', author: richard.id })).rejects.toThrow();
+        await expect(dataLoader.create('Book', { name: 'The Bible', price: 1.99 })).rejects.toThrow();
+        await expect(dataLoader.create('Book', { name: 'The Bible', price: 1.99, author: mobyDick.id })).rejects.toThrow();
+        await expect(dataLoader.create('Book', { name: 'The Bible', price: 1.99, author: [christie.id] })).rejects.toThrow();
+        await expect(dataLoader.create('Book', { name: 'the bible', price: 1.99, author: christie.id })).rejects.toThrow();
+        await expect(dataLoader.create('Book', { name: 'Great Book', price: -1, author: christie.id })).rejects.toThrow();
+        await expect(dataLoader.create('Book', { name: 'Best Book', price: 101, author: christie.id })).rejects.toThrow();
+        await expect(dataLoader.update('Book', mobyDick.id, { author: christie.id })).rejects.toThrow();
+        await expect(dataLoader.update('Book', mobyDick.id, { author: richard.id })).resolves;
 
         switch (stores.default.type) {
           case 'mongo': {
-            await expect(dao.create('Book', { name: 'MoBY DiCK', price: 1.99, author: richard.id })).rejects.toThrow();
+            await expect(dataLoader.create('Book', { name: 'MoBY DiCK', price: 1.99, author: richard.id })).rejects.toThrow();
             break;
           }
           default: break;
@@ -401,15 +364,15 @@ module.exports = (name, db = 'mongo') => {
       });
 
       test('Chapter', async () => {
-        await expect(dao.create('Chapter')).rejects.toThrow();
-        await expect(dao.create('Chapter', { name: 'chapter1' })).rejects.toThrow();
-        await expect(dao.create('Chapter', { name: 'chapter2' })).rejects.toThrow();
-        await expect(dao.create('Chapter', { name: 'chapter3' })).rejects.toThrow();
+        await expect(dataLoader.create('Chapter')).rejects.toThrow();
+        await expect(dataLoader.create('Chapter', { name: 'chapter1' })).rejects.toThrow();
+        await expect(dataLoader.create('Chapter', { name: 'chapter2' })).rejects.toThrow();
+        await expect(dataLoader.create('Chapter', { name: 'chapter3' })).rejects.toThrow();
 
         switch (stores.default.type) {
           case 'mongo': {
-            await expect(dao.create('Chapter', { name: 'chapter1', book: healthBook.id })).rejects.toThrow();
-            await expect(dao.create('Chapter', { name: 'chapter3', book: christie.id })).rejects.toThrow();
+            await expect(dataLoader.create('Chapter', { name: 'chapter1', book: healthBook.id })).rejects.toThrow();
+            await expect(dataLoader.create('Chapter', { name: 'chapter3', book: christie.id })).rejects.toThrow();
             break;
           }
           default: break;
@@ -417,15 +380,15 @@ module.exports = (name, db = 'mongo') => {
       });
 
       test('Page', async () => {
-        await expect(dao.create('Page')).rejects.toThrow();
-        await expect(dao.create('Page', { number: 3 })).rejects.toThrow();
+        await expect(dataLoader.create('Page')).rejects.toThrow();
+        await expect(dataLoader.create('Page', { number: 3 })).rejects.toThrow();
 
         switch (stores.default.type) {
           case 'mongo': {
-            await expect(dao.create('Page', { number: 1, chapter: chapter1 })).rejects.toThrow();
-            await expect(dao.create('Page', { number: 1, chapter: chapter1.id })).rejects.toThrow();
-            await expect(dao.create('Page', { number: 1, chapter: page4.id })).rejects.toThrow();
-            await expect(dao.update('Page', page1.id, { number: 2 })).rejects.toThrow();
+            await expect(dataLoader.create('Page', { number: 1, chapter: chapter1 })).rejects.toThrow();
+            await expect(dataLoader.create('Page', { number: 1, chapter: chapter1.id })).rejects.toThrow();
+            await expect(dataLoader.create('Page', { number: 1, chapter: page4.id })).rejects.toThrow();
+            await expect(dataLoader.update('Page', page1.id, { number: 2 })).rejects.toThrow();
             break;
           }
           default: break;
@@ -433,119 +396,121 @@ module.exports = (name, db = 'mongo') => {
       });
 
       test('Building', async () => {
-        await expect(dao.create('Building')).rejects.toThrow();
-        await expect(dao.create('Building', { type: 'bad-type' })).rejects.toThrow();
-        await expect(dao.create('Building', { type: 'business', landlord: bookstore1.id })).rejects.toThrow();
-        await expect(dao.create('Building', { type: 'business', tenants: [richard.id, bookstore1.id] })).rejects.toThrow();
+        await expect(dataLoader.create('Building')).rejects.toThrow();
+        await expect(dataLoader.create('Building', { type: 'bad-type' })).rejects.toThrow();
+        await expect(dataLoader.create('Building', { type: 'business', landlord: bookstore1.id })).rejects.toThrow();
+        await expect(dataLoader.create('Building', { type: 'business', tenants: [richard.id, bookstore1.id] })).rejects.toThrow();
       });
 
       test('BookStore', async () => {
-        await expect(dao.create('BookStore')).rejects.toThrow();
-        await expect(dao.create('BookStore', { name: 'New Books' })).rejects.toThrow();
-        await expect(dao.create('BookStore', { name: 'New Books', building: 'bad-building' })).rejects.toThrow();
-        await expect(dao.create('BookStore', { name: 'besT bookS eveR', building: bookBuilding })).rejects.toThrow();
-        await expect(dao.create('BookStore', { name: 'Best Books Ever', building: libraryBuilding })).rejects.toThrow();
-        await expect(dao.create('BookStore', { name: 'More More Books', building: bookBuilding, books: bookBuilding.id })).rejects.toThrow();
-        await expect(dao.create('BookStore', { name: 'More More Books', building: bookBuilding, books: [bookBuilding.id] })).rejects.toThrow();
-        await expect(dao.create('BookStore', { name: 'More More Books', building: bookBuilding, books: [mobyDick.id, bookBuilding] })).rejects.toThrow();
+        await expect(dataLoader.create('BookStore')).rejects.toThrow();
+        await expect(dataLoader.create('BookStore', { name: 'New Books' })).rejects.toThrow();
+        await expect(dataLoader.create('BookStore', { name: 'New Books', building: 'bad-building' })).rejects.toThrow();
+        await expect(dataLoader.create('BookStore', { name: 'besT bookS eveR', building: bookBuilding })).rejects.toThrow();
+        await expect(dataLoader.create('BookStore', { name: 'Best Books Ever', building: libraryBuilding })).rejects.toThrow();
+        await expect(dataLoader.create('BookStore', { name: 'More More Books', building: bookBuilding, books: bookBuilding.id })).rejects.toThrow();
+        await expect(dataLoader.create('BookStore', { name: 'More More Books', building: bookBuilding, books: [bookBuilding.id] })).rejects.toThrow();
+        await expect(dataLoader.create('BookStore', { name: 'More More Books', building: bookBuilding, books: [mobyDick.id, bookBuilding] })).rejects.toThrow();
       });
 
       test('Library', async () => {
-        await expect(dao.create('Library')).rejects.toThrow();
-        await expect(dao.create('Library', { name: 'New Library' })).rejects.toThrow();
-        await expect(dao.create('Library', { name: 'New Library', building: 'bad-building' })).rejects.toThrow();
-        await expect(dao.create('Library', { name: 'New Library', building: libraryBuilding })).rejects.toThrow();
+        await expect(dataLoader.create('Library')).rejects.toThrow();
+        await expect(dataLoader.create('Library', { name: 'New Library' })).rejects.toThrow();
+        await expect(dataLoader.create('Library', { name: 'New Library', building: 'bad-building' })).rejects.toThrow();
+        await expect(dataLoader.create('Library', { name: 'New Library', building: libraryBuilding })).rejects.toThrow();
       });
     });
 
 
     describe('Data Normalization', () => {
-      test('uniq', async () => {
-        richard = await dao.update('Person', richard.id, { name: 'richard', friends: [christie.id, christie.id, christie.id] });
+      test('uniq', async (done) => {
+        richard = await dataLoader.update('Person', richard.id, { name: 'richard', friends: [christie.id, christie.id, christie.id] });
         expect(richard.name).toEqual('Richard');
         expect(richard.friends).toEqual([christie.id]);
+        dataLoader.clearAll();
+        done();
       });
     });
 
 
     describe('Find (Deep)', () => {
       test('Person', async () => {
-        expect(await dao.find('Person', { where: { authored: { name: 'Moby Dick' } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
-        expect(await dao.find('Person', { where: { authored: { author: { name: 'ChRist??' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.find('Person', { where: { friends: { name: 'Christie' } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
-        expect(await dao.find('Person', { where: { friends: { authored: { name: 'Health*' } } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
-        expect(await dao.find('Person', { where: { friends: { authored: { name: 'Cray Cray*' } } } })).toMatchObject([]);
-        expect(await dao.find('Person', { where: { authored: { chapters: { pages: { verbage: 'city lust' } } } } })).toMatchObject([]);
-        expect(await dao.find('Person', { where: { authored: { chapters: { pages: { verbage: 'the end.' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.find('Person', { where: { authored: { chapters: { pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.find('Person', { where: { authored: { chapters: { name: 'citizen', pages: { verbage: '*intro*' } } } } })).toMatchObject([]);
-        expect(await dao.find('Person', { where: { authored: { chapters: { name: 'chapter*', pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.find('Person', { where: { authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dataLoader.find('Person').where({ authored: { name: 'Moby Dick' } }).exec()).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dataLoader.find('Person').where({ authored: { author: { name: 'ChRist??' } } }).exec()).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dataLoader.find('Person').where({ friends: { name: 'Christie' } }).exec()).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dataLoader.find('Person').where({ friends: { authored: { name: 'Health*' } } }).exec()).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dataLoader.find('Person').where({ friends: { authored: { name: 'Cray Cray*' } } }).exec()).toMatchObject([]);
+        expect(await dataLoader.find('Person').where({ authored: { chapters: { pages: { verbage: 'city lust' } } } }).exec()).toMatchObject([]);
+        expect(await dataLoader.find('Person').where({ authored: { chapters: { pages: { verbage: 'the end.' } } } }).exec()).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dataLoader.find('Person').where({ authored: { chapters: { pages: { verbage: '*intro*' } } } }).exec()).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dataLoader.find('Person').where({ authored: { chapters: { name: 'citizen', pages: { verbage: '*intro*' } } } }).exec()).toMatchObject([]);
+        expect(await dataLoader.find('Person').where({ authored: { chapters: { name: 'chapter*', pages: { verbage: '*intro*' } } } }).exec()).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dataLoader.find('Person').where({ authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } }).exec()).toMatchObject([{ id: christie.id, name: 'Christie' }]);
       });
 
       test('Book', async () => {
-        expect(await dao.find('Book', { where: { author: { name: 'Richard' } } })).toMatchObject([{ id: mobyDick.id }]);
-        expect(await dao.find('Book', { where: { author: { authored: { name: 'Moby*' } } } })).toMatchObject([{ id: mobyDick.id }]);
-        expect(await dao.find('Book', { where: { author: { authored: { name: 'Health*' } } } })).toMatchObject([{ id: healthBook.id }]);
-        expect((await dao.find('Book', { where: { author: { authored: { name: '*' } } } })).sort(sorter)).toMatchObject([{ id: healthBook.id }, { id: mobyDick.id }].sort(sorter));
-        expect(await dao.find('Book', { where: { chapters: { name: 'Chapter1' } } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.find('Book', { where: { chapters: { name: ['chapter1', 'chapter2'] } } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.find('Book', { where: { chapters: { name: ['chapter1', 'no-chapter'] } } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.find('Book', { where: { chapters: { name: '*' } } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.find('Book', { where: { chapters: { pages: { number: 1 } } } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.find('Book', { where: { chapters: [{ name: 'HongKong' }, chapter1.id] } })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dataLoader.find('Book').where({ author: { name: 'Richard' } }).exec()).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dataLoader.find('Book').where({ author: { authored: { name: 'Moby*' } } }).exec()).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dataLoader.find('Book').where({ author: { authored: { name: 'Health*' } } }).exec()).toMatchObject([{ id: healthBook.id }]);
+        expect((await dataLoader.find('Book').where({ author: { authored: { name: '*' } } }).exec()).sort(sorter)).toMatchObject([{ id: healthBook.id }, { id: mobyDick.id }].sort(sorter));
+        expect(await dataLoader.find('Book').where({ chapters: { name: 'Chapter1' } }).exec()).toMatchObject([{ id: healthBook.id }]);
+        expect(await dataLoader.find('Book').where({ chapters: { name: ['chapter1', 'chapter2'] } }).exec()).toMatchObject([{ id: healthBook.id }]);
+        expect(await dataLoader.find('Book').where({ chapters: { name: ['chapter1', 'no-chapter'] } }).exec()).toMatchObject([{ id: healthBook.id }]);
+        expect(await dataLoader.find('Book').where({ chapters: { name: '*' } }).exec()).toMatchObject([{ id: healthBook.id }]);
+        expect(await dataLoader.find('Book').where({ chapters: { pages: { number: 1 } } }).exec()).toMatchObject([{ id: healthBook.id }]);
+        expect(await dataLoader.find('Book').where({ chapters: [{ name: 'HongKong' }, chapter1.id] }).exec()).toMatchObject([{ id: healthBook.id }]);
       });
     });
 
 
     describe('Update', () => {
       test('Person', async () => {
-        expect(await dao.update('Person', richard.id, { name: 'Rich' })).toMatchObject({ id: richard.id, name: 'Rich' });
-        expect(await dao.update('Person', richard.id, { name: 'richard' })).toMatchObject({ id: richard.id, name: 'Richard' });
+        expect(await dataLoader.update('Person', richard.id, { name: 'Rich' })).toMatchObject({ id: richard.id, name: 'Rich' });
+        expect(await dataLoader.update('Person', richard.id, { name: 'richard' })).toMatchObject({ id: richard.id, name: 'Richard' });
       });
 
       test('Book', async () => {
-        expect(await dao.update('Book', mobyDick.id, { name: 'mopey dick' })).toMatchObject({ id: mobyDick.id, name: 'Mopey Dick' });
-        expect(await dao.update('Book', mobyDick.id, { name: 'moby dick' })).toMatchObject({ id: mobyDick.id, name: 'Moby Dick' });
+        expect(await dataLoader.update('Book', mobyDick.id, { name: 'mopey dick' })).toMatchObject({ id: mobyDick.id, name: 'Mopey Dick' });
+        expect(await dataLoader.update('Book', mobyDick.id, { name: 'moby dick' })).toMatchObject({ id: mobyDick.id, name: 'Moby Dick' });
       });
     });
 
 
     describe('Query (Deep)', () => {
       test('Person', async () => {
-        expect(await dao.query('Person', { where: { authored: { name: 'Moby Dick' } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
-        expect(await dao.query('Person', { where: { authored: { author: { name: 'ChRist??' } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.query('Person', { where: { friends: { name: 'Christie' } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
-        expect(await dao.query('Person', { where: { friends: { authored: { name: 'Health*' } } } })).toMatchObject([{ id: richard.id, name: 'Richard' }]);
-        expect(await dao.query('Person', { where: { friends: { authored: { name: 'Cray Cray*' } } } })).toMatchObject([]);
-        expect(await dao.query('Person', { where: { authored: { chapters: { pages: { verbage: 'city lust' } } } } })).toMatchObject([]);
-        expect(await dao.query('Person', { where: { authored: { chapters: { pages: { verbage: 'the end.' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.query('Person', { where: { authored: { chapters: { pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.query('Person', { where: { authored: { chapters: { name: 'citizen', pages: { verbage: '*intro*' } } } } })).toMatchObject([]);
-        expect(await dao.query('Person', { where: { authored: { chapters: { name: 'chapter*', pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.query('Person', { where: { authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
-        expect(await dao.query('Person', { where: { authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } } })).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dataLoader.query('Person').where({ authored: { name: 'Moby Dick' } }).exec()).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dataLoader.query('Person').where({ authored: { author: { name: 'ChRist??' } } }).exec()).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dataLoader.query('Person').where({ friends: { name: 'Christie' } }).exec()).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dataLoader.query('Person').where({ friends: { authored: { name: 'Health*' } } }).exec()).toMatchObject([{ id: richard.id, name: 'Richard' }]);
+        expect(await dataLoader.query('Person').where({ friends: { authored: { name: 'Cray Cray*' } } }).exec()).toMatchObject([]);
+        expect(await dataLoader.query('Person').where({ authored: { chapters: { pages: { verbage: 'city lust' } } } }).exec()).toMatchObject([]);
+        expect(await dataLoader.query('Person').where({ authored: { chapters: { pages: { verbage: 'the end.' } } } }).exec()).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dataLoader.query('Person').where({ authored: { chapters: { pages: { verbage: '*intro*' } } } }).exec()).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dataLoader.query('Person').where({ authored: { chapters: { name: 'citizen', pages: { verbage: '*intro*' } } } }).exec()).toMatchObject([]);
+        expect(await dataLoader.query('Person').where({ authored: { chapters: { name: 'chapter*', pages: { verbage: '*intro*' } } } }).exec()).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dataLoader.query('Person').where({ authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } }).exec()).toMatchObject([{ id: christie.id, name: 'Christie' }]);
+        expect(await dataLoader.query('Person').where({ authored: { chapters: { name: '{citizen,chap*}', pages: { verbage: '*intro*' } } } }).exec()).toMatchObject([{ id: christie.id, name: 'Christie' }]);
       });
 
       test('Book', async () => {
-        expect(await dao.query('Book', { where: { author: { name: 'Richard' } } })).toMatchObject([{ id: mobyDick.id }]);
-        expect(await dao.query('Book', { where: { author: { authored: { name: 'Moby*' } } } })).toMatchObject([{ id: mobyDick.id }]);
-        expect(await dao.query('Book', { where: { author: { authored: { name: 'Health*' } } } })).toMatchObject([{ id: healthBook.id }]);
-        expect((await dao.query('Book', { where: { author: { authored: { name: '*' } } } })).sort(sorter)).toMatchObject([{ id: healthBook.id }, { id: mobyDick.id }].sort(sorter));
-        expect(await dao.query('Book', { where: { chapters: { name: 'Chapter1' } } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.query('Book', { where: { chapters: { name: ['chapter1', 'chapter2'] } } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.query('Book', { where: { chapters: { name: ['chapter1', 'no-chapter'] } } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.query('Book', { where: { chapters: { name: '*' } } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.query('Book', { where: { chapters: { pages: { number: 1 } } } })).toMatchObject([{ id: healthBook.id }]);
-        expect(await dao.query('Book', { where: { chapters: [{ name: 'HongKong' }, chapter1.id] } })).toMatchObject([{ id: healthBook.id }]);
+        expect(await dataLoader.query('Book').where({ author: { name: 'Richard' } }).exec()).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dataLoader.query('Book').where({ author: { authored: { name: 'Moby*' } } }).exec()).toMatchObject([{ id: mobyDick.id }]);
+        expect(await dataLoader.query('Book').where({ author: { authored: { name: 'Health*' } } }).exec()).toMatchObject([{ id: healthBook.id }]);
+        expect((await dataLoader.query('Book').where({ author: { authored: { name: '*' } } }).exec()).sort(sorter)).toMatchObject([{ id: healthBook.id }, { id: mobyDick.id }].sort(sorter));
+        expect(await dataLoader.query('Book').where({ chapters: { name: 'Chapter1' } }).exec()).toMatchObject([{ id: healthBook.id }]);
+        expect(await dataLoader.query('Book').where({ chapters: { name: ['chapter1', 'chapter2'] } }).exec()).toMatchObject([{ id: healthBook.id }]);
+        expect(await dataLoader.query('Book').where({ chapters: { name: ['chapter1', 'no-chapter'] } }).exec()).toMatchObject([{ id: healthBook.id }]);
+        expect(await dataLoader.query('Book').where({ chapters: { name: '*' } }).exec()).toMatchObject([{ id: healthBook.id }]);
+        expect(await dataLoader.query('Book').where({ chapters: { pages: { number: 1 } } }).exec()).toMatchObject([{ id: healthBook.id }]);
+        expect(await dataLoader.query('Book').where({ chapters: [{ name: 'HongKong' }, chapter1.id] }).exec()).toMatchObject([{ id: healthBook.id }]);
       });
     });
 
 
     describe('Query (counts)', () => {
       test('Person', async () => {
-        expect(await dao.query('Person', { where: { countAuthored: '2' } })).toMatchObject([]);
-        expect((await dao.query('Person', { where: { countAuthored: '1' } })).length).toBe(2);
+        expect(await dataLoader.query('Person').where({ countAuthored: '2' }).exec()).toMatchObject([]);
+        expect((await dataLoader.query('Person').where({ countAuthored: '1' }).exec()).length).toBe(2);
       });
     });
   });
