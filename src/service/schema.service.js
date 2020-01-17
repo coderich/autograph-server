@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const GraphqlFields = require('graphql-fields');
 const { withFilter, PubSub } = require('graphql-subscriptions');
-const { DataLoader, Emitter } = require('@coderich/dataloader');
+const { Emitter } = require('@coderich/dataloader');
 const Resolver = require('../core/Resolver');
 const { ucFirst, hashObject, toGUID, fromGUID } = require('./app.service');
 
@@ -11,30 +11,29 @@ const pubsub = new PubSub();
 exports.createGraphSchema = (schema) => {
   const resolver = new Resolver();
 
-  Emitter.on('postMutation', ({ store }) => {
-    const loader = (store instanceof DataLoader ? store : store.dataLoader());
-    schema.getVisibleModels().forEach(model => pubsub.publish(`${model.getName()}Trigger`, { store: loader }));
+  Emitter.on('postMutation', ({ loader }) => {
+    schema.getVisibleModels().forEach(model => pubsub.publish(`${model.getName()}Trigger`, { loader }));
   });
 
-  Emitter.on('preMutation', ({ method, store }, next) => {
-    const beforeStore = (store instanceof DataLoader ? store : store.dataLoader());
-    const afterStore = store.dataLoader();
+  // Emitter.on('preMutation', ({ method, store }, next) => {
+  //   const beforeStore = (store instanceof DataLoader ? store : store.dataLoader());
+  //   const afterStore = store.dataLoader();
 
-    Promise.all(schema.getVisibleModels().map((model) => {
-      const payload = { method, beforeStore, afterStore, next: undefined };
+  //   Promise.all(schema.getVisibleModels().map((model) => {
+  //     const payload = { method, beforeStore, afterStore, next: undefined };
 
-      return new Promise((resolve) => {
-        pubsub.publish(`${model.getName()}Changed`, payload);
+  //     return new Promise((resolve) => {
+  //       pubsub.publish(`${model.getName()}Changed`, payload);
 
-        setTimeout(() => {
-          if (!payload.next) return resolve();
-          return payload.next.then(() => resolve());
-        });
-      });
-    })).then(() => {
-      next();
-    });
-  });
+  //       setTimeout(() => {
+  //         if (!payload.next) return resolve();
+  //         return payload.next.then(() => resolve());
+  //       });
+  //     });
+  //   })).then(() => {
+  //     next();
+  //   });
+  // });
 
   return {
     typeDefs: schema.getModels().map((model) => {
@@ -168,10 +167,10 @@ exports.createGraphSchema = (schema) => {
       Edge: {
         node: async (root, args, context, info) => {
           const { node } = root;
-          const { store } = context;
+          const { loader } = context;
           const [modelName] = fromGUID(node.$id);
           const model = schema.getModel(modelName);
-          return model.hydrate(store, node, { fields: GraphqlFields(info, {}, { processArguments: true }) });
+          return model.hydrate(loader, node, { fields: GraphqlFields(info, {}, { processArguments: true }) });
         },
       },
       Query: schema.getVisibleModels().reduce((prev, model) => {
@@ -222,72 +221,72 @@ exports.createGraphSchema = (schema) => {
               return resolver.query(context, model, args, info);
             },
           },
-          [`${modelName}Changed`]: {
-            subscribe: withFilter(
-              () => pubsub.asyncIterator(`${modelName}Changed`),
-              (root, args1, context, info) => {
-                let nextPromise;
-                const args = _.cloneDeep(args1);
-                const sid = hashObject({ modelName, args });
-                const { beforeStore, afterStore } = root;
-                const action = `${modelName}Changed`;
-                const fields = GraphqlFields(info, {}, { processArguments: true });
-                context.subscriptions = context.subscriptions || {};
-                context.subscriptions[sid] = [];
+          // [`${modelName}Changed`]: {
+          //   subscribe: withFilter(
+          //     () => pubsub.asyncIterator(`${modelName}Changed`),
+          //     (root, args1, context, info) => {
+          //       let nextPromise;
+          //       const args = _.cloneDeep(args1);
+          //       const sid = hashObject({ modelName, args });
+          //       const { beforeStore, afterStore } = root;
+          //       const action = `${modelName}Changed`;
+          //       const fields = GraphqlFields(info, {}, { processArguments: true });
+          //       context.subscriptions = context.subscriptions || {};
+          //       context.subscriptions[sid] = [];
 
-                // Let them know we're listening and to wait for us...
-                root.next = new Promise(resolve => (nextPromise = resolve));
+          //       // Let them know we're listening and to wait for us...
+          //       root.next = new Promise(resolve => (nextPromise = resolve));
 
-                return new Promise((resolve, reject) => {
-                  beforeStore.query(model, { fields, ...args.query }).then((before) => {
-                    context.store = afterStore;
+          //       return new Promise((resolve, reject) => {
+          //         beforeStore.query(model, { fields, ...args.query }).then((before) => {
+          //           context.store = afterStore;
 
-                    Emitter.once('postMutation', async (event) => {
-                      const after = await afterStore.query(model, { fields, ...args.query });
-                      const diff = _.xorWith(before, after, (a, b) => `${a.id}` === `${b.id}`);
-                      const updated = _.intersectionWith(before, after, (a, b) => `${a.id}` === `${b.id}`).filter((el) => {
-                        const a = before.find(e => `${e.id}` === `${el.id}`);
-                        const b = after.find(e => `${e.id}` === `${el.id}`);
-                        return hashObject(a) !== hashObject(b);
-                      }).map((el) => {
-                        return after.find(e => `${e.id}` === `${el.id}`);
-                      });
+          //           Emitter.once('postMutation', async (event) => {
+          //             const after = await afterStore.query(model, { fields, ...args.query });
+          //             const diff = _.xorWith(before, after, (a, b) => `${a.id}` === `${b.id}`);
+          //             const updated = _.intersectionWith(before, after, (a, b) => `${a.id}` === `${b.id}`).filter((el) => {
+          //               const a = before.find(e => `${e.id}` === `${el.id}`);
+          //               const b = after.find(e => `${e.id}` === `${el.id}`);
+          //               return hashObject(a) !== hashObject(b);
+          //             }).map((el) => {
+          //               return after.find(e => `${e.id}` === `${el.id}`);
+          //             });
 
-                      const added = diff.filter((el) => {
-                        const a = before.find(e => `${e.id}` === `${el.id}`);
-                        const b = after.find(e => `${e.id}` === `${el.id}`);
-                        return Boolean(!a && b);
-                      });
+          //             const added = diff.filter((el) => {
+          //               const a = before.find(e => `${e.id}` === `${el.id}`);
+          //               const b = after.find(e => `${e.id}` === `${el.id}`);
+          //               return Boolean(!a && b);
+          //             });
 
-                      const deleted = diff.filter((el) => {
-                        const a = before.find(e => `${e.id}` === `${el.id}`);
-                        const b = after.find(e => `${e.id}` === `${el.id}`);
-                        return Boolean(a && !b);
-                      });
+          //             const deleted = diff.filter((el) => {
+          //               const a = before.find(e => `${e.id}` === `${el.id}`);
+          //               const b = after.find(e => `${e.id}` === `${el.id}`);
+          //               return Boolean(a && !b);
+          //             });
 
-                      if (!updated.length && !added.length && !deleted.length) return resolve(false);
+          //             if (!updated.length && !added.length && !deleted.length) return resolve(false);
 
-                      updated.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'update', model: result } }));
-                      added.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'create', model: result } }));
-                      deleted.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'delete', model: result } }));
-                      return resolve(true);
-                    });
+          //             updated.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'update', model: result } }));
+          //             added.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'create', model: result } }));
+          //             deleted.forEach(result => context.subscriptions[sid].push({ [action]: { op: 'delete', model: result } }));
+          //             return resolve(true);
+          //           });
 
-                    nextPromise();
-                  });
-                });
-              },
-            ),
-            resolve: (root, args, context) => {
-              const sid = hashObject({ modelName, args });
-              const results = context.subscriptions[sid];
+          //           nextPromise();
+          //         });
+          //       });
+          //     },
+          //   ),
+          //   resolve: (root, args, context) => {
+          //     const sid = hashObject({ modelName, args });
+          //     const results = context.subscriptions[sid];
 
-              return results.map((result) => {
-                const [data] = Object.values(result);
-                return data;
-              });
-            },
-          },
+          //     return results.map((result) => {
+          //       const [data] = Object.values(result);
+          //       return data;
+          //     });
+          //   },
+          // },
         });
       }, {}),
     }),

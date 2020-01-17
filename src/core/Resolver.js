@@ -31,19 +31,19 @@ module.exports = class Resolver {
     this.get = ({ loader }, model, guid, required = false, info) => {
       const query = { fields: GraphqlFields(info, {}, { processArguments: true }) };
 
-      return loader.get(model, guidToId(guid)).query(query).exec().then((doc) => {
+      return loader.match(model).id(guidToId(guid)).query(query).one().then((doc) => {
         if (!doc && required) throw new NotFoundError(`${model} Not Found`);
         return doc;
       });
     };
 
     // Query
-    this.query = ({ loader }, model, args, info) => loader.query(model).query(normalizeQuery(args, info)).exec();
-    this.count = ({ loader }, model, args, info) => loader.count(model).where(args.where).exec();
+    this.query = ({ loader }, model, args, info) => loader.match(model).query(normalizeQuery(args, info)).many();
+    this.count = ({ loader }, model, args, info) => loader.match(model).where(args.where).count();
 
     // Mutations
-    this.create = ({ loader }, model, data, query) => loader.create(model, unrollGuid(loader, model, data), query);
-    this.update = ({ loader }, model, guid, data, query) => loader.update(model, guidToId(guid), unrollGuid(loader, model, data), query);
-    this.delete = ({ loader }, model, guid, query) => loader.delete(model, guidToId(guid), query);
+    this.create = ({ loader }, model, data, query) => loader.match(model).select(query.fields).data(unrollGuid(loader, model, data)).save();
+    this.update = ({ loader }, model, guid, data, query) => loader.match(model).id(guidToId(guid)).data(unrollGuid(loader, model, data)).select(query.fields).save();
+    this.delete = ({ loader }, model, guid, query) => loader.match(model).id(guidToId(guid)).selet(query.fields).remove();
   }
 };
