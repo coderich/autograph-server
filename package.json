@@ -17,7 +17,8 @@
     "uuid": "uuid"
   },
   "dependencies": {
-    "@coderich/dataloader": "^0.0.3",
+    "@coderich/dalmatian": "^0.1.0",
+    "@coderich/dalmation": "^0.1.0",
     "apollo-link-ws": "^1.0.19",
     "axios": "^0.19.0",
     "graphql-fields": "^2.0.3",

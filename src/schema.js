@@ -1,6 +1,6 @@
-const { required, immutable, range, allow, reject, email, selfless } = require('@coderich/dataloader/rules');
-const { titleCase } = require('@coderich/dataloader/transforms');
-const { Array, Set } = require('@coderich/dataloader/types');
+const { required, immutable, range, allow, reject, email, selfless } = require('@coderich/dalmatian/rules');
+const { titleCase } = require('@coderich/dalmatian/transforms');
+const { Array, Set } = require('@coderich/dalmatian/types');
 
 exports.schema = {
   Person: {

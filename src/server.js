@@ -1,5 +1,5 @@
 const { ApolloServer, makeExecutableSchema } = require('apollo-server');
-const { Schema, DataLoader } = require('@coderich/dataloader');
+const { Schema, DataLoader } = require('@coderich/dalmatian');
 const SchemaService = require('./service/schema.service');
 const { schema: schemaDef, stores } = require('./schema');
 

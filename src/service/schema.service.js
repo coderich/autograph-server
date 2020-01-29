@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const GraphqlFields = require('graphql-fields');
 const { withFilter, PubSub } = require('graphql-subscriptions');
-const { Emitter } = require('@coderich/dataloader');
+const { Emitter } = require('@coderich/dalmatian');
 const Resolver = require('../core/Resolver');
 const { ucFirst, hashObject, toGUID, fromGUID } = require('./app.service');
 
