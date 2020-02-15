@@ -1,6 +1,5 @@
 .DS_Store
+.npmrc
 node_modules/
 coverage/
 junit.xml
-*.sublime-workspace
-*.sublime-project
