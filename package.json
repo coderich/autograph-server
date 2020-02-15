@@ -1,7 +1,7 @@
 {
   "name": "@coderich/autographql",
   "author": "Richard Livolsi (coderich)",
-  "version": "0.0.6",
+  "version": "0.0.1",
   "description": "The fastest way to GraphQL",
   "main": "index.js",
   "license": "MIT",
@@ -10,25 +10,28 @@
     "index.js"
   ],
   "scripts": {
-    "start": "node ./src/server",
-    "test": "ratchet test",
-    "lint": "ratchet lint",
+    "start": "APP_ROOT_PATH=$(pwd) node ./test/server",
+    "test": "APP_ROOT_PATH=$(pwd) ratchet test",
+    "lint": "APP_ROOT_PATH=$(pwd) ratchet lint",
     "ratchet": "ratchet",
     "uuid": "uuid"
   },
   "dependencies": {
-    "@coderich/dalmatian": "^0.1.0",
+    "@coderich/autograph": "^0.0.9",
     "apollo-link-ws": "^1.0.19",
-    "axios": "^0.19.0",
     "graphql-fields": "^2.0.3",
     "graphql-subscriptions": "^1.1.0",
     "lodash": "^4.17.15"
   },
   "devDependencies": {
-    "@coderich/ratchet": "^1.2.5",
+    "@coderich/ratchet": "^1.4.3",
     "apollo-server": "^2.9.15",
+    "axios": "^0.19.0",
     "graphql": "^14.5.8",
     "graphql-request": "^1.8.2",
-    "graphql-tag": "^2.10.1"
+    "graphql-tag": "^2.10.1",
+    "mongodb": "^3.5.3",
+    "neo4j-driver": "^4.0.1",
+    "redis": "^3.0.2"
   }
 }

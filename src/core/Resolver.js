@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const GraphqlFields = require('graphql-fields');
-const { NotFoundError } = require('@coderich/dalmatian/errors');
+const { NotFoundError } = require('@coderich/autograph/errors');
 const { fromGUID, map } = require('../service/app.service');
 
 const guidToId = guid => fromGUID(guid)[1];
@@ -42,8 +42,8 @@ module.exports = class Resolver {
     this.count = ({ loader }, model, args, info) => loader.match(model).where(args.where).count();
 
     // Mutations
-    this.create = ({ loader }, model, data, query) => loader.match(model).select(query.fields).data(unrollGuid(loader, model, data)).save();
-    this.update = ({ loader }, model, guid, data, query) => loader.match(model).id(guidToId(guid)).data(unrollGuid(loader, model, data)).select(query.fields).save();
+    this.create = ({ loader }, model, data, query) => loader.match(model).select(query.fields).save(unrollGuid(loader, model, data));
+    this.update = ({ loader }, model, guid, data, query) => loader.match(model).id(guidToId(guid)).select(query.fields).save(unrollGuid(loader, model, data));
     this.delete = ({ loader }, model, guid, query) => loader.match(model).id(guidToId(guid)).selet(query.fields).remove();
   }
 };
