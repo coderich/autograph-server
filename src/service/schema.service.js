@@ -62,14 +62,14 @@ exports.createGraphSchema = (schema) => {
 
         input ${modelName}InputWhere {
           ${model.getFields().map(field => `${field.getName()}: ${field.getDataRef() ? `${ucFirst(field.getDataRef())}InputWhere` : 'String'}`)}
-          countSelf: String
           ${model.getCountableFields().map(field => `count${ucFirst(field.getName())}: String`)}
+          countSelf: String
         }
 
         input ${modelName}InputSort {
           ${model.getFields().map(field => `${field.getName()}: ${field.getDataRef() ? `${ucFirst(field.getDataRef())}InputSort` : 'SortOrderEnum'}`)}
-          countSelf: SortOrderEnum
           ${model.getCountableFields().map(field => `count${ucFirst(field.getName())}: SortOrderEnum`)}
+          countSelf: SortOrderEnum
         }
 
         input ${modelName}InputQuery {

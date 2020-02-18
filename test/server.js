@@ -1,7 +1,7 @@
 const { ApolloServer, makeExecutableSchema } = require('apollo-server');
 const { Schema, Resolver } = require('@coderich/autograph');
 const { Quin, Rule } = require('@coderich/autograph/quin');
-const SchemaService = require('../src/service/schema.service');
+const { createGraphSchema } = require('../src/service/schema.service');
 const stores = require('./stores');
 const gql = require('./schema');
 
@@ -13,7 +13,7 @@ Quin.extend('colors', Rule.allow('blue', 'red', 'green', 'purple'));
 Quin.extend('buildingType', Rule.allow('home', 'office', 'business'));
 
 const schema = new Schema(gql, stores);
-const graphSchema = SchemaService.createGraphSchema(schema);
+const graphSchema = createGraphSchema(schema);
 const executableSchema = makeExecutableSchema(graphSchema);
 
 const apolloServer = new ApolloServer({
