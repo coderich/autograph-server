@@ -1,8 +1,5 @@
-const { Schema, Resolver } = require('@coderich/autograph');
-const { createGraphSchema } = require('./src/service/schema.service');
+const Server = require('./src/core/Server');
 
 module.exports = {
-  Schema,
-  Resolver,
-  createGraphSchema,
+  Server,
 };

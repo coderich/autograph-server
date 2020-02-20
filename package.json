@@ -1,7 +1,7 @@
 {
   "name": "@coderich/autograph-server",
   "author": "Richard Livolsi (coderich)",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "The fastest way to GraphQL",
   "main": "index.js",
   "license": "MIT",
