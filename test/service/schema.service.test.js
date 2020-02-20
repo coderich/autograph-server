@@ -8,7 +8,6 @@ describe('Schema', () => {
   test('simpleSchema', () => {
     const schema = new Schema(gql, stores);
     const graphSchema = createGraphSchema(schema);
-    console.log(JSON.stringify(graphSchema));
     const executableSchema = makeExecutableSchema(graphSchema);
     expect(executableSchema).toBeDefined();
   });

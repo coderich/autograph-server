@@ -1,6 +1,6 @@
 module.exports = {
   typeDefs: `
-    type Person {
+    type Person @quin {
       name: String!
       authored: [Book]
       emailAddress: String!
