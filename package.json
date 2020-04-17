@@ -24,8 +24,10 @@
     "graphql-request": "^1.8.2",
     "graphql-subscriptions": "^1.1.0",
     "graphql-tag": "^2.10.1",
+    "graphql-tools": "^5.0.0",
     "lodash": "^4.17.15",
-    "mongodb": "^3.5.3"
+    "mongodb": "^3.5.3",
+    "picomatch": "^2.2.2"
   },
   "devDependencies": {
     "@coderich/ratchet": "^1.4.3"

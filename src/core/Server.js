@@ -10,7 +10,11 @@ module.exports = class Server {
 
     this.server = new ApolloServer({
       schema: executableSchema,
-      context: () => ({ loader: new Resolver(schema) }),
+      context: () => ({
+        schema,
+        scopes: ['Person/(id|name)/*'],
+        loader: new Resolver(schema),
+      }),
     });
   }
 
