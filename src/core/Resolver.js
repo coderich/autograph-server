@@ -44,6 +44,6 @@ module.exports = class Resolver {
     // Mutations
     this.create = ({ loader }, model, data, query) => loader.match(model).select(query.fields).save(unrollGuid(loader, model, data));
     this.update = ({ loader }, model, guid, data, query) => loader.match(model).id(guidToId(guid)).select(query.fields).save(unrollGuid(loader, model, data));
-    this.delete = ({ loader }, model, guid, query) => loader.match(model).id(guidToId(guid)).selet(query.fields).remove();
+    this.delete = ({ loader }, model, guid, query) => loader.match(model).id(guidToId(guid)).select(query.fields).remove();
   }
 };

@@ -1,13 +1,13 @@
 module.exports = {
   typeDefs: `
-    type Person @quin(namespace: "admin") {
+    type Person @model {
       name: String!
-      authored: [Book]
+      authored: [Book] @field(materializeBy: "author")
       emailAddress: String!
       status: String
     }
 
-    type Book {
+    type Book @model {
       name: String!
       price: Float!
       author: Person!

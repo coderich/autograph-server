@@ -27,22 +27,28 @@ const getCrudOperation = (mutationName) => {
 };
 
 const authorize = (context, model, fields, crud) => {
-  const { schema, scopes = [] } = context;
+  const { schema, permissions = [] } = context;
   const namespace = schema.getModel(model).getNamespace();
+  const parts = namespace.split('/').reverse();
+
+  // const flags = fields.reduce((obj, field) => {
+  //   const directTargets = parts.reduce((prev, part, i) => prev.concat(`${part}/${prev[i]}`), [`${model}/${field}/${crud}`]);
+  //   let result = directTargets.some(target => PicoMatch.isMatch(target, permissions, { nocase: true }));
+
+  //   if (!result) {
+  //     const authorTargets = parts.reduce((prev, part, i) => prev.concat(`${part}/${prev[i]}`), [`${model}/${field}/${crud}`]);
+  //     result = authorTargets.some(target => PicoMatch.isMatch(target, permissions, { nocase: true })) ? 1 : false;
+  //   }
+
+  //   return Object.assign(obj, { [field]: result });
+  // }, {});
+
+  // console.log(flags);
+  // console.log('------');
 
   const authorized = fields.every((field) => {
-    const ns = `${model}/${field}/${crud}`;
-    const fqns = `${namespace}/${ns}`;
-
-    if (field === '*') {
-      return scopes.some((scope) => {
-        return PicoMatch.isMatch(scope, [`**${model}/**`, `${namespace}/**`, '\\*\\*/**'], { nocase: true });
-      });
-    }
-
-    return [ns, fqns].some((scope) => {
-      return PicoMatch.isMatch(scope, scopes, { nocase: true });
-    });
+    const targets = parts.reduce((prev, part, i) => prev.concat(`${part}/${prev[i]}`), [`${model}/${field}/${crud}`]);
+    return targets.some(target => PicoMatch.isMatch(target, permissions, { nocase: true }));
   });
 
   if (!authorized) throw new Error('Not Authorized');
@@ -71,7 +77,7 @@ exports.AuthzDirective = class extends SchemaDirectiveVisitor {
     const { model = dataType } = this.args;
 
     field.resolve = async function resolver(root, args, context, info) {
-      authorize(context, model, Object.keys(args.data || { '*': 1 }), crudOperation);
+      authorize(context, model, Object.keys(args.data || { id: 1 }), crudOperation);
       return resolve.call(this, root, args, context, info);
     };
   }

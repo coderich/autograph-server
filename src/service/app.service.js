@@ -22,40 +22,10 @@ exports.keyPaths = (obj, keys = [], path) => {
   }, keys);
 };
 
-exports.promiseChain = (promises) => {
-  return promises.reduce((chain, promise) => {
-    return chain.then(chainResults => promise().then(promiseResult => [...chainResults, promiseResult]));
-  }, Promise.resolve([]));
+exports.queryPaths = (model, obj) => {
+  return exports.keyPaths(obj).filter(path => path.indexOf('edges.cursor') === -1).map((path) => {
+    return path.replace(/edges|node/gi, '').replace(/^\.+|\.+$/g, '');
+  }).filter(a => a);
 };
 
-exports.proxyDeep = (obj, handler, proxyMap = new WeakMap(), path = '') => {
-  obj = obj || {};
-  if (proxyMap.has(obj)) return proxyMap.get(obj);
-
-  const proxy = new Proxy(Object.entries(obj).reduce((prev, [key, value]) => {
-    if (Array.isArray(value)) return Object.assign(prev, { [key]: value.map(v => (exports.isPlainObject(v) ? exports.proxyDeep(v, handler, proxyMap, path) : v)) });
-    if (exports.isPlainObject(value)) return Object.assign(prev, { [key]: exports.proxyDeep(value, handler, proxyMap, path) });
-    return Object.assign(prev, { [key]: value });
-  }, {}), handler);
-
-  const finalProxy = Object.defineProperty(proxy, 'toObject', {
-    get() {
-      return (getMap = new WeakMap()) => {
-        if (getMap.has(this)) return getMap.get(this);
-
-        const plainObject = Object.entries(this).reduce((prev, [key, value]) => {
-          if (Array.isArray(value)) return Object.assign(prev, { [key]: value.map(v => (v.toObject ? v.toObject(getMap) : v)) });
-          return Object.assign(prev, { [key]: value.toObject ? value.toObject(getMap) : value });
-        }, {});
-
-        getMap.set(this, plainObject);
-
-        return plainObject;
-      };
-    },
-  });
-
-  proxyMap.set(obj, finalProxy);
-
-  return finalProxy;
-};
+exports.isPlainObject = obj => typeof obj === 'object' && !Array.isArray(obj);

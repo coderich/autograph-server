@@ -12,7 +12,7 @@ module.exports = class Server {
       schema: executableSchema,
       context: () => ({
         schema,
-        scopes: ['Person/(id|name)/*'],
+        permissions: ['**'],
         loader: new Resolver(schema),
       }),
     });

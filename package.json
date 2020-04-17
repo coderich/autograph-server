@@ -1,7 +1,7 @@
 {
   "name": "@coderich/autograph-server",
   "author": "Richard Livolsi (coderich)",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "The fastest way to GraphQL",
   "main": "index.js",
   "license": "MIT",
@@ -16,7 +16,7 @@
     "ratchet": "ratchet"
   },
   "dependencies": {
-    "@coderich/autograph": "^0.0.10",
+    "@coderich/autograph": "^0.0.11",
     "apollo-link-ws": "^1.0.19",
     "apollo-server": "^2.9.15",
     "graphql": "^14.5.8",
