@@ -43,7 +43,7 @@ exports.createGraphSchema = (schema) => {
       return `
         type ${modelName} implements Node @authz {
           id: ID!
-          ${model.getFields().map(field => field.getGQLDefinition())}
+          ${model.getSelectFields().map(field => field.getGQLDefinition())}
           ${model.getCountableFields().map(field => `count${ucFirst(field.getName())}(where: ${field.getDataRef()}InputWhere): Int!`)}
           countSelf(where: ${modelName}InputWhere): Int!
         }
@@ -62,13 +62,13 @@ exports.createGraphSchema = (schema) => {
         }
 
         input ${modelName}InputWhere {
-          ${model.getFields().map(field => `${field.getName()}: ${field.getDataRef() ? `${ucFirst(field.getDataRef())}InputWhere` : 'String'}`)}
+          ${model.getSelectFields().map(field => `${field.getName()}: ${field.getDataRef() ? `${ucFirst(field.getDataRef())}InputWhere` : 'String'}`)}
           ${model.getCountableFields().map(field => `count${ucFirst(field.getName())}: String`)}
           countSelf: String
         }
 
         input ${modelName}InputSort {
-          ${model.getFields().map(field => `${field.getName()}: ${field.getDataRef() ? `${ucFirst(field.getDataRef())}InputSort` : 'SortOrderEnum'}`)}
+          ${model.getSelectFields().map(field => `${field.getName()}: ${field.getDataRef() ? `${ucFirst(field.getDataRef())}InputSort` : 'SortOrderEnum'}`)}
           ${model.getCountableFields().map(field => `count${ucFirst(field.getName())}: SortOrderEnum`)}
           countSelf: SortOrderEnum
         }
@@ -150,7 +150,7 @@ exports.createGraphSchema = (schema) => {
       const modelName = model.getName();
 
       return Object.assign(prev, {
-        [modelName]: model.getFields().reduce((def, field) => {
+        [modelName]: model.getSelectFields().reduce((def, field) => {
           const fieldName = field.getName();
           return Object.assign(def, { [fieldName]: root => root[`$${fieldName}`] });
         }, {

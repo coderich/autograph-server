@@ -1,16 +1,16 @@
 module.exports = {
   typeDefs: `
-    type Person @model {
+    type Person @model(driver: "neo4jDriver") {
       name: String!
       authored: [Book] @field(materializeBy: "author")
       emailAddress: String!
       status: String
     }
 
-    type Book @model {
+    type Book @model(driver: "neo4jDriver") {
       name: String!
       price: Float!
-      author: Person!
+      author: Person! @field(enforce: immutable)
       bestSeller: Boolean
       bids: [Float]
     }

@@ -12,9 +12,7 @@ const unrollGuid = (loader, model, data) => {
   return map(data, (doc) => {
     return Object.entries(doc).reduce((prev, [key, value]) => {
       return Object.assign(prev, { [key]: (fields.indexOf(key) > -1 ? guidToId(value) : value) });
-    }, {
-      id: guidToId(doc.id),
-    });
+    }, {});
   });
 };
 

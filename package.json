@@ -1,13 +1,14 @@
 {
   "name": "@coderich/autograph-server",
   "author": "Richard Livolsi (coderich)",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "The fastest way to GraphQL",
   "main": "index.js",
   "license": "MIT",
   "files": [
     "src/",
-    "index.js"
+    "index.js",
+    "autograph.js"
   ],
   "scripts": {
     "start": "APP_ROOT_PATH=$(pwd) node ./src/server",
