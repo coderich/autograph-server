@@ -1,12 +1,10 @@
-const { ApolloServer, makeExecutableSchema } = require('apollo-server');
+const { ApolloServer } = require('apollo-server');
 const { Schema, Resolver } = require('@coderich/autograph');
-const { createGraphSchema } = require('../service/schema.service');
 
 module.exports = class Server {
   constructor(gql, stores) {
     const schema = new Schema(gql, stores);
-    const graphSchema = createGraphSchema(schema);
-    const executableSchema = makeExecutableSchema(graphSchema);
+    const executableSchema = schema.makeServerApiSchema();
 
     this.server = new ApolloServer({
       schema: executableSchema,
